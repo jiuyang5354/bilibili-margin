@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "映间 MARGIN · 首页与播放页预览版",
-  "version": "0.6.0",
+  "version": "0.6.1",
   "description": "重新设计 B 站首页与视频播放页。基于 BewlyBewly。",
   "permissions": [
     "storage",
@@ -30,7 +30,8 @@
         "https://www.bilibili.com/*"
       ],
       "js": [
-        "content/index.js"
+        "content/index.js",
+        "content/enhance.js"
       ],
       "run_at": "document_idle"
     }
