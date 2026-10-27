@@ -1,3 +1,4 @@
+import { BUILDER, BUILDER_FRAG } from './builder';
 import type { ShaderId } from '../../shared/settings';
 
 // 四款原创背景着色器（WebGL1）。共用 value noise / fbm，配色由 u_c1..u_c3 传入。
@@ -10,7 +11,7 @@ float noise(vec2 p){ vec2 i=floor(p), f=fract(p); vec2 u=f*f*(3.-2.*f);
 float fbm(vec2 p){ float v=0., a=.5; mat2 m=mat2(1.6,1.2,-1.2,1.6); for(int i=0;i<5;i++){ v+=a*noise(p); p=m*p; a*=.5; } return v; }
 `;
 
-const BODIES: Record<ShaderId, string> = {
+const BODIES: Partial<Record<ShaderId, string>> = {
   // 冰蓝：雾面上漂浮的柔光团 + 两道斜向玻璃折光
   ice: `
 void main(){
@@ -87,10 +88,13 @@ void main(){
 }`,
 };
 
-export const SHADER_IDS: ShaderId[] = ['aurora', 'silk', 'mesh', 'grain', 'ice'];
-export const SHADER_NAMES: Record<ShaderId, string> = { aurora: '极光', silk: '丝绸', mesh: '网格渐变', grain: '颗粒', ice: '冰蓝' };
+export const SHADER_IDS: ShaderId[] = ['veil', 'smoke', 'neuro', 'flow', 'rays', 'blend', 'aurora', 'silk', 'mesh', 'grain', 'ice'];
+export const BUILDER_IDS = ['veil', 'smoke', 'neuro', 'flow', 'rays', 'blend'] as const;
+export const isBuilder = (id: ShaderId): id is typeof BUILDER_IDS[number] => (BUILDER_IDS as readonly string[]).includes(id);
+export const SHADER_NAMES: Record<ShaderId, string> = { aurora: '极光', silk: '丝绸', mesh: '网格渐变', grain: '颗粒', ice: '冰蓝', veil: '丝缎', smoke: '烟霞', neuro: '流萤', flow: '流沙', rays: '天光', blend: '弥散' };
 
 export function fragment(id: ShaderId): string {
+  if (isBuilder(id)) return BUILDER_FRAG.replace('/*SHADE*/', BUILDER[id].shade);
   return COMMON + BODIES[id];
 }
 
@@ -99,7 +103,7 @@ const hex = (s: string): RGB => [1, 3, 5].map((i) => parseInt(s.slice(i, i + 2),
 
 type Pal = { bg: RGB; c: [RGB, RGB, RGB] };
 
-export const PALETTES: Record<'light' | 'dark', Record<ShaderId, Pal>> = {
+export const PALETTES: Record<'light' | 'dark', Partial<Record<ShaderId, Pal>>> = {
   dark: {
     aurora: { bg: hex('#0d0e12'), c: [hex('#1fd1a5'), hex('#2b6cff'), hex('#b44cff')] },
     silk: { bg: hex('#0f0f13'), c: [hex('#2a2440'), hex('#123a52'), hex('#8fb6d9')] },
