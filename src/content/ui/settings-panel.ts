@@ -14,6 +14,7 @@ export function createSettingsPanel(get: () => Settings, currentShader: () => Sh
   const s0 = get();
 
   const theme = segmented<Theme>([['auto', '跟随系统'], ['light', '亮色'], ['dark', '暗色']], s0.theme, (v) => save({ theme: v }));
+  const watch = toggle(s0.watch, '播放页重设计', (v) => save({ watch: v }));
   const preview = toggle(s0.hoverPreview, '悬停预览', (v) => save({ hoverPreview: v }));
 
   const kw = chipInput(s0.filters.keywords, '输入关键词，回车添加；/正则/ 也可以', (v) => save({ filters: { ...get().filters, keywords: v } }));
@@ -52,7 +53,8 @@ export function createSettingsPanel(get: () => Settings, currentShader: () => Sh
   sheet.body.append(
     h('section', { class: 'group' }, h('h3', {}, '外观'),
       block('明暗', null, theme),
-      row('封面悬停预览', '鼠标停留半秒后静音播放', preview)),
+      row('封面悬停预览', '鼠标停留半秒后静音播放', preview),
+      row('播放页重设计', '保留原生播放器、弹幕与评论，只换外观', watch)),
     h('section', { class: 'group' }, h('h3', {}, '背景'),
       block('模式', '随机：每次打开换一款，不连续重复', mode),
       block('样式', null, swatches),
@@ -70,6 +72,7 @@ export function createSettingsPanel(get: () => Settings, currentShader: () => Sh
     sync(s) {
       theme.set(s.theme);
       preview.setAttribute('aria-checked', String(s.hoverPreview));
+      watch.setAttribute('aria-checked', String(s.watch));
       kw.set(s.filters.keywords);
       ups.set(s.filters.ups);
       mode.set(s.bg.mode);
