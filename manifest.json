@@ -4,7 +4,8 @@
   "version": "0.6.0",
   "description": "重新设计 B 站首页与视频播放页。基于 BewlyBewly。",
   "permissions": [
-    "storage"
+    "storage",
+    "declarativeNetRequestWithHostAccess"
   ],
   "host_permissions": [
     "https://www.bilibili.com/*",
