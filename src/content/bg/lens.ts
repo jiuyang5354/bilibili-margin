@@ -5,17 +5,38 @@
  * 宽卡片的圆角不会被拉伸；纯原生 WebGL1，和背景共用同一个上下文与三角形。
  */
 const VERT = 'attribute vec2 p;void main(){gl_Position=vec4(p,0.,1.);}';
-const FRAG = `precision mediump float;
+const FRAG = `precision highp float;
 uniform sampler2D u_tex;
 uniform vec2 u_res;
 uniform vec4 u_rect;   // x, y (左下角), w, h —— 画布像素，y 向上
 uniform float u_rad;
 uniform vec3 u_tint;
-uniform float u_milk;  // 染色强度
+uniform float u_milk;  // 底色 alpha（clear 款很低）
 uniform float u_rim;   // 高光强度
-uniform float u_bezel; // 折射带宽（像素）
+uniform float u_bezel; // 弧边宽度（像素，恒定，不随卡片尺寸缩放）
+uniform float u_px;    // 1 个 CSS 像素 = 多少画布像素
 
 float sdRound(vec2 p, vec2 b, float r) { vec2 q = abs(p) - b + r; return length(max(q, 0.0)) + min(max(q.x, q.y), 0.0) - r; }
+
+// 凸 squircle 弧边 f(x) = (1-(1-x)^4)^(1/4) 的斜率
+float slope(float x) { float u = 1.0 - x; return u * u * u * pow(max(1.0 - u * u * u * u, 1e-4), -0.75); }
+
+// 竖直视线穿过弧边：Snell 折射 + 厚度 → 背景平面上的横向位移（单位：弧边宽度），乘菲涅尔透射率
+float shift(float x, float n) {
+  float ts = atan(slope(x));
+  float tr = asin(sin(ts) / n);
+  float t = 0.12 + (1.0 - pow(1.0 - x, 4.0)) ;          // 底座 + 弧面高度（f^4 足够近似）
+  float c = cos(ts);
+  float R = 0.04 + 0.96 * pow(1.0 - c, 5.0);           // Schlick
+  return t * tan(ts - tr) * (1.0 - R);
+}
+
+vec3 grade(vec3 c) {                                    // clear 款：saturate 1.8 / brightness 1.06 / contrast 1.04
+  float l = dot(c, vec3(0.2126, 0.7152, 0.0722));
+  c = mix(vec3(l), c, 1.8);
+  c = (c - 0.5) * 1.04 + 0.5;
+  return c * 1.06;
+}
 
 void main() {
   vec2 fc = gl_FragCoord.xy;
@@ -28,36 +49,41 @@ void main() {
   float inside = clamp(0.5 - sd, 0.0, 1.0);
   if (inside <= 0.0) { gl_FragColor = vec4(bg, 1.0); return; }
 
-  // SDF 梯度 = 朝外法线
   vec2 e = vec2(1.0, 0.0);
   vec2 n = normalize(vec2(sdRound(p + e.xy, hb, u_rad) - sdRound(p - e.xy, hb, u_rad),
                           sdRound(p + e.yx, hb, u_rad) - sdRound(p - e.yx, hb, u_rad)) + 1e-5);
-  float depth = clamp(-sd / u_bezel, 0.0, 1.0);        // 0 = 边缘，1 = 进入平坦区
-  float bend = pow(1.0 - depth, 2.2);
-  // 通透：中间几乎不模糊、不染色，只微微放大；折射集中在边缘一圈，把外面的画面往里压
-  vec2 base = c + p * 0.965 - n * bend * u_bezel * 1.35;
-  vec2 ca = n * bend * 2.2;                              // 边缘色散
+  float x = clamp(-sd / u_bezel, 0.004, 1.0);          // 0 = 外沿，1 = 进入平坦区
+  // 中心完全不位移（透明）；位移只在弧边，峰值贴着外沿，指向圆心（凸透镜放大）
+  float k = x < 1.0 ? u_bezel : 0.0;
+  float dR = shift(x, 1.5143), dG = shift(x, 1.5168), dB = shift(x, 1.5224);
+  float disp = 6.0;                                     // 色散夸张系数（≈ 2px 色边）
+  vec2 inward = -n * k * 1.6;                          // UI 尺度上把折射放大一点，平滑背景下才看得出弧边
+  vec3 col;
+  vec2 blur = vec2(u_px * 1.0) / u_res;                // clear 款只有 ~2px 的轻模糊
   vec3 acc = vec3(0.0);
-  for (float x = -1.0; x <= 1.0; x++) {
-    for (float y = -1.0; y <= 1.0; y++) {
-      vec2 o = vec2(x, y) * (0.6 + bend * 2.4);
-      acc.r += texture2D(u_tex, (base + o - ca) / u_res).r;
-      acc.g += texture2D(u_tex, (base + o) / u_res).g;
-      acc.b += texture2D(u_tex, (base + o + ca) / u_res).b;
+  for (float i = -1.0; i <= 1.0; i++) {
+    for (float j = -1.0; j <= 1.0; j++) {
+      vec2 o = vec2(i, j) * blur;
+      acc.r += texture2D(u_tex, (fc + inward * dG * (1.0 - (1.0 - 0.99516) * disp)) / u_res + o).r;
+      acc.g += texture2D(u_tex, (fc + inward * dG) / u_res + o).g;
+      acc.b += texture2D(u_tex, (fc + inward * dG * (1.0 + (1.01084 - 1.0) * disp)) / u_res + o).b;
     }
   }
-  acc /= 9.0;
+  col = grade(acc / 9.0);
+  col = mix(col, u_tint, u_milk);                       // 中性底色（亮色白 / 暗色近黑）
 
-  float edge = smoothstep(2.0, 0.0, -sd);                // 最外 2px 的细边
-  vec2 L = normalize(vec2(-0.5, 1.0));
-  float key = clamp(dot(n, L), 0.0, 1.0);                // 左上主光
-  float back = clamp(dot(n, -L), 0.0, 1.0);              // 右下回光
-  vec3 col = mix(acc, u_tint, u_milk);
-  col *= 1.0 + 0.06 * u_rim;                             // 玻璃比背景略亮一点
-  col += edge * (0.25 + 0.75 * key + 0.35 * back) * u_rim;
-  col += bend * (key * 0.18 + back * 0.08) * u_rim;      // 边缘内侧的菲涅尔亮带
-  col = clamp(col, 0.0, 1.0);
-  gl_FragColor = vec4(mix(bg, col, inside), 1.0);
+  // 高光：实测 Control Center —— 上下沿亮细线、左右沿暗细线；外加菲涅尔内侧羽化
+  float core = smoothstep(max(1.6 * u_px, 1.3), 0.0, -sd);
+  float vert = smoothstep(0.45, 0.85, abs(n.y));
+  float flank = smoothstep(0.55, 0.92, abs(n.x));
+  float topBias = n.y > 0.0 ? 1.0 : 0.8;
+  col += core * vert * 0.6 * topBias * u_rim;
+  col -= core * flank * 0.1 * u_rim;
+  col += core * 0.12 * u_rim;                           // 一圈极细的整体亮边，保证在纯色背景上也读得出轮廓
+  float cosT = cos(atan(slope(x)));
+  float fres = (0.04 + 0.96 * pow(1.0 - cosT, 5.0)) * step(x, 0.999);
+  col += fres * (n.y > 0.0 ? 0.18 : 0.25) * 0.6 * u_rim;
+  gl_FragColor = vec4(mix(bg, clamp(col, 0.0, 1.0), inside), 1.0);
 }`;
 
 export class GlassLens {
@@ -74,7 +100,7 @@ export class GlassLens {
     gl.attachShader(this.prog, sh(gl.VERTEX_SHADER, VERT));
     gl.attachShader(this.prog, sh(gl.FRAGMENT_SHADER, FRAG));
     gl.linkProgram(this.prog);
-    for (const n of ['u_tex', 'u_res', 'u_rect', 'u_rad', 'u_tint', 'u_milk', 'u_rim', 'u_bezel']) this.loc[n] = gl.getUniformLocation(this.prog, n);
+    for (const n of ['u_tex', 'u_res', 'u_rect', 'u_rad', 'u_tint', 'u_milk', 'u_rim', 'u_bezel', 'u_px']) this.loc[n] = gl.getUniformLocation(this.prog, n);
     this.tex = gl.createTexture()!;
     gl.bindTexture(gl.TEXTURE_2D, this.tex);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
@@ -99,7 +125,7 @@ export class GlassLens {
   }
 
   /** 纹理整屏回画到画布，矩形内做玻璃 */
-  present(w: number, h: number, r: { x: number; y: number; w: number; h: number; r: number }, theme: 'light' | 'dark'): void {
+  present(w: number, h: number, r: { x: number; y: number; w: number; h: number; r: number; px: number }, theme: 'light' | 'dark'): void {
     const gl = this.gl, L = this.loc;
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     gl.viewport(0, 0, w, h);
@@ -114,10 +140,11 @@ export class GlassLens {
     gl.uniform4f(L.u_rect, r.x, r.y, r.w, r.h);
     gl.uniform1f(L.u_rad, Math.min(r.r, r.h / 2, r.w / 2));
     const dark = theme === 'dark';
-    gl.uniform3fv(L.u_tint, dark ? [0.05, 0.05, 0.06] : [1, 1, 1]);
-    gl.uniform1f(L.u_milk, dark ? 0.12 : 0.1);
-    gl.uniform1f(L.u_rim, dark ? 0.8 : 1.0);
-    gl.uniform1f(L.u_bezel, Math.max(12, r.h * 0.2));
+    gl.uniform3fv(L.u_tint, dark ? [0.11, 0.11, 0.125] : [1, 1, 1]);
+    gl.uniform1f(L.u_milk, dark ? 0.2 : 0.14);
+    gl.uniform1f(L.u_rim, dark ? 0.85 : 1.0);
+    gl.uniform1f(L.u_bezel, Math.min(30 * r.px, r.h * 0.3));
+    gl.uniform1f(L.u_px, r.px);
     gl.drawArrays(gl.TRIANGLES, 0, 3);
   }
 }
