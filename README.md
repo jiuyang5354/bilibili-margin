@@ -37,7 +37,7 @@
 
 「稍后再看」抽屉按 21st.dev「Drawer」（ddoemonn）移植：右侧弹簧滑出、遮罩随位置变化、拖动头部甩出关闭；顶栏「稍后」、命令面板和卡片右键都能打开，可直接移出条目，显示观看进度。
 
-首页足迹卡按 21st.dev「Glass Card」（educalvolpz）移植：内缩磨砂主体 + 边缘折射环 + 青/品红色散边 + 跟随指针的高光与顶边扫光，悬停轻抬。推荐流加载占位按「Skeleton Loader」（animbits）改成 1.5s 流光。播放页右缘的刻度尺滚动进度按「Scroll Bars」（radiumcoders）竖向版移植：滚动时出现，指示条弹簧跟随，悬停显示百分比，点刻度跳转。
+首页背景新增 6 款着色器：丝缎、烟霞、流萤、流沙、天光、弥散，移植自 21st.dev Shader Builder 系列（Silk、Smoke、Neuro Noise、Grain Gradient、God Rays、Mesh Gradient；Mesh Gradient 改编自 Paper Shaders，Apache-2.0），配色按亮暗主题重新调过；设置面板的样式色块改为真实渲染的缩略图。推荐流加载占位按「Skeleton Loader」（animbits）改成 1.5s 流光。播放页右缘的刻度尺滚动进度按「Scroll Bars」（radiumcoders）竖向版移植：滚动时出现，指示条弹簧跟随，悬停显示百分比，点刻度跳转。
 
 播放页底部的快捷菜单按 21st.dev「Floating Menu」移植（胶囊变形成面板、墨色圆从底部漫上来、逐字翻滚悬停），配色换成墨色 / 暖白，菜单字改衬线：回到顶部、看评论、网页全屏、宽屏模式、收藏夹。
 
