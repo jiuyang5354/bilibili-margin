@@ -45,3 +45,27 @@ export function forgetSearch(q?: string): void {
   localStorage.setItem(HKEY, JSON.stringify(q ? searchHistory().filter((x) => x !== q) : []));
 }
 export const searchUrl = (q: string) => `https://search.bilibili.com/all?keyword=${encodeURIComponent(q)}`;
+
+export interface LaterItem { aid: number; bvid: string; title: string; cover: string; duration: number; progress: number; author: string; mid: number; addAt: number }
+/** 稍后再看列表；未登录返回 null */
+export async function watchLater(): Promise<LaterItem[] | null> {
+  const r = await fetch('https://api.bilibili.com/x/v2/history/toview', { credentials: 'include' });
+  const b = await r.json();
+  if (b.code === -101) return null;
+  if (b.code !== 0) throw new Error(b.message || `code ${b.code}`);
+  /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
+  return ((b.data?.list ?? []) as any[]).map((v) => ({
+    aid: v.aid, bvid: v.bvid, title: v.title, cover: (v.pic ?? '').replace(/^http:/, 'https:'), duration: v.duration ?? 0,
+    progress: v.progress ?? 0, author: v.owner?.name ?? '', mid: v.owner?.mid ?? 0, addAt: v.add_at ?? 0,
+  }));
+}
+export async function removeWatchLater(aid: number): Promise<boolean> {
+  const token = csrf();
+  if (!token) return false;
+  const r = await fetch('https://api.bilibili.com/x/v2/history/toview/del', {
+    method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({ aid: String(aid), csrf: token }),
+  });
+  const b = await r.json().catch(() => ({ code: -1 }));
+  return b.code === 0;
+}
