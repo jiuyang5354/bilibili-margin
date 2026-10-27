@@ -891,7 +891,7 @@ async function N(i) {
     try {
       return JSON.parse(text);
     } catch {
-      return { code: i.status || -1, message: "Bilibili API 响应非 JSON (可能需登录或触发风控验证)", raw: text };
+      return { code: i.status || -1, message: `B 站接口返回了网页而不是数据（HTTP ${i.status}），可能触发了风控，请稍后重试或先登录 B 站` };
     }
   } catch (err) {
     return { code: -1, message: err?.message || "网络请求失败" };
@@ -1161,7 +1161,39 @@ const G = {
   getPopularVideos: j.getPopularVideos,
   getHistoryList: G.getHistoryList
 }, Z = Q(J);
+// 后台 Service Worker 发出的请求默认不带 B 站的 Referer / Origin，
+// api.bilibili.com 会因此返回 412 风控 HTML 页面（"<!DOCTYPE ..." is not valid JSON）。
+// 这里用 declarativeNetRequest 会话规则，只给扩展后台（tabIds: [-1]）发往 B 站 API 的请求补上请求头。
+const MARGIN_HEADER_RULE_ID = 9001;
+async function installBiliHeaderRule() {
+  try {
+    await chrome.declarativeNetRequest.updateSessionRules({
+      removeRuleIds: [MARGIN_HEADER_RULE_ID],
+      addRules: [{
+        id: MARGIN_HEADER_RULE_ID,
+        priority: 1,
+        action: {
+          type: "modifyHeaders",
+          requestHeaders: [
+            { header: "Referer", operation: "set", value: "https://www.bilibili.com/" },
+            { header: "Origin", operation: "set", value: "https://www.bilibili.com" }
+          ]
+        },
+        condition: {
+          requestDomains: ["api.bilibili.com"],
+          tabIds: [-1],
+          resourceTypes: ["xmlhttprequest", "other"]
+        }
+      }]
+    });
+  } catch (err) {
+    console.error("[MARGIN] 无法安装 B 站请求头规则", err);
+  }
+}
+const headerRuleReady = installBiliHeaderRule();
+chrome.runtime.onInstalled.addListener(installBiliHeaderRule);
+chrome.runtime.onStartup.addListener(installBiliHeaderRule);
 I.runtime.onMessage.addListener((i, x) => {
   if (!(!i?.contentScriptQuery || !(i.contentScriptQuery in J)))
-    return Z(i, x);
+    return headerRuleReady.then(() => Z(i, x));
 });
