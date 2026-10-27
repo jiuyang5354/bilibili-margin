@@ -39,7 +39,7 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
   display: flex; align-items: center; gap: 10px; height: 42px; padding: 0 12px 0 16px; border-radius: 999px;
   background: var(--chip); border: 1px solid transparent; color: var(--muted); transition: border-color .2s, background .2s, box-shadow .2s;
 }
-.search:focus-within { background: var(--surface); border-color: var(--line); box-shadow: 0 8px 30px rgb(0 0 0 / .08); }
+.search:focus-within { background: var(--surface); border-color: var(--line); }
 .search svg { width: 18px; height: 18px; flex: none; }
 .search input { flex: 1; min-width: 0; height: 100%; border: 0; outline: 0; background: none; color: var(--ink); font: inherit; font-size: 14px; }
 .search input::placeholder { color: var(--faint); }
@@ -716,3 +716,59 @@ canvas.gf-sheet-art[data-ready] { opacity: 1; filter: none; }
 /* 播放页顶栏：同一套 .app 变量，只占顶部 72px，抽屉仍覆盖全屏 */
 .app.wt { position: fixed; inset: 0 0 auto 0; height: 72px; overflow: visible; background: transparent; scrollbar-gutter: auto; }
 .app.wt .top { position: relative; background: color-mix(in srgb, var(--canvas) 80%, transparent); }
+
+/* ── 液态玻璃顶栏（21st「Apple Liquid glass switcher」原生移植）──
+   顶栏本身不再铺底色/模糊（父级 backdrop-filter 会挡住子级的折射），
+   搜索框和快捷入口胶囊各自是一块玻璃，直接折射滚过下面的内容。 */
+.app { --c-glass: #bbbbbc; --c-light: #fff; --c-dark: #000; --reflex-light: 1; --reflex-dark: 1; --glass-sat: 150%; }
+.app[data-theme="dark"] { --reflex-light: .3; --reflex-dark: 2; }
+.lg, .et, .search {
+  /* 原版是 #bbbbbc 12%；B 站封面花，叠一层画布色保证图标和字可读 */
+  background-color: color-mix(in srgb, var(--c-glass) 12%, color-mix(in srgb, var(--canvas) 34%, transparent));
+  backdrop-filter: blur(8px) url(#lg-bar) saturate(var(--glass-sat));
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--c-light) calc(var(--reflex-light) * 10%), transparent),
+    inset 1.8px 3px 0 -2px color-mix(in srgb, var(--c-light) calc(var(--reflex-light) * 90%), transparent),
+    inset -2px -2px 0 -2px color-mix(in srgb, var(--c-light) calc(var(--reflex-light) * 80%), transparent),
+    inset -3px -8px 1px -6px color-mix(in srgb, var(--c-light) calc(var(--reflex-light) * 60%), transparent),
+    inset -.3px -1px 4px 0 color-mix(in srgb, var(--c-dark) calc(var(--reflex-dark) * 12%), transparent),
+    inset -1.5px 2.5px 0 -2px color-mix(in srgb, var(--c-dark) calc(var(--reflex-dark) * 20%), transparent),
+    inset 0 3px 4px -2px color-mix(in srgb, var(--c-dark) calc(var(--reflex-dark) * 20%), transparent),
+    inset 2px -6.5px 1px -4px color-mix(in srgb, var(--c-dark) calc(var(--reflex-dark) * 10%), transparent),
+    0 1px 5px 0 color-mix(in srgb, var(--c-dark) calc(var(--reflex-dark) * 10%), transparent),
+    0 6px 16px 0 color-mix(in srgb, var(--c-dark) calc(var(--reflex-dark) * 8%), transparent);
+  border: 0;
+  transition: background-color .4s cubic-bezier(1, 0, .4, 1), box-shadow .4s cubic-bezier(1, 0, .4, 1);
+}
+.top, .app:not([data-bg="off"]) .top, .app.wt .top {
+  background: linear-gradient(color-mix(in srgb, var(--canvas) 70%, transparent), transparent);
+  backdrop-filter: none; border-bottom-color: transparent;
+}
+.et { position: relative; isolation: isolate; border-radius: 99em; padding: 5px 6px; gap: 6px; }
+.et-sep { background: color-mix(in srgb, var(--ink) 14%, transparent); }
+.et-btn { border-radius: 99em; color: color-mix(in srgb, var(--ink) 72%, transparent); }
+.et-btn:hover { background: transparent; color: var(--ink); }
+.et-btn[data-selected] { background: transparent; color: var(--accent); }
+.et-thumb {
+  position: absolute; left: 0; top: 5px; bottom: 5px; z-index: -1; width: 0; border-radius: 99em; pointer-events: none;
+  background-color: color-mix(in srgb, var(--c-glass) 36%, transparent);
+  backdrop-filter: blur(2px) url(#lg-thumb) saturate(var(--glass-sat));
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--c-light) calc(var(--reflex-light) * 10%), transparent),
+    inset 2px 1px 0 -1px color-mix(in srgb, var(--c-light) calc(var(--reflex-light) * 90%), transparent),
+    inset -1.5px -1px 0 -1px color-mix(in srgb, var(--c-light) calc(var(--reflex-light) * 80%), transparent),
+    inset -2px -6px 1px -5px color-mix(in srgb, var(--c-light) calc(var(--reflex-light) * 60%), transparent),
+    inset -1px 2px 3px -1px color-mix(in srgb, var(--c-dark) calc(var(--reflex-dark) * 20%), transparent),
+    inset 0 -4px 1px -2px color-mix(in srgb, var(--c-dark) calc(var(--reflex-dark) * 10%), transparent),
+    0 3px 6px 0 color-mix(in srgb, var(--c-dark) calc(var(--reflex-dark) * 8%), transparent);
+  opacity: 0; scale: .85; transition: opacity .25s, scale .35s cubic-bezier(.3, 1.4, .5, 1);
+}
+.et-thumb[data-on] { opacity: 1; scale: 1; }
+.search { color: color-mix(in srgb, var(--ink) 62%, transparent); }
+.search:focus-within { background-color: color-mix(in srgb, var(--c-glass) 22%, transparent); border-color: transparent; }
+.search input::placeholder { color: color-mix(in srgb, var(--ink) 45%, transparent); }
+.search kbd { border-color: color-mix(in srgb, var(--ink) 16%, transparent); }
+@media (prefers-reduced-transparency: reduce) {
+  .lg, .et, .search { backdrop-filter: none; background-color: var(--surface); }
+  .et-thumb { backdrop-filter: none; background-color: var(--chip); }
+}
