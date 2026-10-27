@@ -11,6 +11,7 @@ export type TabItem = TabSpec | 'separator';
 
 export interface ExpandableTabs {
   el: HTMLElement;
+  thumb: HTMLElement;
   buttons: HTMLElement[];
   select(i: number | null): void;
 }
@@ -22,13 +23,49 @@ export interface ExpandableTabs {
  */
 export function createExpandableTabs(items: TabItem[], onChange?: (i: number | null) => void): ExpandableTabs {
   const el = h('nav', { class: 'et', 'aria-label': '快捷入口' });
+  // 液态玻璃滑块（21st「Apple Liquid glass switcher」的 toggler）：跟随选中项移动，移动时弹一下
+  const thumb = h('span', { class: 'et-thumb', 'aria-hidden': 'true' });
+  el.append(thumb);
   const buttons: HTMLElement[] = [];
   let selected: number | null = null;
+  let raf = 0, until = 0, x = 0, w = 0, shown = false;
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)');
+
+  const target = () => {
+    const b = selected === null ? null : buttons[selected];
+    if (!b) return null;
+    const r = b.getBoundingClientRect(), o = el.getBoundingClientRect();
+    return { x: r.left - o.left - el.clientLeft, w: r.width };
+  };
+  const paint = () => { thumb.style.translate = `${x}px 0`; thumb.style.width = `${w}px`; };
+  const follow = (t: number) => {
+    const g = target();
+    if (g) {
+      const k = reduce.matches ? 1 : 0.2;
+      x += (g.x - x) * k; w += (g.w - w) * k;
+      paint();
+    }
+    if (t < until || (g && (Math.abs(g.x - x) > 0.3 || Math.abs(g.w - w) > 0.3))) raf = requestAnimationFrame(follow);
+    else raf = 0;
+  };
 
   const select = (i: number | null) => {
     if (i === selected) return;
+    const prev = selected;
     selected = i;
     buttons.forEach((b, j) => b.toggleAttribute('data-selected', j === i));
+    if (i === null) { thumb.removeAttribute('data-on'); shown = false; }
+    else {
+      const g = target();
+      if (!shown && g) { x = g.x; w = g.w; paint(); }
+      thumb.setAttribute('data-on', '');
+      if (shown && prev !== null && !reduce.matches) {
+        thumb.animate([{ scale: '1 1' }, { scale: '1.18 1.12', offset: 0.45 }, { scale: '1 1' }], { duration: 520, easing: 'cubic-bezier(.3, 0, .2, 1)' });
+      }
+      shown = true;
+      until = performance.now() + 900; // 按钮展开动画 .1s 延迟 + .6s
+      if (!raf) raf = requestAnimationFrame(follow);
+    }
     onChange?.(i);
   };
 
@@ -47,5 +84,5 @@ export function createExpandableTabs(items: TabItem[], onChange?: (i: number | n
   // useOnClickOutside：shadow DOM 里要看 composedPath
   addEventListener('pointerdown', (e) => { if (selected !== null && !e.composedPath().includes(el)) select(null); }, true);
 
-  return { el, buttons, select };
+  return { el, thumb, buttons, select };
 }
