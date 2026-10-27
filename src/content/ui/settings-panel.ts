@@ -1,4 +1,4 @@
-import type { BgMode, Palette, Settings, ShaderId, Theme } from '../../shared/settings';
+import type { BgMode, Settings, ShaderId, Theme } from '../../shared/settings';
 import { BG_IMAGE_KEY, saveSettings } from '../../shared/settings';
 import { compressImage } from '../bg/background';
 import { SHADER_IDS, SHADER_NAMES } from '../bg/shaders';
@@ -14,16 +14,6 @@ export function createSettingsPanel(get: () => Settings, currentShader: () => Sh
   const s0 = get();
 
   const theme = segmented<Theme>([['auto', '跟随系统'], ['light', '亮色'], ['dark', '暗色']], s0.theme, (v) => save({ theme: v }));
-  const palettes = h('div', { class: 'palettes', role: 'radiogroup', 'aria-label': '配色' });
-  for (const [id, name, sub] of [['classic', '经典', '暖白 · 衬线'], ['mist', '雾蓝', '暗色时为夜蓝']] as [Palette, string, string][]) {
-    const b = h('button', { type: 'button', class: 'pal-item', role: 'radio', onclick: () => save({ palette: id }) },
-      h('span', { class: `pal-chip pal-${id}` }, h('i', {}), h('i', {}), h('i', {})),
-      h('span', { class: 'pal-text' }, h('b', {}, name), h('small', {}, sub)));
-    b.dataset.v = id;
-    palettes.append(b);
-  }
-  const paintPalettes = (v: Palette) => palettes.querySelectorAll<HTMLElement>('.pal-item').forEach((b) => b.setAttribute('aria-checked', String(b.dataset.v === v)));
-  paintPalettes(s0.palette);
   const preview = toggle(s0.hoverPreview, '悬停预览', (v) => save({ hoverPreview: v }));
 
   const kw = chipInput(s0.filters.keywords, '输入关键词，回车添加；/正则/ 也可以', (v) => save({ filters: { ...get().filters, keywords: v } }));
@@ -61,7 +51,6 @@ export function createSettingsPanel(get: () => Settings, currentShader: () => Sh
 
   sheet.body.append(
     h('section', { class: 'group' }, h('h3', {}, '外观'),
-      block('配色', null, palettes),
       block('明暗', null, theme),
       row('封面悬停预览', '鼠标停留半秒后静音播放', preview)),
     h('section', { class: 'group' }, h('h3', {}, '背景'),
@@ -80,7 +69,6 @@ export function createSettingsPanel(get: () => Settings, currentShader: () => Sh
     sheet,
     sync(s) {
       theme.set(s.theme);
-      paintPalettes(s.palette);
       preview.setAttribute('aria-checked', String(s.hoverPreview));
       kw.set(s.filters.keywords);
       ups.set(s.filters.ups);
