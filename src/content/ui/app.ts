@@ -18,7 +18,6 @@ import { createCommandPalette } from './command-palette';
 import { createContextMenu } from './context-menu';
 import { bindCardMenu } from './card-menu';
 import { createLaterDrawer } from './drawer';
-import { createGlassCard } from './glass-card';
 import css from '../styles.css?inline';
 
 type Tab = 'rcmd' | 'popular';
@@ -142,7 +141,7 @@ export class MarginApp {
       this.bg.el,
       header,
       h('main', { class: 'main' },
-        createGlassCard(this.foot, 'fp-glass'),
+        this.foot,
         barMark,
         bar,
         this.grid, this.status, this.sentinel,
