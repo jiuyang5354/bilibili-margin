@@ -35,9 +35,10 @@
       r = null;
     }
     if (r?.code !== 0 || !r?.data?.item?.length) {
+      const rc = r?.code ?? "无响应";
       try {
         r = await or.video.getPopularVideos({ pn: t, ps: 30 });
-        n = "推荐流暂未登录或触发风控，当前已自动切换为 B 站热门视频。";
+        n = `推荐流暂时不可用（代码 ${rc}），当前展示 B 站热门视频。`;
       } catch (err) {
         throw new Error("暂时没能取得内容，建议前往 B 站原首页。");
       }
