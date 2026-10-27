@@ -41,7 +41,7 @@ export const ICONS = {
   link: '<path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/>',
   copy: '<rect x="8" y="8" width="12" height="12" rx="2.5"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/>',
   user: '<circle cx="12" cy="8.5" r="3.5"/><path d="M5 20a7 7 0 0 1 14 0"/>',
-  later: '<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12h4"/>',
+  later: '<path d="M4 6h12M4 11h12M4 16h7"/><path d="m15 13.5 5 3-5 3z"/>',
   top: '<path d="M6 15l6-6 6 6"/><path d="M5 5h14"/>',
   palette: '<circle cx="12" cy="12" r="8.5"/><path d="M12 3.5v17M3.5 12h17" opacity=".0"/><path d="M15.5 8.5a5 5 0 0 0-7 7"/>',
   exit: '<path d="M14 4h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-4"/><path d="M10 16l-4-4 4-4M6 12h10"/>',
