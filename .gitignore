@@ -12,3 +12,6 @@ Desktop.ini
 .idea/
 *.suo
 *.user
+
+# Archives
+*.zip
