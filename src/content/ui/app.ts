@@ -13,6 +13,7 @@ import type { SunMoon } from './sun-moon';
 import { attachPreview } from './preview';
 import { createSettingsPanel, type SettingsPanel } from './settings-panel';
 import type { Sheet } from './sheet';
+import { attachGlass, filtersIn } from './liquid-glass';
 import css from '../styles.css?inline';
 
 type Tab = 'rcmd' | 'popular';
@@ -123,6 +124,9 @@ export class MarginApp {
       this.fav.el,
     );
     this.root.append(this.app);
+    const lg = filtersIn(this.root);
+    head.glass.forEach((g) => attachGlass(g, lg));
+    attachGlass(head.thumb, lg, { blur: 2, strength: 0.4 });
 
     new IntersectionObserver((es) => { if (es.some((e) => e.isIntersecting)) this.load(); }, { root: this.app, rootMargin: '900px 0px' }).observe(this.sentinel);
 
