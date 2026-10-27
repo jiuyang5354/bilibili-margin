@@ -98,11 +98,6 @@ type RGB = [number, number, number];
 const hex = (s: string): RGB => [1, 3, 5].map((i) => parseInt(s.slice(i, i + 2), 16) / 255) as RGB;
 
 type Pal = { bg: RGB; c: [RGB, RGB, RGB] };
-/** 雾蓝 / 夜蓝配色下，所有着色器统一用这一组蓝 */
-export const MIST: Record<'light' | 'dark', Pal> = {
-  light: { bg: hex('#fafaf8'), c: [hex('#3b82f6'), hex('#a9c6ff'), hex('#e5eeff')] },
-  dark: { bg: hex('#0b1020'), c: [hex('#2563eb'), hex('#1e3a8a'), hex('#16233f')] },
-};
 
 export const PALETTES: Record<'light' | 'dark', Record<ShaderId, Pal>> = {
   dark: {
