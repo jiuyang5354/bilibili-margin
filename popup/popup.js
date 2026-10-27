@@ -70,10 +70,28 @@ function updateThemeUI(theme) {
 }
 
 // Initial Load
-storage.get(['margin-enabled', 'margin-scope', 'margin-theme']).then(state => {
+// 页面实际读取的主题存放在 margin-state-v1.preferences.theme（仅 light / dark）
+const STATE_KEY = 'margin-state-v1'
+
+function resolveTheme(theme) {
+  if (theme !== 'auto') return theme
+  return window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'
+}
+
+async function saveTheme(theme) {
+  const res = await storage.get([STATE_KEY])
+  const state = res[STATE_KEY] || {}
+  await storage.set({
+    'margin-theme': theme,
+    [STATE_KEY]: { ...state, preferences: { ...(state.preferences || {}), theme: resolveTheme(theme) } }
+  })
+}
+
+storage.get(['margin-enabled', 'margin-scope', 'margin-theme', STATE_KEY]).then(state => {
   enabled = state['margin-enabled'] !== false
   currentScope = state['margin-scope'] || 'all'
-  currentTheme = state['margin-theme'] || 'dark'
+  const pageTheme = state[STATE_KEY]?.preferences?.theme
+  currentTheme = state['margin-theme'] === 'auto' ? 'auto' : (pageTheme === 'light' || pageTheme === 'dark' ? pageTheme : 'dark')
 
   updateToggleUI()
   updateScopeUI(currentScope)
@@ -85,7 +103,7 @@ toggle.addEventListener('click', async () => {
   enabled = !enabled
   await storage.set({ 'margin-enabled': enabled })
   updateToggleUI()
-  status.textContent = '设置已保存，刷新页面后生效'
+  status.textContent = enabled ? '已开启，打开的 B 站页面会自动应用' : '已停用，打开的 B 站页面会自动恢复'
 })
 
 // Segmented Scope Switch
@@ -105,7 +123,7 @@ themeBtns.forEach(btn => {
     const theme = btn.dataset.themeVal
     currentTheme = theme
     updateThemeUI(theme)
-    await storage.set({ 'margin-theme': theme })
-    status.textContent = `主题已切换为：${btn.textContent}`
+    await saveTheme(theme)
+    status.textContent = `主题已切换为：${btn.textContent}，刷新页面后生效`
   })
 })
