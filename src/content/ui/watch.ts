@@ -54,6 +54,8 @@ export class WatchSkin {
     this.host = h('div', { id: 'margin-watch-top' });
     const root = this.host.attachShadow({ mode: 'open' });
     root.append(h('style', {}, css));
+    // 搜索页本身有大号搜索框，顶栏那个就不再重复（Ctrl+K / / 仍可唤出命令面板）
+    if (kind === 'search') root.append(h('style', {}, '.top .search { visibility: hidden; pointer-events: none; }'));
 
     this.panel = createSettingsPanel(() => this.settings, () => this.bg.shader);
     this.fav = createFavorites((g) => attachPreview(g, () => this.settings.hoverPreview));
