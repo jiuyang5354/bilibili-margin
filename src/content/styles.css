@@ -722,7 +722,7 @@ canvas.gf-sheet-art[data-ready] { opacity: 1; filter: none; }
    顶栏本身不再铺底色/模糊（父级 backdrop-filter 会挡住子级的折射），
    搜索框和快捷入口胶囊各自是一块玻璃，直接折射滚过下面的内容。 */
 .app { --c-glass: #bbbbbc; --c-light: #fff; --c-dark: #000; --reflex-light: 1; --reflex-dark: 1; --glass-sat: 150%; }
-.app[data-theme="dark"] { --reflex-light: .3; --reflex-dark: 2; }
+.app[data-theme="dark"] { --reflex-light: .1; --reflex-dark: 1.3; --c-glass: #8e8e92; }
 .lg, .et, .search {
   /* 原版是 #bbbbbc 12%；B 站封面花，叠一层画布色保证图标和字可读 */
   background-color: color-mix(in srgb, var(--c-glass) 12%, color-mix(in srgb, var(--canvas) 34%, transparent));
