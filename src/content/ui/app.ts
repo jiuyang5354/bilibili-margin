@@ -14,6 +14,9 @@ import { attachPreview } from './preview';
 import { createSettingsPanel, type SettingsPanel } from './settings-panel';
 import type { Sheet } from './sheet';
 import { attachGlass, filtersIn } from './liquid-glass';
+import { createCommandPalette } from './command-palette';
+import { createContextMenu } from './context-menu';
+import { bindCardMenu } from './card-menu';
 import css from '../styles.css?inline';
 
 type Tab = 'rcmd' | 'popular';
@@ -81,7 +84,23 @@ export class MarginApp {
     this.panel = createSettingsPanel(() => this.settings, () => this.bg.shader);
     this.fav = createFavorites((g) => attachPreview(g, () => this.settings.hoverPreview));
     this.foot = createFootprintCard();
-    const head = createHeader({ onTheme: () => this.toggleTheme(), tabs: [
+    const palette = createCommandPalette([
+      { id: 'refresh', title: '换一批推荐', cat: '操作', icon: ICONS.refresh, keys: ['刷新', 'refresh'], run: () => this.reload() },
+      { id: 'rcmd', title: '看推荐', cat: '跳转', icon: ICONS.moments, keys: ['首页'], run: () => (this.app.querySelector('.tab[data-tab=rcmd]') as HTMLElement)?.click() },
+      { id: 'popular', title: '看热门', cat: '跳转', icon: ICONS.heat, keys: ['popular', '排行'], run: () => (this.app.querySelector('.tab[data-tab=popular]') as HTMLElement)?.click() },
+      { id: 'fav', title: '打开收藏夹', cat: '操作', icon: ICONS.fav, keys: ['收藏'], run: () => this.fav.open() },
+      { id: 'foot', title: '看足迹', desc: '一年的 B 站热力图', cat: '跳转', icon: ICONS.heat, keys: ['热力图', '足迹'], run: () => this.app.scrollTo({ top: 0, behavior: 'smooth' }) },
+      { id: 'theme', title: '切换亮色 / 暗色', cat: '操作', icon: ICONS.moon, keys: ['主题', '夜间', 'dark', 'light'], run: () => this.toggleTheme() },
+      { id: 'settings', title: '打开设置', cat: '操作', icon: ICONS.gear, keys: ['背景', '过滤', '屏蔽'], run: () => this.panel.sheet.open() },
+      { id: 'top', title: '回到顶部', cat: '操作', icon: ICONS.top, run: () => this.app.scrollTo({ top: 0, behavior: 'smooth' }) },
+      { id: 'later', title: '稍后再看', cat: '跳转', icon: ICONS.later, keys: ['watchlater'], run: () => window.open('https://www.bilibili.com/watchlater/#/list', '_blank', 'noopener') },
+      { id: 'moments', title: '动态', cat: '跳转', icon: ICONS.moments, run: () => window.open('https://t.bilibili.com/', '_blank', 'noopener') },
+      { id: 'message', title: '消息', cat: '跳转', icon: ICONS.message, run: () => window.open('https://message.bilibili.com/', '_blank', 'noopener') },
+      { id: 'history', title: '观看历史', cat: '跳转', icon: ICONS.history, run: () => window.open('https://www.bilibili.com/history', '_blank', 'noopener') },
+      { id: 'off', title: '本次回到 B 站原版', cat: '操作', icon: ICONS.exit, keys: ['原版', '关闭'], run: () => { sessionStorage.setItem('margin:off', '1'); location.reload(); } },
+    ]);
+    const cm = createContextMenu();
+    const head = createHeader({ onTheme: () => this.toggleTheme(), onSearch: (q) => palette.open(q), tabs: [
       { title: '动态', icon: ICONS.moments, href: 'https://t.bilibili.com/' },
       { title: '消息', icon: ICONS.message, href: 'https://message.bilibili.com/' },
       { title: '历史', icon: ICONS.history, href: 'https://www.bilibili.com/history' },
@@ -127,12 +146,17 @@ export class MarginApp {
       ),
       this.panel.sheet.el,
       this.fav.el,
+      palette.el,
+      cm.el,
     );
     this.root.append(this.app);
     const lg = filtersIn(this.root);
     head.glass.forEach((g) => attachGlass(g, lg));
     attachGlass(head.thumb, lg, { blur: 2, strength: 0.4 });
     attachGlass(tabs, lg); attachGlass(refresh, lg);
+    bindCardMenu(this.grid, cm, () => this.app, { onBlock: (x) => this.blockUp(x) });
+    const favGrid = this.fav.el.querySelector('.fav-grid') as HTMLElement | null;
+    if (favGrid) bindCardMenu(favGrid, cm, () => this.app);
     new IntersectionObserver(([e]) => {
       bar.classList.toggle('stuck', !e.isIntersecting && e.boundingClientRect.top < 80);
     }, { root: this.app, rootMargin: '-72px 0px 0px 0px', threshold: 0 }).observe(barMark);
