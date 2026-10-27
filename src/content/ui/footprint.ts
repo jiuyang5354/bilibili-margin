@@ -1,6 +1,5 @@
 import { backfill, dayKey, firstOf, loadActivity, secondsOf, type Activity } from '../footprint/store';
 import { h } from './dom';
-import { createSheet, type Sheet } from './sheet';
 
 const WEEK = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
 const fmt = (sec: number) => {
@@ -9,26 +8,30 @@ const fmt = (sec: number) => {
 };
 const level = (s: number) => (s <= 0 ? 0 : s < 900 ? 1 : s < 2700 ? 2 : s < 5400 ? 3 : 4);
 
-/** 「B 站足迹」：近一年每天首次打开时间与停留时长的热力图 */
-export function createFootprint(): Sheet {
-  let filled = false;
-  const sheet = createSheet({
-    title: 'B 站足迹', eyebrow: 'FOOTPRINT', width: 920,
-    onOpen: async () => {
-      paint(await loadActivity(), '时长按页面可见且有操作或在播放时计算');
-      if (filled) return;
-      const r = await backfill();
-      filled = r === 'ok';
-      if (!sheet.isOpen()) return;
-      paint(await loadActivity(), r === 'ok'
-        ? '已用 B 站观看历史补全过去的天数 · 时长取本地记录与观看历史的较大值'
-        : r === 'nologin' ? '登录 B 站后可以用观看历史补全过去的天数' : '观看历史暂时读取失败，只显示本地记录');
-    },
-  });
-  const tip = h('div', { class: 'fp-tip', hidden: '' });
-  sheet.el.append(tip);
+const BF_KEY = 'margin:activity-bf';
 
-  function paint(data: Activity, note: string) {
+/** 首页上的「B 站足迹」卡片：近一年每天首次打开时间与停留时长的热力图 */
+export function createFootprintCard(): HTMLElement {
+  const el = h('section', { class: 'fp-card', 'aria-label': 'B 站足迹' });
+  const tip = h('div', { class: 'fp-tip', hidden: '' });
+  let note = '时长按页面可见且有操作或在播放时计算';
+
+  const refresh = async () => { try { paint(await loadActivity()); } catch { /* 扩展已重载 */ } };
+  (async () => {
+    await refresh();
+    // 观看历史补全：每 6 小时最多一次
+    const last = ((await chrome.storage.local.get(BF_KEY))[BF_KEY] as number | undefined) ?? 0;
+    if (Date.now() - last < 6 * 3600e3) { note = '已用 B 站观看历史补全过去的天数'; return refresh(); }
+    const r = await backfill();
+    if (r === 'ok') await chrome.storage.local.set({ [BF_KEY]: Date.now() });
+    note = r === 'ok' ? '已用 B 站观看历史补全过去的天数 · 时长取本地记录与观看历史的较大值'
+      : r === 'nologin' ? '登录 B 站后可以用观看历史补全过去的天数' : '观看历史暂时读取失败，只显示本地记录';
+    refresh();
+  })();
+  setInterval(refresh, 60_000);
+  let ro: ResizeObserver | null = null;
+
+  function paint(data: Activity) {
     const today = new Date(); today.setHours(0, 0, 0, 0);
     const start = new Date(today); start.setDate(start.getDate() - 364 - today.getDay());
     const cells: HTMLElement[] = [];
@@ -63,21 +66,28 @@ export function createFootprint(): Sheet {
       h('div', { class: 'fp-days' }, ...['', '一', '', '三', '', '五', ''].map((x) => h('span', {}, x))),
       h('div', { class: 'fp-cells' }, ...cells),
     );
-    sheet.body.replaceChildren(h('div', { class: 'fp' },
-      h('h3', { class: 'fp-head' }, `${active} 天打开过 B 站`, h('span', {}, ' · 近一年')),
-      h('div', { class: 'fp-stats' },
+    el.replaceChildren(
+      h('div', { class: 'fp-side' },
+        h('div', { class: 'eyebrow' }, h('span', {}, 'FOOTPRINT'), h('span', {}, '近一年')),
+        h('h3', { class: 'fp-head' }, `${active} 天打开过 B 站`),
+        h('div', { class: 'fp-stats' },
         stat(firstOf(t) ?? '—', '今日首次打开'),
         stat(fmt(secondsOf(t)), '今日时长'),
         stat(fmt(total), '近一年累计'),
-        stat(`${streak} 天`, `当前连续 · 最长 ${best} 天`)),
-      graph,
-      h('div', { class: 'fp-foot' }, h('span', {}, note), legend),
-    ));
-    requestAnimationFrame(() => {
-      const cs = Math.max(9, Math.min(15, Math.floor((graph.clientWidth - 34) / weeks) - 3));
+        stat(`${streak} 天`, `当前连续 · 最长 ${best} 天`))),
+      h('div', { class: 'fp-main' }, graph, h('div', { class: 'fp-foot' }, h('span', {}, note), legend)),
+      tip,
+    );
+    const fit = () => {
+      const w = (graph.parentElement as HTMLElement).clientWidth;
+      const cs = Math.max(8, Math.min(18, Math.floor((w - 34) / weeks) - 3));
       graph.style.setProperty('--c', `${cs}px`);
       graph.scrollLeft = graph.scrollWidth;
-    });
+    };
+    requestAnimationFrame(fit);
+    ro?.disconnect();
+    ro = new ResizeObserver(fit);
+    ro.observe(el);
     graph.onpointerover = (e) => {
       const c = (e.target as HTMLElement).closest<HTMLElement>('.fp-cells .fp-cell');
       if (!c || c.classList.contains('future')) { tip.hidden = true; return; }
@@ -91,5 +101,5 @@ export function createFootprint(): Sheet {
     };
     graph.onpointerleave = () => { tip.hidden = true; };
   }
-  return sheet;
+  return el;
 }
