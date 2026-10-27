@@ -2,6 +2,7 @@ import { nav } from '../api/http';
 import { h, icon, ICONS } from './dom';
 import { createExpandableTabs, type TabItem } from './expandable-tabs';
 import { createSunMoon, type SunMoon } from './sun-moon';
+import { attachTooltips } from './tooltip';
 
 export interface Header { el: HTMLElement; input: HTMLInputElement; sunMoon: SunMoon; /** 液态玻璃块：搜索框、快捷入口胶囊、选中滑块 */ glass: HTMLElement[]; thumb: HTMLElement }
 
@@ -40,6 +41,11 @@ export function createHeader(o: { tabs: TabItem[]; onTheme: () => void; onSearch
     search,
     h('div', { class: 'acts' }, tabsNav.el, sunMoon.el, user),
   );
+
+  if (!user.classList.contains('in')) user.dataset.tip = '登录 B 站';
+  search.dataset.tip = '搜索';
+  search.dataset.kbd = o.onSearch ? 'Ctrl K' : '/';
+  attachTooltips(el);
 
   if (!o.onSearch) addEventListener('keydown', (e) => {
     if (e.key !== '/' || e.ctrlKey || e.metaKey || e.altKey) return;
