@@ -1,6 +1,8 @@
 import type { Settings } from '../../shared/settings';
 import { saveSettings } from '../../shared/settings';
 import { h, ICONS } from './dom';
+import { toast } from './controls';
+import { addWatchLater } from '../api/search';
 import { createFavorites } from './favorites';
 import { createHeader, type Header } from './header';
 import { attachPreview } from './preview';
@@ -8,6 +10,9 @@ import { createSettingsPanel, type SettingsPanel } from './settings-panel';
 import type { Sheet } from './sheet';
 import { attachGlass, filtersIn } from './liquid-glass';
 import { createFloatingMenu } from './floating-menu';
+import { createCommandPalette } from './command-palette';
+import { createContextMenu } from './context-menu';
+import { bindCardMenu } from './card-menu';
 import css from '../styles.css?inline';
 import pageCss from '../watch.css?inline';
 
@@ -36,8 +41,27 @@ export class WatchSkin {
 
     this.panel = createSettingsPanel(() => this.settings, () => null);
     this.fav = createFavorites((g) => attachPreview(g, () => this.settings.hoverPreview));
+    const open = (u: string) => window.open(u, '_blank', 'noopener');
+    const clickSel = (sel: string) => (document.querySelector(sel) as HTMLElement | null)?.click();
+    const palette = createCommandPalette([
+      { id: 'w-top', title: '回到顶部', cat: '操作', icon: ICONS.top, run: () => scrollTo({ top: 0, behavior: 'smooth' }) },
+      { id: 'w-comments', title: '看评论', cat: '跳转', icon: ICONS.message, keys: ['评论'], run: () => document.querySelector('#commentapp, bili-comments, .comment-container')?.scrollIntoView({ behavior: 'smooth', block: 'start' }) },
+      { id: 'w-web', title: '网页全屏', cat: '操作', icon: ICONS.image, keys: ['全屏'], run: () => clickSel('.bpx-player-ctrl-web') },
+      { id: 'w-wide', title: '宽屏模式', cat: '操作', icon: ICONS.image, keys: ['宽屏'], run: () => clickSel('.bpx-player-ctrl-wide') },
+      { id: 'w-later', title: '把这个视频加入稍后再看', cat: '操作', icon: ICONS.later, keys: ['稍后'], run: async () => { const bv = location.pathname.match(/BV\w+/)?.[0]; if (!bv) return; const r = await addWatchLater(bv); toast(this.app, r.msg); } },
+      { id: 'w-copy', title: '复制视频链接', cat: '操作', icon: ICONS.link, keys: ['分享'], run: () => navigator.clipboard.writeText(location.href.split('?')[0]).then(() => toast(this.app, '链接已复制')) },
+      { id: 'fav', title: '打开收藏夹', cat: '操作', icon: ICONS.fav, keys: ['收藏'], run: () => this.fav.open() },
+      { id: 'theme', title: '切换亮色 / 暗色', cat: '操作', icon: ICONS.moon, keys: ['主题', '夜间'], run: () => this.toggleTheme() },
+      { id: 'settings', title: '打开设置', cat: '操作', icon: ICONS.gear, run: () => this.panel.sheet.open() },
+      { id: 'home', title: '回首页', cat: '跳转', icon: ICONS.logo, run: () => { location.href = 'https://www.bilibili.com/'; } },
+      { id: 'later', title: '稍后再看列表', cat: '跳转', icon: ICONS.later, run: () => open('https://www.bilibili.com/watchlater/#/list') },
+      { id: 'history', title: '观看历史', cat: '跳转', icon: ICONS.history, run: () => open('https://www.bilibili.com/history') },
+      { id: 'off', title: '本次回到 B 站原版', cat: '操作', icon: ICONS.exit, keys: ['原版'], run: () => { sessionStorage.setItem('margin:off', '1'); location.reload(); } },
+    ]);
+    const cm = createContextMenu();
     this.head = createHeader({
       onTheme: () => this.toggleTheme(),
+      onSearch: (q) => palette.open(q),
       tabs: [
         { title: '动态', icon: ICONS.moments, href: 'https://t.bilibili.com/' },
         { title: '消息', icon: ICONS.message, href: 'https://message.bilibili.com/' },
@@ -56,11 +80,13 @@ export class WatchSkin {
       { label: '宽屏模式', run: () => click('.bpx-player-ctrl-wide') },
       { label: '收藏夹', run: () => this.fav.open() },
     ]);
-    this.app = h('div', { class: 'app wt', 'data-bg': 'off' }, this.head.el, quick.el, this.panel.sheet.el, this.fav.el);
+    this.app = h('div', { class: 'app wt', 'data-bg': 'off' }, this.head.el, quick.el, this.panel.sheet.el, this.fav.el, palette.el, cm.el);
     root.append(this.app);
     const lg = filtersIn(root);
     this.head.glass.forEach((g) => attachGlass(g, lg));
     attachGlass(this.head.thumb, lg, { blur: 2, strength: 0.4 });
+    const favGrid = this.fav.el.querySelector('.fav-grid') as HTMLElement | null;
+    if (favGrid) bindCardMenu(favGrid, cm, () => this.app);
     de.append(this.host);
 
     this.applyTheme(false);
