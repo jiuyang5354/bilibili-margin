@@ -339,8 +339,8 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
 .app[data-theme="dark"] .fd { --fd-back: linear-gradient(180deg, #2a2a2e, #121214); --fd-tint: linear-gradient(180deg, rgb(18 18 20 / .18), rgb(14 14 16 / .62) 46%, rgb(8 8 10 / .94)); --fd-ink: #f5f5f7; --fd-soft: rgb(245 245 247 / .58); --fd-rim: rgb(255 255 255 / .22); }
 .app[data-palette="mist"] .fd { --fd-back: linear-gradient(180deg, #e5eeff, #c9dafb); --fd-tint: linear-gradient(180deg, rgb(248 250 255 / .12), rgb(248 250 255 / .58) 42%, rgb(250 251 255 / .95)); --fd-ink: #0f172a; --fd-soft: rgb(15 23 42 / .5); }
 .app[data-palette="mist"][data-theme="dark"] .fd { --fd-back: linear-gradient(180deg, #1e3a8a, #0b1020); --fd-tint: linear-gradient(180deg, rgb(11 16 32 / .2), rgb(11 16 32 / .64) 46%, rgb(8 12 26 / .95)); --fd-ink: #e6eaf2; --fd-soft: rgb(230 234 242 / .58); }
-.fd:hover, .fd:focus-visible { --hinge: -11deg; --lift: -30px; }
-.fd[aria-pressed="true"] { --hinge: -18deg; --lift: -46px; }
+.fd:hover, .fd:focus-visible { --hinge: -8deg; --lift: -30px; }
+.fd[aria-pressed="true"] { --hinge: -12deg; --lift: -46px; }
 .fd-stage { position: absolute; left: 0; top: 0; width: 340px; height: 272px; transform: scale(var(--s)); transform-origin: 0 0; }
 .fd-tilt { position: absolute; inset: 0; transform: perspective(1400px) rotateX(calc(var(--py) * -3deg)) rotateY(calc(var(--px) * 4deg)); transition: transform .9s var(--ease); }
 .fd-shadow { position: absolute; left: 18px; right: 18px; bottom: -6px; height: 60px; border-radius: 40px; background: rgb(16 18 24 / .3); filter: blur(22px); transform: translateX(calc(var(--px) * -8px)); transition: transform .9s var(--ease); }
@@ -351,11 +351,11 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
 .fd-rim { position: absolute; left: 0; top: 0; overflow: visible; pointer-events: none; fill: none; }
 .fd-back-rim { width: 340px; height: 272px; }
 .fd-back-rim path { stroke: rgb(255 255 255 / .45); stroke-width: 1; }
-.app[data-theme="dark"] .fd-back-rim path { stroke: rgb(255 255 255 / .16); }
+.app[data-theme="dark"] .fd-back-rim path { stroke: rgb(255 255 255 / .08); }
 .fd-sheet { position: absolute; left: 34px; right: 34px; top: 58px; height: 150px; border-radius: 14px; overflow: hidden; background: var(--surface); box-shadow: 0 10px 26px rgb(0 0 0 / .22); transform: translateY(var(--lift)) rotate(calc(var(--lift) * .05deg)); transition: transform .8s var(--spring); }
 .fd-sheet img { width: 100%; height: 100%; object-fit: cover; }
 .fd-front { position: absolute; left: 0; top: 74px; width: 340px; height: 198px; z-index: 2; overflow: hidden; clip-path: path('M0 22A22 22 0 0 1 22 0L118 0C144 0 146 32 172 32L318 32A22 22 0 0 1 340 54L340 176A22 22 0 0 1 318 198L22 198A22 22 0 0 1 0 176Z');
-  transform-origin: 50% 100%; transform: perspective(760px) rotateX(var(--hinge)); transition: transform .8s var(--spring); }
+  transform-origin: 50% 100%; transform: perspective(1800px) rotateX(var(--hinge)); transition: transform .8s var(--spring); }
 .fd-blur { position: absolute; inset: -40px; }
 .fd-blur img { width: 100%; height: 100%; object-fit: cover; filter: blur(26px) saturate(1.5); transform: scale(1.15); }
 .fd-tint { position: absolute; inset: 0; background: var(--fd-tint); }
