@@ -113,12 +113,14 @@ export class BackgroundLayer {
     const gl = this.gl, w = this.canvas.width, hh = this.canvas.height;
     const t = this.reduced.matches ? 12 : (now - this.start) / 1000;
     const rect = this.lensRect();
+    // 有玻璃时由 GL 自己合成强度和遮罩（canvas 满不透明），没有时走原来的 CSS opacity + scrim
+    this.el.toggleAttribute('data-composite', !!rect);
     if (!rect) { this.prog.bind(); this.prog.draw(w, hh, t, this.theme); return; }
     this.lens ??= new GlassLens(gl);
     this.lens.target(w, hh);
     this.prog.bind();
     this.prog.draw(w, hh, t, this.theme);
-    this.lens.present(w, hh, rect, this.theme);
+    this.lens.present(w, hh, rect, this.theme, this.cfg.intensity);
   }
 
   /** 透镜元素在画布上的矩形（画布像素，y 向上）；不可见时返回 null */
