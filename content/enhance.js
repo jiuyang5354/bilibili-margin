@@ -640,3 +640,293 @@ html.m21-reveal::view-transition-new(root){animation:m21-reveal .68s cubic-bezie
   ensure();
   setInterval(ensure, 1500);
 })();
+
+/* 映间 MARGIN · Shader 背景：6 个 21st.dev 着色器的原生 WebGL 移植 + 自定义图片 */
+(() => {
+  if (window.__marginBg) return;
+  window.__marginBg = true;
+  const KEY = 'margin-bg-v1', IMG = 'margin-bg-image';
+  const store = chrome?.storage?.local;
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)');
+  const HEAD = `precision highp float;uniform vec2 R;uniform float T;uniform vec2 M;uniform float D;
+float h12(vec2 p){vec3 p3=fract(vec3(p.xyx)*.1031);p3+=dot(p3,p3.yzx+33.33);return fract((p3.x+p3.y)*p3.z);}
+float nz(vec2 p){vec2 i=floor(p),f=fract(p),u=f*f*(3.-2.*f);return mix(mix(h12(i),h12(i+vec2(1,0)),u.x),mix(h12(i+vec2(0,1)),h12(i+vec2(1,1)),u.x),u.y);}
+float fbm(vec2 p){float v=0.,a=.5;mat2 r=mat2(.8,-.6,.6,.8);for(int i=0;i<4;i++){v+=a*nz(p);p=r*p*2.03+11.7;a*=.5;}return v;}
+vec3 hx(float r,float g,float b){return vec3(r,g,b)/255.;}
+float grain(){return h12(floor(gl_FragCoord.xy)+fract(T*7.)*97.)-.5;}
+`;
+  const SHADERS = [
+    { id: 'leak', name: 'Light Leak', frag: `
+float lobe(vec2 q,vec2 c,vec2 s){vec2 d=(q-c)/s;return exp(-dot(d,d));}
+void main(){vec2 uv=gl_FragCoord.xy/R;uv.y=1.-uv.y;float t=T;vec2 asp=vec2(R.x/R.y,1.);vec2 q=uv;
+vec2 lamp=vec2(M.x,1.-M.y);vec2 dm=(q-lamp)*asp;float fall=exp(-dot(dm,dm)/.09);q+=(lamp-q)*fall*.08;
+float ts=t*.06;vec2 w=vec2(fbm(q*1.4+vec2(0.,ts)),fbm(q*1.4+vec2(5.2,1.3-ts*.8)))-.5;q+=w*.2;
+float sway=sin(q.x*3.3+t*.21)*.025+sin(q.x*7.1-t*.13)*.01;
+float edge=.4+.2*smoothstep(.02,.5,q.x)-.1*smoothstep(.45,1.,q.x)+sway;float soft=mix(.03,.12,smoothstep(0.,.8,q.x))+.004;
+float folded=smoothstep(edge+soft,edge-soft,q.y);vec2 lc=vec2(.32,.28);
+float silver=(min(lobe(q,lc,vec2(.75,.52))*1.18,1.)*folded+lobe(q,lc+vec2(.1,.36),vec2(.24,.1))*.34)*.9;
+vec3 ink=hx(6.,6.,9.),sil=hx(206.,206.,220.),lav=hx(170.,156.,220.),vio=hx(104.,74.,196.),emb=hx(196.,110.,80.);
+vec3 col=mix(ink,mix(sil,lav,lobe(q,vec2(.5,.02),vec2(.3,.24))*.8),clamp(silver,0.,1.));
+col=mix(col,vio,clamp(lobe(q,vec2(.7,0.),vec2(.27,.24))*.85,0.,1.)*.72);
+col=mix(col,emb,clamp(lobe(q,vec2(.66,.28),vec2(.18,.09))*.35,0.,1.)*.75);
+float sd=dot(q-vec2(.6,.37),vec2(.874,.486))+sway*.8;col=mix(col,vec3(0.),clamp(smoothstep(-.14,.26,sd)*.85*(1.-fall*.5),0.,1.)*.97);
+col=mix(col,ink,smoothstep(.62,.92,uv.y)*.8);col+=sil*fall*.05;col+=grain()*.06;gl_FragColor=vec4(col,1.);}` },
+    { id: 'wash', name: 'Shader Gradient', frag: `
+float stp(float v,float at){float d=abs(v-at);d=min(d,1.-d);return smoothstep(0.,1.,1.-clamp(d*4.,0.,1.));}
+void main(){vec2 uv=gl_FragCoord.xy/R;float a=R.x/R.y;vec2 p=vec2(uv.x*a,uv.y)*1.3;float t=T;
+vec2 d=p-vec2(M.x*a,M.y)*1.3;p+=vec2(-d.y,d.x)*exp(-dot(d,d)*1.4)*.25;
+vec2 q=vec2(fbm(p+vec2(0.,.12*t)),fbm(p+vec2(5.2,1.3)-.1*t));vec2 r=vec2(fbm(p+2.2*q+vec2(1.7,9.2)+.07*t),fbm(p+2.2*q+vec2(8.3,2.8)-.06*t));
+float f=fbm(p+2.*r);float v=fract(f*2.4+.35*r.x+.02*t);
+vec3 c=hx(247.,164.,139.)*stp(v,0.)+hx(249.,215.,142.)*stp(v,.25)+hx(159.,203.,240.)*stp(v,.5)+hx(187.,169.,238.)*stp(v,.75);
+float air=smoothstep(.28,.72,fbm(p*.6-q+13.+.03*t));vec3 base=mix(hx(250.,248.,245.),hx(14.,14.,16.),D);
+vec3 col=mix(base,c,mix(D>.5?.45:.82,1.,air)*(D>.5?.55:1.));col+=grain()*.035;gl_FragColor=vec4(col,1.);}` },
+    { id: 'grain', name: 'Grain Gradient', loud: .2, frag: `
+vec3 pal(float x){vec3 c0=hx(10.,10.,10.),c1=hx(63.,60.,187.),c2=hx(219.,75.,143.),c3=hx(255.,214.,107.);float f=clamp(x,0.,1.)*3.;
+vec3 c=mix(c0,c1,smoothstep(0.,1.,clamp(f,0.,1.)));c=mix(c,c2,smoothstep(0.,1.,clamp(f-1.,0.,1.)));return mix(c,c3,smoothstep(0.,1.,clamp(f-2.,0.,1.)));}
+void main(){vec2 uv=gl_FragCoord.xy/R;vec2 p=(gl_FragCoord.xy-.5*R)/min(R.x,R.y)*1.4;float t=T;
+p+=.35*(vec2(fbm(p*1.2),fbm(p*1.2+vec2(5.2,1.3)))-.5);vec2 q=p;
+q.x+=sin(q.y*2.1+t*.2)*.24;q.y+=cos(q.x*2.7-t*.17)*.19;float wave=.5+.5*sin(q.x*2.8+q.y*1.9+fbm(q*2.)*3.);
+float g=(h12(floor((uv+t*.002)*220.))-.5)*.5*.42;vec3 col=pal(clamp(wave+g,0.,1.));col+=grain()*.12;gl_FragColor=vec4(col,1.);}` },
+    { id: 'mesh', name: 'Mesh Gradient', loud: .08, frag: `
+void main(){vec2 p=(gl_FragCoord.xy-.5*R)/min(R.x,R.y)*1.2;float t=T;p+=(M-.5)*.12;
+p+=.3*(vec2(fbm(p*1.1),fbm(p*1.1+vec2(5.2,1.3)))-.5);
+vec3 C[4];C[0]=hx(18.,13.,49.);C[1]=hx(108.,76.,241.);C[2]=hx(239.,93.,168.);C[3]=hx(255.,209.,102.);
+vec3 col=C[0]*.16;float w=.16;for(int i=0;i<4;i++){float fi=float(i);vec2 c=vec2(sin(fi*2.17+t*.13+3.),cos(fi*1.63-t*.11))*.6;
+float inf=exp(-dot(p-c,p-c)*4.5);col+=C[i]*inf;w+=inf;}col/=w;col+=grain()*.04;gl_FragColor=vec4(col,1.);}` },
+    { id: 'silk', name: 'Silk', loud: .18, frag: `
+vec3 pal(float x){vec3 c0=hx(0.,0.,0.),c1=hx(31.,81.,255.),c2=hx(0.,229.,255.),c3=hx(234.,253.,255.);float f=clamp(x,0.,1.)*3.;
+vec3 c=mix(c0,c1,smoothstep(0.,1.,clamp(f,0.,1.)));c=mix(c,c2,smoothstep(0.,1.,clamp(f-1.,0.,1.)));return mix(c,c3,smoothstep(0.,1.,clamp(f-2.,0.,1.)));}
+void main(){vec2 p=(gl_FragCoord.xy-.5*R)/min(R.x,R.y);float t=T*.5;p+=(M-.5)*.1;vec2 q=p*1.6;float amp=.62;
+for(float i=1.;i<5.;i+=1.){q.x+=amp/i*cos(i*2.4*q.y+t*.8+2.);q.y+=amp/i*cos(i*1.7*q.x+t*.6);}
+vec3 col=pal(pow(.5+.5*sin(q.x+q.y),1.6));col+=grain()*.035;gl_FragColor=vec4(col,1.);}` },
+    { id: 'aurora', name: 'Aurora', frag: `
+vec3 au(vec2 uv,float sp,float k,vec3 c,float a){float tm=T*.35*sp;vec2 pt=vec2(uv.x*a,uv.y)*2.2+tm*vec2(-.12,.04);
+float n=nz(pt+nz(c.xy+pt+tm));return c*max(n-uv.y*1.1,0.)*k;}
+void main(){vec2 uv=gl_FragCoord.xy/R;uv.y=1.-uv.y;float a=R.x/R.y;vec3 col=vec3(0.);
+col+=au(uv,1.,1.1,hx(64.,224.,170.),a);col+=au(uv,.8,.9,hx(80.,120.,255.),a);col+=au(uv,1.3,.7,hx(170.,90.,255.),a);col+=au(uv,.6,.5,hx(255.,120.,190.),a);
+col=col*1.25+hx(6.,8.,20.)+hx(14.,20.,52.)*(1.-smoothstep(0.,.9,uv.y));col+=grain()*.03;gl_FragColor=vec4(col,1.);}` },
+  ];
+  const VERT = 'attribute vec2 a;void main(){gl_Position=vec4(a,0.,1.);}';
+
+  function makeGL(canvas) {
+    const gl = canvas.getContext('webgl', { alpha: false, antialias: false, depth: false, stencil: false, powerPreference: 'low-power', preserveDrawingBuffer: true });
+    if (!gl) return null;
+    const buf = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
+    const progs = {};
+    const prog = (s) => {
+      if (progs[s.id]) return progs[s.id];
+      const sh = (type, src) => { const o = gl.createShader(type); gl.shaderSource(o, src); gl.compileShader(o); if (!gl.getShaderParameter(o, gl.COMPILE_STATUS)) throw new Error(s.id + ': ' + gl.getShaderInfoLog(o)); return o; };
+      const p = gl.createProgram();
+      gl.attachShader(p, sh(gl.VERTEX_SHADER, VERT)); gl.attachShader(p, sh(gl.FRAGMENT_SHADER, HEAD + s.frag));
+      gl.bindAttribLocation(p, 0, 'a'); gl.linkProgram(p);
+      if (!gl.getProgramParameter(p, gl.LINK_STATUS)) throw new Error(s.id + ': ' + gl.getProgramInfoLog(p));
+      return (progs[s.id] = { p, R: gl.getUniformLocation(p, 'R'), T: gl.getUniformLocation(p, 'T'), M: gl.getUniformLocation(p, 'M'), D: gl.getUniformLocation(p, 'D') });
+    };
+    const draw = (s, t, m, dark) => {
+      const P = prog(s);
+      gl.viewport(0, 0, canvas.width, canvas.height);
+      gl.useProgram(P.p);
+      gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+      gl.uniform2f(P.R, canvas.width, canvas.height); gl.uniform1f(P.T, t); gl.uniform2f(P.M, m[0], m[1]); gl.uniform1f(P.D, dark ? 1 : 0);
+      gl.drawArrays(gl.TRIANGLES, 0, 3);
+    };
+    return { gl, draw };
+  }
+
+  let cfg = { mode: 'random', shader: 'leak', strength: 0.6 };
+  let img = '';
+  let current = null; // shader object in use
+  let layer = null, renderer = null, raf = 0, last = 0, t0 = performance.now() - Math.random() * 60000;
+  const mouse = [0.5, 0.5], mTarget = [0.5, 0.5];
+  addEventListener('pointermove', (e) => { mTarget[0] = e.clientX / innerWidth; mTarget[1] = 1 - e.clientY / innerHeight; }, { passive: true });
+
+  const CSS = `
+.m21-bg-on{isolation:isolate}
+.m21-bg{position:absolute;inset:0;z-index:-1;pointer-events:none;overflow:hidden;transition:opacity .6s ease}
+.m21-bg canvas,.m21-bg .img{position:absolute;inset:0;width:100%;height:100%;display:block}
+.m21-bg .img{background:center/cover no-repeat}
+.m21-bg .veil{position:absolute;inset:0;background:var(--canvas);opacity:var(--m21-veil,.5)}
+.m21-bg-on .v2-header,.m21-bg-on .v2-controls{background:color-mix(in srgb,var(--canvas) 58%,transparent)!important;backdrop-filter:blur(18px) saturate(1.2);-webkit-backdrop-filter:blur(18px) saturate(1.2)}
+.m21-bg-panel{position:fixed;inset:0;z-index:50;display:grid;place-items:center;background:rgb(0 0 0 / .45);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);animation:m21-fade .2s ease}
+.m21-bg-card{width:min(640px,92vw);max-height:88vh;overflow:auto;padding:26px 26px 22px;border-radius:20px;background:var(--canvas);color:var(--ink);border:1px solid var(--line);box-shadow:0 30px 80px rgb(0 0 0 / .35)}
+.m21-bg-card h3{margin:0 0 4px;font-size:18px;font-weight:600}
+.m21-bg-card .sub{font:11px ui-monospace,SFMono-Regular,Menlo,monospace;opacity:.5;letter-spacing:.08em}
+.m21-bg-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:20px 0 18px}
+.m21-bg-opt{position:relative;aspect-ratio:16/10;border-radius:12px;overflow:hidden;cursor:pointer;background:#1b1b1d center/cover no-repeat;border:1px solid var(--line);transition:transform .2s,box-shadow .2s;display:flex;align-items:flex-end;padding:0;color:#fff;font-size:11.5px}
+.m21-bg-opt span{width:100%;padding:16px 8px 6px;text-align:left;background:linear-gradient(transparent,rgb(0 0 0 / .55))}
+.m21-bg-opt:hover{transform:translateY(-2px)}
+.m21-bg-opt.on{box-shadow:0 0 0 2px var(--canvas),0 0 0 4px #00aeec}
+.m21-bg-opt.txt{align-items:center;justify-content:center;background:color-mix(in srgb,var(--ink) 6%,transparent);color:var(--ink);font-size:13px}
+.m21-bg-opt.txt span{background:none;padding:0;text-align:center}
+.m21-bg-row{display:flex;align-items:center;gap:12px;font-size:13px}
+.m21-bg-row input[type=range]{flex:1;accent-color:#00aeec}
+.m21-bg-foot{display:flex;justify-content:space-between;align-items:center;margin-top:18px;gap:10px}
+.m21-bg-btn{height:34px;padding:0 14px;border-radius:10px;border:1px solid var(--line)!important;background:color-mix(in srgb,var(--ink) 5%,transparent)!important;font-size:13px}
+.m21-bg-btn:hover{background:color-mix(in srgb,var(--ink) 10%,transparent)!important}`;
+
+  const app = () => document.getElementById('margin-extension')?.shadowRoot?.querySelector('.margin-app');
+  const isDark = (el) => { const m = getComputedStyle(el).backgroundColor.match(/\d+(\.\d+)?/g); if (!m) return true; return (0.2126 * m[0] + 0.7152 * m[1] + 0.0722 * m[2]) < 128; };
+  const pick = () => {
+    if (cfg.mode === 'shader') return SHADERS.find((s) => s.id === cfg.shader) || SHADERS[0];
+    let prev = ''; try { prev = sessionStorage.getItem('margin-bg-last') || ''; } catch (_) {}
+    const pool = SHADERS.filter((s) => s.id !== prev);
+    const s = pool[Math.floor(Math.random() * pool.length)];
+    try { sessionStorage.setItem('margin-bg-last', s.id); } catch (_) {}
+    return s;
+  };
+
+  function stop() { cancelAnimationFrame(raf); raf = 0; }
+  function teardown() { stop(); renderer = null; layer?.remove(); layer = null; app()?.classList.remove('m21-bg-on'); }
+
+  function size() {
+    if (!layer) return;
+    const c = layer.querySelector('canvas'); if (!c) return;
+    const s = 0.5; // 半分辨率：柔和背景足够清晰，GPU 开销降为 1/4
+    const w = Math.max(2, Math.round(layer.clientWidth * s)), h = Math.max(2, Math.round(layer.clientHeight * s));
+    if (c.width !== w || c.height !== h) { c.width = w; c.height = h; frame(performance.now(), true); }
+  }
+
+  function frame(now, force) {
+    if (!renderer || !layer) return;
+    if (!force && now - last < 33) return; // ≈30fps
+    last = now;
+    mouse[0] += (mTarget[0] - mouse[0]) * 0.06; mouse[1] += (mTarget[1] - mouse[1]) * 0.06;
+    try { renderer.draw(current, (now - t0) / 1000, mouse, layer.dataset.dark === '1'); } catch (e) { console.warn('[MARGIN bg]', e); teardown(); }
+  }
+  function loop(now) { raf = requestAnimationFrame(loop); frame(now); }
+  function play() {
+    stop();
+    if (!renderer) return;
+    if (reduce.matches || document.hidden) { frame(performance.now(), true); return; }
+    raf = requestAnimationFrame(loop);
+  }
+
+  function veil(dark) {
+    // strength 1 = 最鲜明；veil 是覆盖在背景上的底色比例
+    const base = (dark ? 0.18 : 0.42) + (layer?.dataset.kind === 'shader' ? (current?.loud || 0) : 0);
+    return Math.min(0.95, base + (1 - cfg.strength) * 0.6);
+  }
+
+  function mount() {
+    const a = app(); if (!a) return;
+    const root = a.getRootNode();
+    if (!root.getElementById('margin-bg-css')) { const s = document.createElement('style'); s.id = 'margin-bg-css'; s.textContent = CSS; root.appendChild(s); }
+    const want = cfg.mode === 'off' ? 'off' : (cfg.mode === 'image' && img ? 'image' : 'shader');
+    if (want === 'off') { teardown(); return; }
+    if (layer && layer.isConnected && layer.parentNode === a && layer.dataset.kind === want && (want === 'image' || layer.dataset.shader === current?.id)) {
+      const d = isDark(a); layer.dataset.dark = d ? '1' : '0'; layer.style.setProperty('--m21-veil', veil(d)); return;
+    }
+    teardown();
+    layer = document.createElement('div');
+    layer.className = 'm21-bg'; layer.dataset.kind = want;
+    const d = isDark(a); layer.dataset.dark = d ? '1' : '0';
+    layer.style.setProperty('--m21-veil', veil(d));
+    if (want === 'image') {
+      layer.innerHTML = '<div class="img"></div><div class="veil"></div>';
+      layer.querySelector('.img').style.backgroundImage = `url("${img}")`;
+    } else {
+      if (!current) current = pick();
+      layer.dataset.shader = current.id;
+      layer.innerHTML = '<canvas></canvas><div class="veil"></div>';
+      renderer = makeGL(layer.querySelector('canvas'));
+      if (!renderer) { layer.remove(); layer = null; return; }
+    }
+    layer.style.setProperty('--m21-veil', veil(d));
+    a.prepend(layer);
+    a.classList.add('m21-bg-on');
+    size(); play();
+  }
+
+  document.addEventListener('visibilitychange', () => (document.hidden ? stop() : play()));
+  reduce.addEventListener?.('change', play);
+  addEventListener('resize', size);
+
+  async function thumbs() {
+    const c = document.createElement('canvas'); c.width = 240; c.height = 150;
+    const r = makeGL(c); const out = {};
+    if (!r) return out;
+    for (const s of SHADERS) { try { r.draw(s, 24, [0.5, 0.5], true); out[s.id] = c.toDataURL('image/jpeg', 0.8); } catch (_) {} }
+    r.gl.getExtension('WEBGL_lose_context')?.loseContext();
+    return out;
+  }
+  let thumbCache = null;
+
+  function save() { store?.set({ [KEY]: cfg }); }
+
+  async function compress(file) {
+    const bmp = await createImageBitmap(file);
+    const k = Math.min(1, 2560 / Math.max(bmp.width, bmp.height));
+    const c = document.createElement('canvas'); c.width = Math.round(bmp.width * k); c.height = Math.round(bmp.height * k);
+    c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height);
+    return c.toDataURL('image/jpeg', 0.86);
+  }
+
+  async function panel(root) {
+    root.querySelector('.m21-bg-panel')?.remove();
+    const wrap = document.createElement('div'); wrap.className = 'm21-bg-panel';
+    thumbCache = thumbCache || await thumbs();
+    const opt = (key, label, bg, cls = '') => `<button class="m21-bg-opt ${cls}" data-k="${key}" style="${bg ? `background-image:url('${bg}')` : ''}"><span>${label}</span></button>`;
+    const render = () => {
+      const sel = cfg.mode === 'shader' ? 's:' + cfg.shader : cfg.mode;
+      wrap.innerHTML = `<div class="m21-bg-card" role="dialog" aria-label="背景">
+        <h3>背景</h3><div class="sub">SHADER · RANDOM · IMAGE</div>
+        <div class="m21-bg-grid">
+          ${opt('random', '每次随机', '', 'txt')}
+          ${SHADERS.map((s) => opt('s:' + s.id, s.name, thumbCache[s.id])).join('')}
+          ${opt('image', img ? '自定义图片' : '上传图片…', img, img ? '' : 'txt')}
+        </div>
+        <div class="m21-bg-row"><span>强度</span><input type="range" min="0" max="1" step="0.05" value="${cfg.strength}"><span class="v">${Math.round(cfg.strength * 100)}%</span></div>
+        <div class="m21-bg-foot"><div style="display:flex;gap:8px"><button class="m21-bg-btn" data-a="upload">${img ? '更换图片' : '上传图片'}</button>${img ? '<button class="m21-bg-btn" data-a="clear">删除图片</button>' : ''}<button class="m21-bg-btn" data-a="off">${cfg.mode === 'off' ? '已关闭' : '关闭背景'}</button></div><button class="m21-bg-btn" data-a="close">完成</button></div>
+        <input type="file" accept="image/*" hidden></div>`;
+      wrap.querySelectorAll('.m21-bg-opt').forEach((b) => b.classList.toggle('on', b.dataset.k === sel));
+    };
+    render();
+    wrap.addEventListener('click', async (e) => {
+      if (e.target === wrap) return wrap.remove();
+      const o = e.target.closest('.m21-bg-opt'), a = e.target.closest('[data-a]')?.dataset.a;
+      if (o) {
+        const k = o.dataset.k;
+        if (k === 'random') { cfg.mode = 'random'; current = pick(); }
+        else if (k === 'image') { if (!img) return wrap.querySelector('input[type=file]').click(); cfg.mode = 'image'; }
+        else { cfg.mode = 'shader'; cfg.shader = k.slice(2); current = pick(); }
+        save(); mount(); render();
+      } else if (a === 'upload') wrap.querySelector('input[type=file]').click();
+      else if (a === 'clear') { img = ''; store?.remove(IMG); if (cfg.mode === 'image') { cfg.mode = 'random'; current = pick(); } save(); mount(); render(); }
+      else if (a === 'off') { cfg.mode = 'off'; save(); mount(); render(); }
+      else if (a === 'close') wrap.remove();
+    });
+    wrap.addEventListener('change', async (e) => {
+      const f = e.target.files?.[0]; if (!f) return;
+      try { img = await compress(f); await store?.set({ [IMG]: img }); cfg.mode = 'image'; save(); mount(); render(); }
+      catch (_) { alert('图片读取失败，换一张试试'); }
+    });
+    wrap.addEventListener('input', (e) => {
+      if (e.target.type !== 'range') return;
+      cfg.strength = Number(e.target.value); wrap.querySelector('.v').textContent = Math.round(cfg.strength * 100) + '%';
+      if (layer) layer.style.setProperty('--m21-veil', veil(layer.dataset.dark === '1'));
+      save();
+    });
+    wrap.addEventListener('keydown', (e) => { if (e.key === 'Escape') wrap.remove(); });
+    (app() || root).appendChild(wrap);
+  }
+
+  const ICON = '<svg xmlns="http://www.w3.org/2000/svg" class="mi" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M3 15c3-3 5.5-3.5 8-1.5S16 16 21 11"/><circle cx="8.5" cy="9" r="1.5"/></svg>';
+  function ensure() {
+    mount();
+    const a = app(); const root = a?.getRootNode(); if (!root) return;
+    const rail = root.querySelector('.v2-rail');
+    if (rail && !rail.querySelector('.m21-bg-btn-rail')) {
+      const b = document.createElement('button');
+      b.className = 'v2-rail-button m21-bg-btn-rail';
+      b.setAttribute('aria-label', '背景');
+      b.innerHTML = ICON + '<span class="v2-rail-tooltip">背景<kbd>Shader</kbd></span>';
+      b.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); panel(root); });
+      rail.insertBefore(b, rail.querySelector('.m21-fav-btn') || rail.querySelector('.m21-foot-btn') || rail.querySelector('.v2-rail-divider') || null);
+    }
+  }
+  const boot = () => { ensure(); setInterval(ensure, 1500); };
+  if (store) store.get([KEY, IMG], (r) => { if (r?.[KEY]) cfg = { ...cfg, ...r[KEY] }; img = r?.[IMG] || ''; boot(); });
+  else boot();
+})();
