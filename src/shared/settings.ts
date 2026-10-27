@@ -1,7 +1,7 @@
 export type Theme = 'auto' | 'light' | 'dark';
 /** 只保留经典配色（雾蓝 / 夜蓝已按用户要求移除） */
 export type Palette = 'classic';
-export type ShaderId = 'aurora' | 'silk' | 'mesh' | 'grain' | 'ice';
+export type ShaderId = 'aurora' | 'silk' | 'mesh' | 'grain' | 'ice' | 'veil' | 'smoke' | 'neuro' | 'flow' | 'rays' | 'blend';
 export type BgMode = 'random' | 'fixed' | 'image' | 'off';
 
 export interface Filters {
