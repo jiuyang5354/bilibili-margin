@@ -6,7 +6,7 @@ import { toast } from './controls';
 import { ICONS } from './dom';
 
 /** 视频卡片右键菜单：新标签打开、稍后再看、复制链接 / BV 号、UP 主空间、屏蔽 UP */
-export function bindCardMenu(container: HTMLElement, cm: ContextMenu, toastRoot: () => HTMLElement, opts: { onBlock?: (v: Video) => void } = {}): void {
+export function bindCardMenu(container: HTMLElement, cm: ContextMenu, toastRoot: () => HTMLElement, opts: { onBlock?: (v: Video) => void; onLater?: () => void } = {}): void {
   container.addEventListener('contextmenu', (e) => {
     if (e.shiftKey) return;
     const card = (e.target as Element).closest('.card');
@@ -17,7 +17,7 @@ export function bindCardMenu(container: HTMLElement, cm: ContextMenu, toastRoot:
     const copy = (text: string, msg: string) => navigator.clipboard.writeText(text).then(() => toast(toastRoot(), msg), () => toast(toastRoot(), '复制失败'));
     const items: MenuEntry[] = [
       { label: '新标签页打开', icon: ICONS.arrow, shortcut: '↵', run: () => window.open(url, '_blank', 'noopener') },
-      { label: '稍后再看', icon: ICONS.later, run: async () => { const r = await addWatchLater(v.bvid).catch(() => ({ ok: false, msg: '没加上，稍后再试' })); toast(toastRoot(), r.msg); } },
+      { label: '稍后再看', icon: ICONS.later, run: async () => { const r = await addWatchLater(v.bvid).catch(() => ({ ok: false, msg: '没加上，稍后再试' })); toast(toastRoot(), r.msg, r.ok && opts.onLater ? { label: '查看', run: opts.onLater } : undefined); } },
       'separator',
       { label: '复制链接', icon: ICONS.link, run: () => copy(url, '链接已复制') },
       { label: '复制 BV 号', icon: ICONS.copy, run: () => copy(v.bvid, `${v.bvid} 已复制`) },
