@@ -1,9 +1,11 @@
 import { loadSettings, onSettingsChange } from '../shared/settings';
 import { MarginApp } from './ui/app';
+import { startTracking } from './footprint/store';
 
 const isHome = () => location.hostname === 'www.bilibili.com' && /^\/(?:[a-z]{2}(?:-[A-Za-z]{2,4})?\/?)?(?:index\.html)?$/.test(location.pathname);
 
 async function start(): Promise<void> {
+  startTracking(); // 足迹在所有 B 站页面记录，不只首页
   if (!isHome() || sessionStorage.getItem('margin:off')) {
     sessionStorage.removeItem('margin:off');
     return;
