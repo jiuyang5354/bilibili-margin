@@ -354,7 +354,7 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
 }
 .app[data-theme="dark"] .gf-root { --gf-ink: #f5f5f7; --gf-ink-soft: rgba(245, 245, 247, .58); }
 .gf-root:hover, .gf-root:focus-within { --gf-hinge: -11deg; --gf-lift: -34px; --gf-spread: 8px; --gf-fan: 1.4deg; --gf-stack: 10px; }
-.gf-root[data-open] { --gf-hinge: -24deg; --gf-lift: -96px; --gf-spread: 40px; --gf-fan: 5deg; --gf-stack: 30px; }
+.gf-root[data-open] { --gf-hinge: -24deg; --gf-lift: -96px; --gf-spread: 20px; --gf-fan: 4.5deg; --gf-stack: 30px; }
 
 .gf-stage {
   position: absolute;
@@ -432,7 +432,7 @@ canvas.gf-art[data-ready] { opacity: 1; filter: none; }
   z-index: 5;
   pointer-events: none;
   /* nothing hangs out of the bottom of the pocket, however tall the stack */
-  clip-path: inset(-400px -400px 10px -400px);
+  clip-path: polygon(-400px -400px, 740px -400px, 740px 106px, 340px 106px, 340px 262px, 0 262px, 0 74px, -400px 74px);
 }
 .gf-sheet-slot { display: contents; }
 .gf-sheet {
