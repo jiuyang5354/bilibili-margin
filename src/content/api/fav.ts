@@ -1,14 +1,14 @@
 import { getJSON, nav } from './http';
 import type { Video } from './feed';
 
-export interface Folder { id: number; title: string; count: number; cover: string }
+export interface Folder { id: number; title: string; count: number; cover: string; mid: number }
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 export async function folders(): Promise<Folder[] | null> {
   const n = await nav();
   if (!n?.isLogin || !n.mid) return null;
   const data = await getJSON<{ list: any[] | null }>('/x/v3/fav/folder/created/list', { up_mid: n.mid, pn: 1, ps: 50 });
-  return (data.list ?? []).map((f) => ({ id: f.id, title: f.title, count: f.media_count, cover: String(f.cover || '').replace(/^http:/, 'https:') }));
+  return (data.list ?? []).map((f) => ({ id: f.id, title: f.title, count: f.media_count, cover: String(f.cover || '').replace(/^http:/, 'https:'), mid: n.mid! }));
 }
 
 export async function folderVideos(id: number, page: number): Promise<{ list: Video[]; more: boolean }> {
