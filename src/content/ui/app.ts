@@ -8,6 +8,8 @@ import { videoCard, skeleton } from './card';
 import { toast } from './controls';
 import { h, icon, ICONS } from './dom';
 import { createFavorites } from './favorites';
+import { createExpandableTabs } from './expandable-tabs';
+import { createFootprint } from './footprint';
 import { attachPreview } from './preview';
 import { createSettingsPanel, type SettingsPanel } from './settings-panel';
 import type { Sheet } from './sheet';
@@ -26,6 +28,7 @@ export class MarginApp {
   private bg = new BackgroundLayer();
   private panel!: SettingsPanel;
   private fav!: Sheet;
+  private foot!: Sheet;
   private tab: Tab = 'rcmd';
   private round = 1;
   private page = 1;
@@ -68,18 +71,14 @@ export class MarginApp {
     this.app.dataset.theme = t;
     this.app.dataset.palette = this.settings.palette;
     this.app.dataset.bg = this.settings.bg.mode;
-    this.themeBtn.replaceChildren(icon(t === 'dark' ? ICONS.sun : ICONS.moon));
+    this.themeBtn.querySelector('svg')?.replaceWith(icon(t === 'dark' ? ICONS.sun : ICONS.moon));
     this.themeBtn.title = t === 'dark' ? '切换到亮色' : '切换到暗色';
+    this.themeBtn.setAttribute('aria-label', this.themeBtn.title);
+    this.themeBtn.querySelector('span')!.textContent = t === 'dark' ? '亮色' : '暗色';
     this.bg.apply(this.settings.bg, t, this.settings.palette).then(() => this.panel?.sync(this.settings));
   }
 
   private render(): void {
-    const link = (href: string, label: string, ic: string) =>
-      h('a', { class: 'act opt', href, target: '_blank', rel: 'noopener', title: label }, icon(ic), h('span', {}, label));
-    const btn = (label: string, ic: string, run: () => void) =>
-      h('button', { class: 'act', type: 'button', title: label, onclick: run }, icon(ic), h('span', {}, label));
-
-    this.themeBtn = h('button', { class: 'act icon-only', type: 'button', onclick: () => this.toggleTheme() });
     const user = h('a', { class: 'user', href: 'https://passport.bilibili.com/login', target: '_blank', rel: 'noopener' }, '登录');
     nav().then((n) => {
       if (!n?.isLogin) return;
@@ -101,19 +100,23 @@ export class MarginApp {
 
     this.panel = createSettingsPanel(() => this.settings, () => this.bg.shader);
     this.fav = createFavorites((g) => attachPreview(g, () => this.settings.hoverPreview));
+    this.foot = createFootprint();
+    const tabsNav = createExpandableTabs([
+      { title: '动态', icon: ICONS.moments, href: 'https://t.bilibili.com/' },
+      { title: '消息', icon: ICONS.message, href: 'https://message.bilibili.com/' },
+      { title: '历史', icon: ICONS.history, href: 'https://www.bilibili.com/history' },
+      'separator',
+      { title: '收藏', icon: ICONS.fav, run: () => this.fav.open() },
+      { title: '足迹', icon: ICONS.heat, run: () => this.foot.open() },
+      { title: '设置', icon: ICONS.gear, run: () => this.panel.sheet.open() },
+      { title: '主题', icon: ICONS.moon, run: () => this.toggleTheme() },
+    ]);
+    this.themeBtn = tabsNav.buttons[tabsNav.buttons.length - 1] as HTMLButtonElement;
 
     const header = h('header', { class: 'top' },
       h('a', { class: 'brand', href: '/', title: '映间 MARGIN', 'aria-label': '映间 MARGIN 首页' }, h('span', { class: 'mark' }, icon(ICONS.logo))),
       search,
-      h('nav', { class: 'acts' },
-        link('https://t.bilibili.com/', '动态', ICONS.moments),
-        link('https://message.bilibili.com/', '消息', ICONS.message),
-        btn('收藏', ICONS.fav, () => this.fav.open()),
-        link('https://www.bilibili.com/history', '历史', ICONS.history),
-        btn('设置', ICONS.gear, () => this.panel.sheet.open()),
-        this.themeBtn,
-        user,
-      ),
+      h('div', { class: 'acts' }, tabsNav.el, user),
     );
 
     const tabs = h('div', { class: 'tabs', role: 'tablist' });
@@ -144,6 +147,7 @@ export class MarginApp {
       ),
       this.panel.sheet.el,
       this.fav.el,
+      this.foot.el,
     );
     this.root.append(this.app);
 
