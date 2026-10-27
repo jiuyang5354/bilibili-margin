@@ -1,6 +1,6 @@
 export type Theme = 'auto' | 'light' | 'dark';
-/** classic：经典；mist：亮色为「雾蓝」、暗色为「夜蓝」 */
-export type Palette = 'classic' | 'mist';
+/** 只保留经典配色（雾蓝 / 夜蓝已按用户要求移除） */
+export type Palette = 'classic';
 export type ShaderId = 'aurora' | 'silk' | 'mesh' | 'grain' | 'ice';
 export type BgMode = 'random' | 'fixed' | 'image' | 'off';
 
@@ -49,6 +49,7 @@ function merge(raw: Partial<Settings> | undefined): Settings {
     ...r,
     filters: { ...DEFAULTS.filters, ...(r.filters ?? {}) },
     bg: { ...DEFAULTS.bg, ...(r.bg ?? {}) },
+    palette: 'classic', // 旧版存过 mist，统一回到经典
   };
 }
 
