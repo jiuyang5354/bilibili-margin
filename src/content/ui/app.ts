@@ -9,7 +9,7 @@ import { toast } from './controls';
 import { h, icon, ICONS } from './dom';
 import { createFavorites } from './favorites';
 import { createExpandableTabs } from './expandable-tabs';
-import { createFootprint } from './footprint';
+import { createFootprintCard } from './footprint';
 import { attachPreview } from './preview';
 import { createSettingsPanel, type SettingsPanel } from './settings-panel';
 import type { Sheet } from './sheet';
@@ -28,7 +28,7 @@ export class MarginApp {
   private bg = new BackgroundLayer();
   private panel!: SettingsPanel;
   private fav!: Sheet;
-  private foot!: Sheet;
+  private foot!: HTMLElement;
   private tab: Tab = 'rcmd';
   private round = 1;
   private page = 1;
@@ -100,14 +100,14 @@ export class MarginApp {
 
     this.panel = createSettingsPanel(() => this.settings, () => this.bg.shader);
     this.fav = createFavorites((g) => attachPreview(g, () => this.settings.hoverPreview));
-    this.foot = createFootprint();
+    this.foot = createFootprintCard();
     const tabsNav = createExpandableTabs([
       { title: '动态', icon: ICONS.moments, href: 'https://t.bilibili.com/' },
       { title: '消息', icon: ICONS.message, href: 'https://message.bilibili.com/' },
       { title: '历史', icon: ICONS.history, href: 'https://www.bilibili.com/history' },
       'separator',
       { title: '收藏', icon: ICONS.fav, run: () => this.fav.open() },
-      { title: '足迹', icon: ICONS.heat, run: () => this.foot.open() },
+      { title: '足迹', icon: ICONS.heat, run: () => { this.app.scrollTo({ top: 0, behavior: 'smooth' }); this.foot.animate([{ boxShadow: '0 0 0 2px var(--accent)' }, { boxShadow: '0 0 0 0 transparent' }], { duration: 1200, easing: 'ease-out' }); } },
       { title: '设置', icon: ICONS.gear, run: () => this.panel.sheet.open() },
       { title: '主题', icon: ICONS.moon, run: () => this.toggleTheme() },
     ]);
@@ -141,13 +141,13 @@ export class MarginApp {
       this.bg.el,
       header,
       h('main', { class: 'main' },
+        this.foot,
         h('div', { class: 'bar' }, h('div', { class: 'eyebrow' }, h('span', {}, todayLabel()), h('span', {}, 'BILIBILI · 首页')), h('div', { class: 'bar-row' }, tabs, refresh)),
         this.grid, this.status, this.sentinel,
         h('footer', { class: 'foot' }, exit, h('span', {}, '映间 MARGIN · 非 B 站官方')),
       ),
       this.panel.sheet.el,
       this.fav.el,
-      this.foot.el,
     );
     this.root.append(this.app);
 
