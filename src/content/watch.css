@@ -1,8 +1,8 @@
-/* 映间 MARGIN · 播放页外观（全局样式，只在 html.margin-watch 下生效）
+/* 映间 MARGIN · 播放页外观（全局样式，只在 html.margin-skin 下生效）
    做法：改写 B 站自己的主题变量（--bg1 / --text1 …，能穿透评论区 Shadow DOM），
    再整理版式。不改原生播放器、弹幕、评论、账号操作的任何行为。 */
 
-html.margin-watch {
+html.margin-skin {
   --m-canvas: #f5f4f1; --m-surface: #ffffff; --m-ink: #17181a; --m-muted: #6f7177; --m-faint: #a3a5aa;
   --m-line: rgb(23 24 26 / .09); --m-chip: rgb(23 24 26 / .05); --m-accent: #00aeec;
   --m-serif: "Noto Serif SC", "Source Han Serif SC", "Songti SC", "STSong", serif;
@@ -18,7 +18,7 @@ html.margin-watch {
   --brand_blue: #00aeec; --brand_blue_thin: #e3f5fc;
   background: var(--m-canvas) !important;
 }
-html.margin-watch[data-margin-theme="dark"] {
+html.margin-skin[data-margin-theme="dark"] {
   --m-canvas: #111112; --m-surface: #1a1a1c; --m-ink: #ededee; --m-muted: #9a9ba0; --m-faint: #64656a;
   --m-line: rgb(255 255 255 / .08); --m-chip: rgb(255 255 255 / .06);
 
@@ -31,7 +31,7 @@ html.margin-watch[data-margin-theme="dark"] {
   --brand_blue_thin: #0c2c38;
   color-scheme: dark;
 }
-html.margin-watch body { background: var(--m-canvas) !important; color: var(--m-ink); }
+html.margin-skin body { background: var(--m-canvas) !important; color: var(--m-ink); }
 
 /* 主题切换：整页 View Transition 交叉淡化（新画面实时，日月动画照常跑） */
 html.margin-vt::view-transition-old(root), html.margin-vt::view-transition-new(root) {
@@ -39,8 +39,8 @@ html.margin-vt::view-transition-old(root), html.margin-vt::view-transition-new(r
 }
 
 /* 顶栏：原生顶栏隐藏，换成 MARGIN 顶栏（#margin-watch-top，Shadow DOM） */
-html.margin-watch #biliMainHeader,
-html.margin-watch .bili-header.fixed-header { display: none !important; }
+html.margin-skin #biliMainHeader,
+html.margin-skin .bili-header.fixed-header { display: none !important; }
 #margin-watch-top { position: fixed; top: 0; left: 0; right: 0; z-index: 10000; height: 72px; }
 #margin-watch-top[hidden] { display: none !important; }
 html.margin-watch .video-container-v1 { padding-top: 96px !important; }
@@ -171,3 +171,5 @@ html.margin-watch .fixed-sidenav-storage-item {
 
 /* 滚动条 */
 html.margin-watch { scrollbar-width: thin; scrollbar-color: color-mix(in srgb, var(--m-ink) 22%, transparent) transparent; }
+/* 交叉淡化期间关掉逐元素 transition：否则 B 站自带的颜色过渡会把文字卡在半路色 */
+html.margin-vt *, html.margin-vt *::before, html.margin-vt *::after { transition: none !important; }
