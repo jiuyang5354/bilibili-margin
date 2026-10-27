@@ -26,6 +26,8 @@ export interface Settings {
   theme: Theme;
   palette: Palette;
   hoverPreview: boolean;
+  /** 重新设计视频播放页（保留 B 站原生播放器与评论） */
+  watch: boolean;
   filters: Filters;
   bg: Background;
 }
@@ -35,6 +37,7 @@ export const DEFAULTS: Settings = {
   theme: 'auto',
   palette: 'classic',
   hoverPreview: true,
+  watch: true,
   filters: { keywords: [], ups: [], minViews: 0, minDuration: 0 },
   bg: { mode: 'random', shader: 'aurora', intensity: 0.6 },
 };
