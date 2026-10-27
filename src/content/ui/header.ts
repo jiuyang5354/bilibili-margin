@@ -6,7 +6,7 @@ import { createSunMoon, type SunMoon } from './sun-moon';
 export interface Header { el: HTMLElement; input: HTMLInputElement; sunMoon: SunMoon; /** 液态玻璃块：搜索框、快捷入口胶囊、选中滑块 */ glass: HTMLElement[]; thumb: HTMLElement }
 
 /** 首页和播放页共用的顶栏：标志、搜索、Expandable Tabs、日月主题按钮、头像 */
-export function createHeader(o: { tabs: TabItem[]; onTheme: () => void }): Header {
+export function createHeader(o: { tabs: TabItem[]; onTheme: () => void; onSearch?: (q: string) => void }): Header {
   const user = h('a', { class: 'user', href: 'https://passport.bilibili.com/login', target: '_blank', rel: 'noopener' }, '登录');
   nav().then((n) => {
     if (!n?.isLogin) return;
@@ -25,6 +25,13 @@ export function createHeader(o: { tabs: TabItem[]; onTheme: () => void }): Heade
       if (q) window.open(`https://search.bilibili.com/all?keyword=${encodeURIComponent(q)}`, '_blank', 'noopener');
     },
   }, icon(ICONS.search), input, h('kbd', {}, '/'));
+  if (o.onSearch) {
+    // 顶栏搜索框只做入口：点一下、或开始打字，就交给命令面板
+    input.readOnly = true;
+    const openP = () => { const q = input.value; input.value = ''; input.blur(); o.onSearch!(q); };
+    search.addEventListener('pointerdown', (e) => { e.preventDefault(); openP(); });
+    input.addEventListener('focus', openP);
+  }
 
   const tabsNav = createExpandableTabs(o.tabs);
   const sunMoon = createSunMoon(o.onTheme);
@@ -34,7 +41,7 @@ export function createHeader(o: { tabs: TabItem[]; onTheme: () => void }): Heade
     h('div', { class: 'acts' }, tabsNav.el, sunMoon.el, user),
   );
 
-  addEventListener('keydown', (e) => {
+  if (!o.onSearch) addEventListener('keydown', (e) => {
     if (e.key !== '/' || e.ctrlKey || e.metaKey || e.altKey) return;
     const typing = e.composedPath().some((n) => n instanceof HTMLInputElement || n instanceof HTMLTextAreaElement || (n instanceof HTMLElement && n.isContentEditable));
     if (typing) return;
