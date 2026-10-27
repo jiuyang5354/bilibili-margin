@@ -10,13 +10,17 @@ import { createSettingsPanel, type SettingsPanel } from './settings-panel';
 import type { Sheet } from './sheet';
 import { attachGlass, filtersIn } from './liquid-glass';
 import { createFloatingMenu } from './floating-menu';
-import { createCommandPalette } from './command-palette';
+import { createCommandPalette, type Command } from './command-palette';
 import { createContextMenu } from './context-menu';
 import { bindCardMenu } from './card-menu';
 import { createLaterDrawer } from './drawer';
 import { createScrollRuler } from './scroll-ruler';
 import css from '../styles.css?inline';
 import pageCss from '../watch.css?inline';
+import skinCss from '../pages.css?inline';
+import { BackgroundLayer } from '../bg/background';
+
+export type SkinKind = 'watch' | 'search' | 'page';
 
 /**
  * 播放页：不替换 B 站原生播放器、弹幕、评论，只做两件事——
@@ -25,33 +29,47 @@ import pageCss from '../watch.css?inline';
  */
 export class WatchSkin {
   readonly host: HTMLElement;
+  private bg = new BackgroundLayer();
+  private bgApp: HTMLElement;
   private app: HTMLElement;
   private head: Header;
   private panel: SettingsPanel;
   private fav: Sheet;
   private media = matchMedia('(prefers-color-scheme: dark)');
 
-  constructor(private settings: Settings) {
+  constructor(private settings: Settings, private kind: SkinKind = 'watch') {
     const de = document.documentElement;
-    de.classList.add('margin-watch');
-    de.append(h('style', { id: 'margin-watch-css' }, pageCss));
+    const isWatch = kind === 'watch';
+    de.classList.add('margin-skin', `margin-${kind}`);
+    de.append(h('style', { id: 'margin-watch-css' }, pageCss + '\n' + skinCss));
+
+    // Shader 背景：独立宿主，fixed 铺满、z-index -1，在 B 站内容之下、画布底色之上
+    const bgHost = h('div', { id: 'margin-bg' });
+    const bgRoot = bgHost.attachShadow({ mode: 'open' });
+    bgRoot.append(h('style', {}, css));
+    this.bgApp = h('div', { class: 'app bgwrap' }, this.bg.el);
+    bgRoot.append(this.bgApp);
+    de.append(bgHost);
 
     this.host = h('div', { id: 'margin-watch-top' });
     const root = this.host.attachShadow({ mode: 'open' });
     root.append(h('style', {}, css));
 
-    this.panel = createSettingsPanel(() => this.settings, () => null);
+    this.panel = createSettingsPanel(() => this.settings, () => this.bg.shader);
     this.fav = createFavorites((g) => attachPreview(g, () => this.settings.hoverPreview));
     const open = (u: string) => window.open(u, '_blank', 'noopener');
     const clickSel = (sel: string) => (document.querySelector(sel) as HTMLElement | null)?.click();
     const later = createLaterDrawer(() => this.app);
-    const palette = createCommandPalette([
+    const watchCmds: Command[] = isWatch ? [
       { id: 'w-top', title: '回到顶部', cat: '操作', icon: ICONS.top, run: () => scrollTo({ top: 0, behavior: 'smooth' }) },
       { id: 'w-comments', title: '看评论', cat: '跳转', icon: ICONS.message, keys: ['评论'], run: () => document.querySelector('#commentapp, bili-comments, .comment-container')?.scrollIntoView({ behavior: 'smooth', block: 'start' }) },
       { id: 'w-web', title: '网页全屏', cat: '操作', icon: ICONS.image, keys: ['全屏'], run: () => clickSel('.bpx-player-ctrl-web') },
       { id: 'w-wide', title: '宽屏模式', cat: '操作', icon: ICONS.image, keys: ['宽屏'], run: () => clickSel('.bpx-player-ctrl-wide') },
       { id: 'w-later', title: '把这个视频加入稍后再看', cat: '操作', icon: ICONS.later, keys: ['稍后'], run: async () => { const bv = location.pathname.match(/BV\w+/)?.[0]; if (!bv) return; const r = await addWatchLater(bv); toast(this.app, r.msg, r.ok ? { label: '查看', run: () => later.open() } : undefined); } },
       { id: 'w-copy', title: '复制视频链接', cat: '操作', icon: ICONS.link, keys: ['分享'], run: () => navigator.clipboard.writeText(location.href.split('?')[0]).then(() => toast(this.app, '链接已复制')) },
+    ] : [{ id: 'w-top', title: '回到顶部', cat: '操作', icon: ICONS.top, run: () => scrollTo({ top: 0, behavior: 'smooth' }) }];
+    const palette = createCommandPalette([
+      ...watchCmds,
       { id: 'fav', title: '打开收藏夹', cat: '操作', icon: ICONS.fav, keys: ['收藏'], run: () => this.fav.open() },
       { id: 'theme', title: '切换亮色 / 暗色', cat: '操作', icon: ICONS.moon, keys: ['主题', '夜间'], run: () => this.toggleTheme() },
       { id: 'settings', title: '打开设置', cat: '操作', icon: ICONS.gear, run: () => this.panel.sheet.open() },
@@ -76,14 +94,14 @@ export class WatchSkin {
       ],
     });
     const click = (sel: string) => (document.querySelector(sel) as HTMLElement | null)?.click();
-    const quick = createFloatingMenu([
+    const quick = isWatch ? createFloatingMenu([
       { label: '回到顶部', run: () => scrollTo({ top: 0, behavior: 'smooth' }) },
       { label: '看评论', run: () => document.querySelector('#commentapp, bili-comments, .comment-container')?.scrollIntoView({ behavior: 'smooth', block: 'start' }) },
       { label: '网页全屏', run: () => click('.bpx-player-ctrl-web') },
       { label: '宽屏模式', run: () => click('.bpx-player-ctrl-wide') },
       { label: '收藏夹', run: () => this.fav.open() },
-    ]);
-    this.app = h('div', { class: 'app wt', 'data-bg': 'off' }, this.head.el, quick.el, createScrollRuler(), this.panel.sheet.el, this.fav.el, palette.el, later.el, cm.el);
+    ]) : null;
+    this.app = h('div', { class: 'app wt', 'data-bg': 'off' }, this.head.el, quick?.el ?? null, createScrollRuler(), this.panel.sheet.el, this.fav.el, palette.el, later.el, cm.el);
     root.append(this.app);
     const lg = filtersIn(root);
     this.head.glass.forEach((g) => attachGlass(g, lg));
@@ -94,13 +112,13 @@ export class WatchSkin {
 
     this.applyTheme(false);
     this.media.addEventListener('change', () => this.applyTheme(false));
-    this.watchScreen();
+    if (isWatch) this.watchScreen();
   }
 
   update(s: Settings): void {
     const prev = this.settings;
     this.settings = s;
-    if (prev.theme !== s.theme) this.applyTheme(false);
+    if (prev.theme !== s.theme || JSON.stringify(prev.bg) !== JSON.stringify(s.bg)) this.applyTheme(false);
     this.panel.sync(s);
   }
 
@@ -113,7 +131,14 @@ export class WatchSkin {
     const t = this.resolved();
     document.documentElement.dataset.marginTheme = t;
     this.app.dataset.theme = t;
+    this.bgApp.dataset.theme = t;
     this.head.sunMoon.set(t, animate);
+    const mode = this.settings.bg.mode;
+    document.documentElement.classList.toggle('margin-has-bg', mode !== 'off');
+    this.bg.apply(this.settings.bg, t, this.settings.palette).then(() => {
+      document.documentElement.classList.toggle('margin-has-bg', this.bg.el.dataset.mode !== 'off');
+      this.panel.sync(this.settings);
+    });
   }
 
   private async toggleTheme(): Promise<void> {
