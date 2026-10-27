@@ -36,7 +36,7 @@ export function createHeader(o: { tabs: TabItem[]; onTheme: () => void; onSearch
   const tabsNav = createExpandableTabs(o.tabs);
   const sunMoon = createSunMoon(o.onTheme);
   const el = h('header', { class: 'top' },
-    h('a', { class: 'brand', href: 'https://www.bilibili.com/', title: '映间 MARGIN', 'aria-label': '映间 MARGIN 首页' }, h('span', { class: 'mark' }, icon(ICONS.logo))),
+    h('div', { class: 'brand', 'aria-hidden': 'true' }),
     search,
     h('div', { class: 'acts' }, tabsNav.el, sunMoon.el, user),
   );
