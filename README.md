@@ -31,6 +31,10 @@
 
 顶栏快捷入口按 21st.dev「Expandable Tabs」的源码移植（framer-motion 弹簧展开 → 原生 CSS 过渡，点外部收起）。
 
+命令面板按 21st.dev「Command Palette」（rafa-porto，Raycast 风格）移植：点顶栏搜索框、按 `/` 或 `Ctrl/⌘ + K` 唤出，有 B 站搜索联想、最近搜索、bilibili 热搜和 MARGIN 命令（换一批、切主题、收藏夹、网页全屏……），↑↓ 选、↵ 执行、Tab 切分类，常用命令按次数排前。
+
+视频卡片右键菜单按 21st.dev「Context Menu」（ddoemonn）移植：新标签打开、稍后再看、复制链接 / BV 号、UP 主空间、不看该 UP；贴边自动翻转，支持键盘和首字母跳转，Shift + 右键是浏览器原生菜单。
+
 播放页底部的快捷菜单按 21st.dev「Floating Menu」移植（胶囊变形成面板、墨色圆从底部漫上来、逐字翻滚悬停），配色换成墨色 / 暖白，菜单字改衬线：回到顶部、看评论、网页全屏、宽屏模式、收藏夹。
 
 顶栏的液态玻璃（搜索框、快捷入口胶囊、选中滑块）按 21st.dev「Apple Liquid glass switcher」（Den Dionigi）移植：多层内阴影高光 + `backdrop-filter: url(#位移滤镜)` 折射背后的内容，选中滑块移动时弹一下。原版位移图是按 344×76 胶囊画的，这里按每块玻璃的实际尺寸用光学公式（squircle 斜面 + 斯涅尔折射）现算，尺寸变化时重算。
