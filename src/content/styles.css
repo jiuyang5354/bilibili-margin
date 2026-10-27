@@ -63,7 +63,7 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
 /* main */
 .main { padding: 0 var(--g) 48px; }
 .bar { position: sticky; top: 72px; z-index: 4; margin: 0 calc(-1 * var(--g)); padding: 26px var(--g) 14px; background: linear-gradient(var(--canvas) 78%, transparent); }
-.app:not([data-bg="off"]) .bar { background: color-mix(in srgb, var(--canvas) 62%, transparent); backdrop-filter: blur(20px) saturate(1.4); border-bottom: 1px solid var(--line); }
+.app:not([data-bg="off"]) .bar { background: transparent; }
 .app:not([data-bg="off"]) .top { border-bottom-color: transparent; }
 .app:not([data-bg="off"]) .top { background: color-mix(in srgb, var(--canvas) 55%, transparent); }
 .eyebrow { display: flex; gap: 18px; font: 11px/1 var(--mono); letter-spacing: .16em; color: var(--faint); margin-bottom: 14px; }
