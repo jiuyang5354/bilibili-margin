@@ -15,6 +15,18 @@ uniform float u_milk;  // 底色 alpha（clear 款很低）
 uniform float u_rim;   // 高光强度
 uniform float u_bezel; // 弧边宽度（像素，恒定，不随卡片尺寸缩放）
 uniform float u_px;    // 1 个 CSS 像素 = 多少画布像素
+uniform vec3 u_canvas; // 页面底色
+uniform float u_o;     // 背景强度（原来是 CSS opacity）
+uniform float u_lift;  // 亮度提升（暗色抬一点，亮色不抬，否则发白）
+
+// 用户实际看到的背景 = 着色器按强度叠在页面底色上，再盖一层自上而下的底色渐隐（原 .bg-scrim）。
+// 这一步挪进 GL 里做，玻璃才能以满强度画在最上层，不被 opacity 和遮罩冲淡。
+vec3 seen(vec2 px) {
+  vec3 c = mix(u_canvas, texture2D(u_tex, px / u_res).rgb, u_o);
+  float t = 1.0 - px.y / u_res.y;
+  float a = t < 0.55 ? t : mix(0.55, 0.88, (t - 0.55) / 0.45);
+  return mix(c, u_canvas, a);
+}
 
 float sdRound(vec2 p, vec2 b, float r) { vec2 q = abs(p) - b + r; return length(max(q, 0.0)) + min(max(q.x, q.y), 0.0) - r; }
 
@@ -35,13 +47,13 @@ vec3 grade(vec3 c) {                                    // clear 款：saturate 
   float l = dot(c, vec3(0.2126, 0.7152, 0.0722));
   c = mix(vec3(l), c, 1.8);
   c = (c - 0.5) * 1.04 + 0.5;
-  return c * 1.06;
+  return c * u_lift;
 }
 
 void main() {
   vec2 fc = gl_FragCoord.xy;
   vec2 uv = fc / u_res;
-  vec3 bg = texture2D(u_tex, uv).rgb;
+  vec3 bg = seen(fc);
   vec2 hb = u_rect.zw * 0.5;
   vec2 c = u_rect.xy + hb;
   vec2 p = fc - c;
@@ -59,14 +71,14 @@ void main() {
   float disp = 6.0;                                     // 色散夸张系数（≈ 2px 色边）
   vec2 inward = -n * k * 1.6;                          // UI 尺度上把折射放大一点，平滑背景下才看得出弧边
   vec3 col;
-  vec2 blur = vec2(u_px * 1.0) / u_res;                // clear 款只有 ~2px 的轻模糊
+  vec2 blur = vec2(u_px * 1.0);                // clear 款只有 ~2px 的轻模糊
   vec3 acc = vec3(0.0);
   for (float i = -1.0; i <= 1.0; i++) {
     for (float j = -1.0; j <= 1.0; j++) {
       vec2 o = vec2(i, j) * blur;
-      acc.r += texture2D(u_tex, (fc + inward * dG * (1.0 - (1.0 - 0.99516) * disp)) / u_res + o).r;
-      acc.g += texture2D(u_tex, (fc + inward * dG) / u_res + o).g;
-      acc.b += texture2D(u_tex, (fc + inward * dG * (1.0 + (1.01084 - 1.0) * disp)) / u_res + o).b;
+      acc.r += seen(fc + inward * dG * (1.0 - (1.0 - 0.99516) * disp) + o).r;
+      acc.g += seen(fc + inward * dG + o).g;
+      acc.b += seen(fc + inward * dG * (1.0 + (1.01084 - 1.0) * disp) + o).b;
     }
   }
   col = grade(acc / 9.0);
@@ -100,7 +112,7 @@ export class GlassLens {
     gl.attachShader(this.prog, sh(gl.VERTEX_SHADER, VERT));
     gl.attachShader(this.prog, sh(gl.FRAGMENT_SHADER, FRAG));
     gl.linkProgram(this.prog);
-    for (const n of ['u_tex', 'u_res', 'u_rect', 'u_rad', 'u_tint', 'u_milk', 'u_rim', 'u_bezel', 'u_px']) this.loc[n] = gl.getUniformLocation(this.prog, n);
+    for (const n of ['u_tex', 'u_res', 'u_rect', 'u_rad', 'u_tint', 'u_milk', 'u_rim', 'u_bezel', 'u_px', 'u_canvas', 'u_o', 'u_lift']) this.loc[n] = gl.getUniformLocation(this.prog, n);
     this.tex = gl.createTexture()!;
     gl.bindTexture(gl.TEXTURE_2D, this.tex);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
@@ -125,7 +137,7 @@ export class GlassLens {
   }
 
   /** 纹理整屏回画到画布，矩形内做玻璃 */
-  present(w: number, h: number, r: { x: number; y: number; w: number; h: number; r: number; px: number }, theme: 'light' | 'dark'): void {
+  present(w: number, h: number, r: { x: number; y: number; w: number; h: number; r: number; px: number }, theme: 'light' | 'dark', o = 0.6): void {
     const gl = this.gl, L = this.loc;
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     gl.viewport(0, 0, w, h);
@@ -141,10 +153,13 @@ export class GlassLens {
     gl.uniform1f(L.u_rad, Math.min(r.r, r.h / 2, r.w / 2));
     const dark = theme === 'dark';
     gl.uniform3fv(L.u_tint, dark ? [0.11, 0.11, 0.125] : [1, 1, 1]);
-    gl.uniform1f(L.u_milk, dark ? 0.2 : 0.14);
+    gl.uniform1f(L.u_milk, dark ? 0.2 : 0.05);
+    gl.uniform1f(L.u_lift, dark ? 1.06 : 0.99);
     gl.uniform1f(L.u_rim, dark ? 0.85 : 1.0);
     gl.uniform1f(L.u_bezel, Math.min(30 * r.px, r.h * 0.3));
     gl.uniform1f(L.u_px, r.px);
+    gl.uniform3fv(L.u_canvas, dark ? [0x11 / 255, 0x11 / 255, 0x12 / 255] : [0xf5 / 255, 0xf4 / 255, 0xf1 / 255]);
+    gl.uniform1f(L.u_o, o);
     gl.drawArrays(gl.TRIANGLES, 0, 3);
   }
 }
