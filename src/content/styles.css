@@ -792,13 +792,5 @@ canvas.gf-sheet-art[data-ready] { opacity: 1; filter: none; }
   .top { grid-template-columns: auto minmax(0, 1fr) auto; gap: 14px; }
   .act span, .brand small { display: none; }
 }
-@media (max-width: 640px) {
-  .act.opt, .search kbd, .bar .ghost span { display: none; }
-  .user { margin-left: 4px; padding: 0 12px; }
-  .acts { gap: 0; }
-  .act { min-width: 40px; }
-  .sheet { top: auto; left: 8px; right: 8px; bottom: 8px; width: auto; max-height: 86vh; transform: translateY(calc(100% + 24px)); }
-  .fav-grid { grid-template-columns: 1fr 1fr; }
-}
 @media (prefers-reduced-transparency: reduce) { .sheet, .top { backdrop-filter: none; background: var(--surface); } }
 @media (prefers-reduced-motion: reduce) { .app[data-palette="mist"] .ghost.refresh::before { animation: none; } .sheet, .seg-thumb, .switch::after { transition: none; } .card, .card.sk .cover, .card.sk .line { animation: none; } .cover img { transition: none; } }
