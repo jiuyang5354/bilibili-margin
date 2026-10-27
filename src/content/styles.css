@@ -712,3 +712,7 @@ canvas.gf-sheet-art[data-ready] { opacity: 1; filter: none; }
 .sm-moon { color: #fde68a; filter: drop-shadow(0 0 8px rgb(252 211 77 / .6)); }
 .sm-sun { color: #fb923c; filter: drop-shadow(0 0 10px rgb(251 146 60 / .7)); }
 @media (prefers-reduced-motion: reduce) { .et-btn, .et-btn > span { transition: none; } }
+
+/* 播放页顶栏：同一套 .app 变量，只占顶部 72px，抽屉仍覆盖全屏 */
+.app.wt { position: fixed; inset: 0 0 auto 0; height: 72px; overflow: visible; background: transparent; scrollbar-gutter: auto; }
+.app.wt .top { position: relative; background: color-mix(in srgb, var(--canvas) 80%, transparent); }
