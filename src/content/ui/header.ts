@@ -3,7 +3,7 @@ import { h, icon, ICONS } from './dom';
 import { createExpandableTabs, type TabItem } from './expandable-tabs';
 import { createSunMoon, type SunMoon } from './sun-moon';
 
-export interface Header { el: HTMLElement; input: HTMLInputElement; sunMoon: SunMoon }
+export interface Header { el: HTMLElement; input: HTMLInputElement; sunMoon: SunMoon; /** 液态玻璃块：搜索框、快捷入口胶囊、选中滑块 */ glass: HTMLElement[]; thumb: HTMLElement }
 
 /** 首页和播放页共用的顶栏：标志、搜索、Expandable Tabs、日月主题按钮、头像 */
 export function createHeader(o: { tabs: TabItem[]; onTheme: () => void }): Header {
@@ -41,5 +41,5 @@ export function createHeader(o: { tabs: TabItem[]; onTheme: () => void }): Heade
     e.preventDefault();
     input.focus();
   });
-  return { el, input, sunMoon };
+  return { el, input, sunMoon, glass: [search, tabsNav.el], thumb: tabsNav.thumb };
 }
