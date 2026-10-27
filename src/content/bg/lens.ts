@@ -33,25 +33,29 @@ void main() {
   vec2 n = normalize(vec2(sdRound(p + e.xy, hb, u_rad) - sdRound(p - e.xy, hb, u_rad),
                           sdRound(p + e.yx, hb, u_rad) - sdRound(p - e.yx, hb, u_rad)) + 1e-5);
   float depth = clamp(-sd / u_bezel, 0.0, 1.0);        // 0 = 边缘，1 = 进入平坦区
-  float bend = pow(1.0 - depth, 2.0);
-  // 边缘把外面的画面往里折（像凸透镜边），中间整体微放大
-  vec2 lensUv = (c + p * 0.94 - n * bend * u_bezel * 0.9) / u_res;
-
+  float bend = pow(1.0 - depth, 2.2);
+  // 通透：中间几乎不模糊、不染色，只微微放大；折射集中在边缘一圈，把外面的画面往里压
+  vec2 base = c + p * 0.965 - n * bend * u_bezel * 1.35;
+  vec2 ca = n * bend * 2.2;                              // 边缘色散
   vec3 acc = vec3(0.0);
-  for (float x = -2.0; x <= 2.0; x++) {
-    for (float y = -2.0; y <= 2.0; y++) {
-      acc += texture2D(u_tex, lensUv + vec2(x, y) * 4.5 / u_res).rgb;
+  for (float x = -1.0; x <= 1.0; x++) {
+    for (float y = -1.0; y <= 1.0; y++) {
+      vec2 o = vec2(x, y) * (0.6 + bend * 2.4);
+      acc.r += texture2D(u_tex, (base + o - ca) / u_res).r;
+      acc.g += texture2D(u_tex, (base + o) / u_res).g;
+      acc.b += texture2D(u_tex, (base + o + ca) / u_res).b;
     }
   }
-  acc /= 25.0;
+  acc /= 9.0;
 
-  // 顶光：上沿与左上更亮，下沿一条暗一点的反光
-  float edge = smoothstep(2.5, 0.0, -sd);                // 最外 2px 的细边
-  float light = clamp(dot(n, normalize(vec2(-0.45, 1.0))), 0.0, 1.0);
-  float under = clamp(dot(n, vec2(0.0, -1.0)), 0.0, 1.0);
+  float edge = smoothstep(2.0, 0.0, -sd);                // 最外 2px 的细边
+  vec2 L = normalize(vec2(-0.5, 1.0));
+  float key = clamp(dot(n, L), 0.0, 1.0);                // 左上主光
+  float back = clamp(dot(n, -L), 0.0, 1.0);              // 右下回光
   vec3 col = mix(acc, u_tint, u_milk);
-  col += (edge * (0.35 + 0.65 * light) + bend * light * 0.22) * u_rim;
-  col += bend * under * 0.06 * u_rim;
+  col *= 1.0 + 0.06 * u_rim;                             // 玻璃比背景略亮一点
+  col += edge * (0.25 + 0.75 * key + 0.35 * back) * u_rim;
+  col += bend * (key * 0.18 + back * 0.08) * u_rim;      // 边缘内侧的菲涅尔亮带
   col = clamp(col, 0.0, 1.0);
   gl_FragColor = vec4(mix(bg, col, inside), 1.0);
 }`;
@@ -110,10 +114,10 @@ export class GlassLens {
     gl.uniform4f(L.u_rect, r.x, r.y, r.w, r.h);
     gl.uniform1f(L.u_rad, Math.min(r.r, r.h / 2, r.w / 2));
     const dark = theme === 'dark';
-    gl.uniform3fv(L.u_tint, dark ? [0.16, 0.16, 0.18] : [1, 1, 1]);
-    gl.uniform1f(L.u_milk, dark ? 0.45 : 0.3);
-    gl.uniform1f(L.u_rim, dark ? 1.0 : 1.0);
-    gl.uniform1f(L.u_bezel, Math.max(8, r.h * 0.16));
+    gl.uniform3fv(L.u_tint, dark ? [0.05, 0.05, 0.06] : [1, 1, 1]);
+    gl.uniform1f(L.u_milk, dark ? 0.12 : 0.1);
+    gl.uniform1f(L.u_rim, dark ? 0.8 : 1.0);
+    gl.uniform1f(L.u_bezel, Math.max(12, r.h * 0.2));
     gl.drawArrays(gl.TRIANGLES, 0, 3);
   }
 }
