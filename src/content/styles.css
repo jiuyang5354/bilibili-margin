@@ -670,13 +670,14 @@ canvas.gf-sheet-art[data-ready] { opacity: 1; filter: none; }
 @media (prefers-reduced-transparency: reduce) { .sheet, .top { backdrop-filter: none; background: var(--surface); } }
 @media (prefers-reduced-motion: reduce) { .sheet, .seg-thumb, .switch::after { transition: none; } .card, .card.sk .cover, .card.sk .line { animation: none; } .cover img { transition: none; } }
 
-/* B 站足迹热力图 */
-.fp { padding: 4px 4px 8px; }
-.fp-head { margin: 0; font-size: 15px; font-weight: 600; }
-.fp-head span { color: var(--muted); font-weight: 400; }
-.fp-stats { display: flex; gap: 32px; margin: 16px 0 22px; flex-wrap: wrap; }
-.fp-stat b { display: block; font-size: 20px; font-weight: 600; font-variant-numeric: tabular-nums; line-height: 1.25; }
-.fp-stat small { font-size: 11px; color: var(--muted); }
+/* B 站足迹热力图（首页卡片） */
+.fp-card { position: relative; display: grid; grid-template-columns: 240px minmax(0, 1fr); gap: 36px; align-items: center; margin-top: 26px; padding: 24px 28px 20px; border-radius: 18px; background: var(--surface); border: 1px solid var(--line); }
+.fp-card .eyebrow { margin-bottom: 10px; }
+.fp-head { margin: 0; font-size: 17px; font-weight: 600; }
+.fp-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 18px; margin-top: 16px; }
+.fp-stat b { display: block; font-size: 18px; font-weight: 600; font-variant-numeric: tabular-nums; line-height: 1.25; white-space: nowrap; }
+.fp-stat small { font-size: 11px; color: var(--muted); white-space: nowrap; }
+.fp-main { min-width: 0; }
 .fp-graph { --c: 13px; --gp: 3px; display: grid; grid-template-columns: 28px 1fr; gap: 6px; overflow-x: auto; padding-bottom: 4px; }
 .fp-months { grid-column: 2; position: relative; height: 16px; font-size: 11px; color: var(--muted); }
 .fp-months span { position: absolute; top: 0; }
@@ -691,10 +692,11 @@ canvas.gf-sheet-art[data-ready] { opacity: 1; filter: none; }
 .fp-cell.future { visibility: hidden; }
 .fp-cell.today { outline: 1.5px solid var(--ink); outline-offset: 1px; }
 .fp-cells .fp-cell:hover { transform: scale(1.35); }
-.fp-foot { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-top: 16px; font-size: 11px; color: var(--muted); }
+.fp-foot { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-top: 12px; font-size: 11px; color: var(--muted); }
 .fp-legend { display: flex; align-items: center; gap: 4px; }
 .fp-legend .fp-cell { width: 11px; height: 11px; }
 .fp-tip { position: fixed; z-index: 99; pointer-events: none; padding: 7px 10px; border-radius: 8px; font-size: 12px; line-height: 1.5; white-space: nowrap; background: var(--ink); color: var(--canvas); box-shadow: 0 6px 20px rgb(0 0 0 / .25); transform: translate(-50%, calc(-100% - 10px)); }
 .fp-tip[hidden] { display: none; }
 .fp-tip small { opacity: .7; }
+@media (max-width: 1100px) { .fp-card { grid-template-columns: 1fr; gap: 18px; } .fp-stats { grid-template-columns: repeat(4, auto); justify-content: start; gap: 12px 28px; } }
 @media (prefers-reduced-motion: reduce) { .et-btn, .et-btn > span { transition: none; } }
