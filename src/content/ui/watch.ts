@@ -30,7 +30,6 @@ export class WatchSkin {
   private panel: SettingsPanel;
   private fav: Sheet;
   private media = matchMedia('(prefers-color-scheme: dark)');
-  private fadeTimer = 0;
 
   constructor(private settings: Settings) {
     const de = document.documentElement;
@@ -120,17 +119,17 @@ export class WatchSkin {
   private async toggleTheme(): Promise<void> {
     const next = this.resolved() === 'dark' ? 'light' : 'dark';
     const de = document.documentElement;
-    if (!matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      const ms = this.head.sunMoon.duration;
-      de.style.setProperty('--m-fade', `${ms}ms`);
-      de.classList.add('margin-fading');
-      this.app.classList.add('theme-fading');
-      this.app.style.setProperty('--fade', `${ms}ms`);
-      clearTimeout(this.fadeTimer);
-      this.fadeTimer = window.setTimeout(() => { de.classList.remove('margin-fading'); this.app.classList.remove('theme-fading'); }, ms + 100);
-    }
+    const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const ms = this.head.sunMoon.duration;
     this.settings = await saveSettings({ theme: next });
-    this.applyTheme(true);
+    // B 站页面元素成千上万、评论区还在各自的 Shadow DOM 里，逐元素 transition 会各走各的、
+    // 卡出半亮半暗。改用 View Transition 整页（含顶栏）一次交叉淡化；新画面是实时的，日月动画照常跑。
+    const vt = (document as Document & { startViewTransition?: (cb: () => void) => { finished: Promise<void> } }).startViewTransition;
+    if (reduce || !vt) { this.applyTheme(true); return; }
+    de.style.setProperty('--m-vt', `${Math.round(ms * 0.42)}ms`);
+    de.classList.add('margin-vt');
+    const t = vt.call(document, () => this.applyTheme(true));
+    t.finished.finally(() => de.classList.remove('margin-vt'));
   }
 
   /** 网页全屏 / 全屏时收起顶栏，不挡播放器 */
