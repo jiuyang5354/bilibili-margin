@@ -6,6 +6,7 @@ import { createHeader, type Header } from './header';
 import { attachPreview } from './preview';
 import { createSettingsPanel, type SettingsPanel } from './settings-panel';
 import type { Sheet } from './sheet';
+import { attachGlass, filtersIn } from './liquid-glass';
 import css from '../styles.css?inline';
 import pageCss from '../watch.css?inline';
 
@@ -48,6 +49,9 @@ export class WatchSkin {
     });
     this.app = h('div', { class: 'app wt', 'data-bg': 'off' }, this.head.el, this.panel.sheet.el, this.fav.el);
     root.append(this.app);
+    const lg = filtersIn(root);
+    this.head.glass.forEach((g) => attachGlass(g, lg));
+    attachGlass(this.head.thumb, lg, { blur: 2, strength: 0.4 });
     de.append(this.host);
 
     this.applyTheme(false);
