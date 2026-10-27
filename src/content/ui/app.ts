@@ -85,6 +85,7 @@ export class MarginApp {
     this.panel = createSettingsPanel(() => this.settings, () => this.bg.shader);
     this.fav = createFavorites((g) => attachPreview(g, () => this.settings.hoverPreview));
     this.foot = createFootprintCard();
+    this.bg.setLens(this.foot);
     const later = createLaterDrawer(() => this.app);
     const palette = createCommandPalette([
       { id: 'refresh', title: '换一批推荐', cat: '操作', icon: ICONS.refresh, keys: ['刷新', 'refresh'], run: () => this.reload() },
@@ -154,6 +155,8 @@ export class MarginApp {
       cm.el,
     );
     this.root.append(this.app);
+    this.app.addEventListener('scroll', () => this.bg.redraw(), { passive: true });
+    new ResizeObserver(() => this.bg.redraw()).observe(this.foot);
     const lg = filtersIn(this.root);
     head.glass.forEach((g) => attachGlass(g, lg));
     attachGlass(head.thumb, lg, { blur: 2, strength: 0.4 });
