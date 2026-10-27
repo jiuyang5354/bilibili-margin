@@ -2,6 +2,7 @@ import type { BgMode, Settings, ShaderId, Theme } from '../../shared/settings';
 import { BG_IMAGE_KEY, saveSettings } from '../../shared/settings';
 import { compressImage } from '../bg/background';
 import { SHADER_IDS, SHADER_NAMES } from '../bg/shaders';
+import { shaderThumb } from '../bg/program';
 import { block, chipInput, rangeSlider, row, segmented, stepSlider, toggle } from './controls';
 import { fmtCount, h, icon, ICONS } from './dom';
 import { createSheet, type Sheet } from './sheet';
@@ -31,10 +32,17 @@ export function createSettingsPanel(get: () => Settings, currentShader: () => Sh
     const s = get();
     const on = s.bg.mode === 'fixed' ? s.bg.shader : s.bg.mode === 'random' ? currentShader() : null;
     swatches.querySelectorAll<HTMLElement>('.sw-item').forEach((b) => b.setAttribute('aria-checked', String(b.dataset.v === on)));
+    // 用真实渲染的缩略图替换 CSS 色块（主题变了就重画）
+    requestAnimationFrame(() => {
+      const t = (swatches.closest('.app') as HTMLElement | null)?.dataset.theme === 'light' ? 'light' : 'dark';
+      if (swatches.dataset.thumbs === t) return;
+      swatches.dataset.thumbs = t;
+      swatches.querySelectorAll<HTMLElement>('.sw-chip').forEach((c) => { const url = shaderThumb(c.dataset.id as ShaderId, t); if (url) c.style.backgroundImage = `url(${url})`; });
+    });
   };
   for (const id of SHADER_IDS) {
     const b = h('button', { type: 'button', class: 'sw-item', role: 'radio', onclick: () => save({ bg: { ...get().bg, mode: 'fixed', shader: id } }) },
-      h('span', { class: `sw-chip sw-${id}` }), h('span', {}, SHADER_NAMES[id]));
+      h('span', { class: `sw-chip sw-${id}`, 'data-id': id }), h('span', {}, SHADER_NAMES[id]));
     b.dataset.v = id;
     swatches.append(b);
   }
