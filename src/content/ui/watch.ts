@@ -7,6 +7,7 @@ import { attachPreview } from './preview';
 import { createSettingsPanel, type SettingsPanel } from './settings-panel';
 import type { Sheet } from './sheet';
 import { attachGlass, filtersIn } from './liquid-glass';
+import { createFloatingMenu } from './floating-menu';
 import css from '../styles.css?inline';
 import pageCss from '../watch.css?inline';
 
@@ -47,7 +48,15 @@ export class WatchSkin {
         { title: '原版', icon: ICONS.exit, run: () => { sessionStorage.setItem('margin:off', '1'); location.reload(); } },
       ],
     });
-    this.app = h('div', { class: 'app wt', 'data-bg': 'off' }, this.head.el, this.panel.sheet.el, this.fav.el);
+    const click = (sel: string) => (document.querySelector(sel) as HTMLElement | null)?.click();
+    const quick = createFloatingMenu([
+      { label: '回到顶部', run: () => scrollTo({ top: 0, behavior: 'smooth' }) },
+      { label: '看评论', run: () => document.querySelector('#commentapp, bili-comments, .comment-container')?.scrollIntoView({ behavior: 'smooth', block: 'start' }) },
+      { label: '网页全屏', run: () => click('.bpx-player-ctrl-web') },
+      { label: '宽屏模式', run: () => click('.bpx-player-ctrl-wide') },
+      { label: '收藏夹', run: () => this.fav.open() },
+    ]);
+    this.app = h('div', { class: 'app wt', 'data-bg': 'off' }, this.head.el, quick.el, this.panel.sheet.el, this.fav.el);
     root.append(this.app);
     const lg = filtersIn(root);
     this.head.glass.forEach((g) => attachGlass(g, lg));
