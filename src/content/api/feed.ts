@@ -2,6 +2,7 @@ import { getJSON, getWbi } from './http';
 
 export interface Video {
   bvid: string;
+  cid: number;
   title: string;
   cover: string;
   duration: number;
@@ -17,6 +18,7 @@ export interface Video {
 /* eslint-disable @typescript-eslint/no-explicit-any */
 const toVideo = (v: any): Video => ({
   bvid: v.bvid,
+  cid: Number(v.cid) || 0,
   title: v.title,
   cover: String(v.pic || '').replace(/^http:/, 'https:'),
   duration: Number(v.duration) || 0,
