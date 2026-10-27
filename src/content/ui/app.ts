@@ -102,6 +102,10 @@ export class MarginApp {
     tabs.append(mkTab('rcmd', '推荐'), mkTab('popular', '热门'));
     const refresh = h('button', { class: 'ghost refresh', type: 'button', title: '换一批', onclick: () => this.reload() }, icon(ICONS.refresh), h('span', {}, '换一批'));
 
+    // 吸顶时分类栏变成液态玻璃胶囊，日期行收起
+    const barMark = h('div', { class: 'bar-mark', 'aria-hidden': 'true' });
+    const bar = h('div', { class: 'bar' }, h('div', { class: 'eyebrow' }, h('span', {}, todayLabel()), h('span', {}, 'BILIBILI · 首页')), h('div', { class: 'bar-row' }, tabs, refresh));
+
     this.grid = h('section', { class: 'grid', 'aria-live': 'polite' });
     this.status = h('div', { class: 'status' });
     this.sentinel = h('div', { class: 'sentinel' });
@@ -116,7 +120,8 @@ export class MarginApp {
       header,
       h('main', { class: 'main' },
         this.foot,
-        h('div', { class: 'bar' }, h('div', { class: 'eyebrow' }, h('span', {}, todayLabel()), h('span', {}, 'BILIBILI · 首页')), h('div', { class: 'bar-row' }, tabs, refresh)),
+        barMark,
+        bar,
         this.grid, this.status, this.sentinel,
         h('footer', { class: 'foot' }, exit, h('span', {}, '映间 MARGIN · 非 B 站官方')),
       ),
@@ -127,6 +132,10 @@ export class MarginApp {
     const lg = filtersIn(this.root);
     head.glass.forEach((g) => attachGlass(g, lg));
     attachGlass(head.thumb, lg, { blur: 2, strength: 0.4 });
+    attachGlass(tabs, lg); attachGlass(refresh, lg);
+    new IntersectionObserver(([e]) => {
+      bar.classList.toggle('stuck', !e.isIntersecting && e.boundingClientRect.top < 80);
+    }, { root: this.app, rootMargin: '-72px 0px 0px 0px', threshold: 0 }).observe(barMark);
 
     new IntersectionObserver((es) => { if (es.some((e) => e.isIntersecting)) this.load(); }, { root: this.app, rootMargin: '900px 0px' }).observe(this.sentinel);
 
