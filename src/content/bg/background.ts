@@ -1,6 +1,6 @@
-import type { Background, ShaderId } from '../../shared/settings';
+import type { Background, Palette, ShaderId } from '../../shared/settings';
 import { BG_IMAGE_KEY } from '../../shared/settings';
-import { fragment, PALETTES, SHADER_IDS } from './shaders';
+import { fragment, MIST, PALETTES, SHADER_IDS } from './shaders';
 import { h } from '../ui/dom';
 
 const VERT = 'attribute vec2 p;void main(){gl_Position=vec4(p,0.,1.);}';
@@ -19,6 +19,7 @@ export class BackgroundLayer {
   private start = performance.now();
   private current: ShaderId | null = null;
   private theme: 'light' | 'dark' = 'dark';
+  private palette: Palette = 'classic';
   private cfg!: Background;
   private reduced = matchMedia('(prefers-reduced-motion: reduce)');
 
@@ -28,7 +29,8 @@ export class BackgroundLayer {
     new ResizeObserver(() => this.resize()).observe(this.el);
   }
 
-  async apply(cfg: Background, theme: 'light' | 'dark'): Promise<void> {
+  async apply(cfg: Background, theme: 'light' | 'dark', palette: Palette = 'classic'): Promise<void> {
+    this.palette = palette;
     const first = !this.cfg;
     const prevMode = this.cfg?.mode;
     this.cfg = cfg;
@@ -54,6 +56,7 @@ export class BackgroundLayer {
       } else id = this.current;
     }
     this.use(id);
+    this.draw(performance.now());
     this.loop();
   }
 
@@ -99,7 +102,7 @@ export class BackgroundLayer {
   private draw(now: number): void {
     const gl = this.gl;
     if (!gl || !this.prog || !this.current) return;
-    const pal = PALETTES[this.theme][this.current];
+    const pal = this.palette === 'mist' ? MIST[this.theme] : PALETTES[this.theme][this.current];
     gl.uniform2f(this.loc.u_res, this.canvas.width, this.canvas.height);
     gl.uniform1f(this.loc.u_t, this.reduced.matches ? 12 : (now - this.start) / 1000);
     gl.uniform3fv(this.loc.u_bg, pal.bg);
