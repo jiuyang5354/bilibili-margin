@@ -17,7 +17,7 @@ html.margin-skin .search-layout, html.margin-skin .search-content { background: 
 html.margin-skin .bili-footer, html.margin-skin #biliMainFooter { background: transparent !important; }
 
 /* ── 搜索页：编辑式排版，和首页同一套语言 ── */
-html.margin-search .search-header { padding-top: 34px; margin-bottom: 10px; }
+html.margin-search .search-header { padding-top: 0; margin-top: 4px; margin-bottom: 14px; }
 html.margin-search .search-input-wrap {
   height: 56px !important; width: 680px !important; max-width: calc(100vw - 96px); padding: 0 6px 0 22px !important;
   border-radius: 999px !important; border: 1px solid var(--m-line) !important;
