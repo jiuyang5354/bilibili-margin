@@ -1,5 +1,7 @@
 export type Theme = 'auto' | 'light' | 'dark';
-export type ShaderId = 'aurora' | 'silk' | 'mesh' | 'grain';
+/** classic：经典；mist：亮色为「雾蓝」、暗色为「夜蓝」 */
+export type Palette = 'classic' | 'mist';
+export type ShaderId = 'aurora' | 'silk' | 'mesh' | 'grain' | 'ice';
 export type BgMode = 'random' | 'fixed' | 'image' | 'off';
 
 export interface Filters {
@@ -22,6 +24,7 @@ export interface Background {
 export interface Settings {
   enabled: boolean;
   theme: Theme;
+  palette: Palette;
   hoverPreview: boolean;
   filters: Filters;
   bg: Background;
@@ -30,6 +33,7 @@ export interface Settings {
 export const DEFAULTS: Settings = {
   enabled: true,
   theme: 'auto',
+  palette: 'classic',
   hoverPreview: true,
   filters: { keywords: [], ups: [], minViews: 0, minDuration: 0 },
   bg: { mode: 'random', shader: 'aurora', intensity: 0.6 },
