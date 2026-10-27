@@ -891,7 +891,7 @@ async function N(i) {
     try {
       return JSON.parse(text);
     } catch {
-      return { code: i.status || -1, message: "Bilibili API 响应非 JSON (可能需登录或触发风控验证)", raw: text };
+      return { code: i.status || -1, message: `B 站接口返回了网页而不是数据（HTTP ${i.status}），可能触发了风控，请稍后重试或先登录 B 站` };
     }
   } catch (err) {
     return { code: -1, message: err?.message || "网络请求失败" };
@@ -1157,11 +1157,113 @@ const G = {
     afterHandle: m.J_D
   }
 }, J = {
-  getRecommendVideos: j.getRecommendVideos,
+  getRecommendVideos: marginGetRecommendVideos,
   getPopularVideos: j.getPopularVideos,
   getHistoryList: G.getHistoryList
 }, Z = Q(J);
+// ---- MARGIN: WBI 签名 + 推荐流 ----
+function marginMd5(str) {
+  const bytes = new TextEncoder().encode(str);
+  const len = bytes.length, nBlocks = ((len + 8) >> 6) + 1, words = new Uint32Array(nBlocks * 16);
+  for (let i = 0; i < len; i++) words[i >> 2] |= bytes[i] << ((i % 4) * 8);
+  words[len >> 2] |= 0x80 << ((len % 4) * 8);
+  words[nBlocks * 16 - 2] = len * 8;
+  const S = [7, 12, 17, 22, 5, 9, 14, 20, 4, 11, 16, 23, 6, 10, 15, 21];
+  const K = Array.from({ length: 64 }, (_, i) => Math.floor(Math.abs(Math.sin(i + 1)) * 2 ** 32) >>> 0);
+  let a0 = 0x67452301, b0 = 0xefcdab89, c0 = 0x98badcfe, d0 = 0x10325476;
+  for (let blk = 0; blk < nBlocks; blk++) {
+    let A = a0, B = b0, C = c0, D = d0;
+    for (let i = 0; i < 64; i++) {
+      let F, g;
+      if (i < 16) { F = (B & C) | (~B & D); g = i; }
+      else if (i < 32) { F = (D & B) | (~D & C); g = (5 * i + 1) % 16; }
+      else if (i < 48) { F = B ^ C ^ D; g = (3 * i + 5) % 16; }
+      else { F = C ^ (B | ~D); g = (7 * i) % 16; }
+      const s = S[(i >> 4) * 4 + (i % 4)];
+      const tmp = D; D = C; C = B;
+      const x = (A + F + K[i] + words[blk * 16 + g]) >>> 0;
+      B = (B + ((x << s) | (x >>> (32 - s)))) >>> 0;
+      A = tmp;
+    }
+    a0 = (a0 + A) >>> 0; b0 = (b0 + B) >>> 0; c0 = (c0 + C) >>> 0; d0 = (d0 + D) >>> 0;
+  }
+  return [a0, b0, c0, d0].map((v) => Array.from({ length: 4 }, (_, i) => ((v >>> (i * 8)) & 255).toString(16).padStart(2, "0")).join("")).join("");
+}
+const MARGIN_MIXIN_TAB = [46, 47, 18, 2, 53, 8, 23, 32, 15, 50, 10, 31, 58, 3, 45, 35, 27, 43, 5, 49, 33, 9, 42, 19, 29, 28, 14, 39, 12, 38, 41, 13, 37, 48, 7, 16, 24, 55, 40, 61, 26, 17, 0, 1, 60, 51, 30, 4, 22, 25, 54, 21, 56, 59, 6, 63, 57, 62, 11, 36, 20, 34, 44, 52];
+let marginWbiCache = null;
+async function marginFetchJSON(url) {
+  const res = await fetch(url, { credentials: "include", signal: AbortSignal.timeout(15e3) });
+  return N(res);
+}
+async function marginGetMixinKey() {
+  if (marginWbiCache && Date.now() - marginWbiCache.time < 36e5) return marginWbiCache.key;
+  const nav = await marginFetchJSON("https://api.bilibili.com/x/web-interface/nav");
+  const img = nav?.data?.wbi_img;
+  if (!img?.img_url || !img?.sub_url) throw new Error("无法取得 WBI 密钥");
+  const name = (u) => u.slice(u.lastIndexOf("/") + 1).split(".")[0];
+  const raw = name(img.img_url) + name(img.sub_url);
+  const key = MARGIN_MIXIN_TAB.map((n) => raw[n]).join("").slice(0, 32);
+  marginWbiCache = { key, time: Date.now() };
+  return key;
+}
+async function marginWbiQuery(params) {
+  const key = await marginGetMixinKey();
+  const all = { ...params, wts: Math.round(Date.now() / 1e3) };
+  const query = Object.keys(all).sort().map((k) => `${encodeURIComponent(k)}=${encodeURIComponent(String(all[k]).replace(/[!'()*]/g, ""))}`).join("&");
+  return `${query}&w_rid=${marginMd5(query + key)}`;
+}
+async function marginGetRecommendVideos(msg) {
+  const { contentScriptQuery, ...q } = msg || {};
+  const idx = Number(q.fresh_idx) || 1, ps = Number(q.ps) || 30;
+  const params = { web_location: 1430650, y_num: 5, fresh_type: 4, feed_version: "V8", fresh_idx_1h: idx, fetch_row: 1, fresh_idx: idx, brush: idx, homepage_ver: 1, ps, last_y_num: 5, screen: "1920-1080", seo_info: "" };
+  let signed = null;
+  try {
+    signed = await marginFetchJSON(`https://api.bilibili.com/x/web-interface/wbi/index/top/feed/rcmd?${await marginWbiQuery(params)}`);
+    if (signed?.code === 0 && signed?.data?.item?.length) return signed;
+  } catch (err) {
+    console.warn("[MARGIN] WBI 推荐流失败", err);
+  }
+  try {
+    const plain = await marginFetchJSON(`https://api.bilibili.com/x/web-interface/index/top/feed/rcmd?fresh_idx=${idx}&feed_version=V2&fresh_type=4&ps=${ps}&plat=1`);
+    if (plain?.code === 0 && plain?.data?.item?.length) return plain;
+    return signed || plain;
+  } catch (err) {
+    return signed || { code: -1, message: err?.message || "推荐流请求失败" };
+  }
+}
+// 后台 Service Worker 发出的请求默认不带 B 站的 Referer / Origin，
+// api.bilibili.com 会因此返回 412 风控 HTML 页面（"<!DOCTYPE ..." is not valid JSON）。
+// 这里用 declarativeNetRequest 会话规则，只给扩展后台（tabIds: [-1]）发往 B 站 API 的请求补上请求头。
+const MARGIN_HEADER_RULE_ID = 9001;
+async function installBiliHeaderRule() {
+  try {
+    await chrome.declarativeNetRequest.updateSessionRules({
+      removeRuleIds: [MARGIN_HEADER_RULE_ID],
+      addRules: [{
+        id: MARGIN_HEADER_RULE_ID,
+        priority: 1,
+        action: {
+          type: "modifyHeaders",
+          requestHeaders: [
+            { header: "Referer", operation: "set", value: "https://www.bilibili.com/" },
+            { header: "Origin", operation: "set", value: "https://www.bilibili.com" }
+          ]
+        },
+        condition: {
+          requestDomains: ["api.bilibili.com"],
+          tabIds: [-1],
+          resourceTypes: ["xmlhttprequest", "other"]
+        }
+      }]
+    });
+  } catch (err) {
+    console.error("[MARGIN] 无法安装 B 站请求头规则", err);
+  }
+}
+const headerRuleReady = installBiliHeaderRule();
+chrome.runtime.onInstalled.addListener(installBiliHeaderRule);
+chrome.runtime.onStartup.addListener(installBiliHeaderRule);
 I.runtime.onMessage.addListener((i, x) => {
   if (!(!i?.contentScriptQuery || !(i.contentScriptQuery in J)))
-    return Z(i, x);
+    return headerRuleReady.then(() => Z(i, x));
 });
