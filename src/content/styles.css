@@ -1008,3 +1008,16 @@ canvas.gf-sheet-art[data-ready] { opacity: 1; filter: none; }
 .sr-pct { position: absolute; right: 32px; top: -9px; padding: 3px 6px; border-radius: 6px; background: var(--surface); box-shadow: 0 0 0 1px var(--line); font: 11px/1 var(--mono); color: var(--ink); white-space: nowrap; opacity: 0; transition: opacity .2s; pointer-events: none; }
 .sr:hover .sr-pct { opacity: 1; }
 .sr:not([data-on="true"]) .sr-track i { transition-delay: 0s; }
+
+/* 首页主搜索：居中大胶囊；首页顶栏搜索隐藏 */
+.top.no-search .search { visibility: hidden; pointer-events: none; }
+.hero-search { display: flex; align-items: center; gap: 12px; width: min(680px, 100%); height: 56px; margin: 30px auto 0; padding: 0 6px 0 22px; border-radius: 999px; border: 1px solid var(--line); background: color-mix(in srgb, var(--surface) 82%, transparent); backdrop-filter: blur(18px) saturate(1.4); box-shadow: 0 1px 2px rgb(0 0 0 / .04), 0 12px 32px -18px rgb(0 0 0 / .25); transition: box-shadow .2s, border-color .2s; }
+.hero-search:focus-within { border-color: color-mix(in srgb, var(--ink) 24%, transparent); box-shadow: 0 0 0 4px color-mix(in srgb, var(--ink) 6%, transparent), 0 12px 32px -18px rgb(0 0 0 / .3); }
+.hero-search > svg { width: 18px; height: 18px; flex: none; color: var(--faint); }
+.hs-input { flex: 1; min-width: 0; height: 100%; border: 0; outline: 0; background: transparent; color: var(--ink); font: 500 17px/1 var(--serif); letter-spacing: .02em; }
+.hs-input::placeholder { color: var(--faint); }
+.hs-input::-webkit-search-cancel-button { display: none; }
+.hs-kbd { flex: none; padding: 3px 7px; border-radius: 6px; border: 1px solid var(--line); color: var(--faint); font: 500 11px/1.2 var(--mono); cursor: pointer; }
+.hs-kbd:hover { color: var(--ink); }
+.hs-btn { flex: none; height: 44px; min-width: 92px; border: 0; border-radius: 999px; background: var(--ink); color: var(--canvas); font-family: inherit; font-size: 15px; font-weight: 600; letter-spacing: .1em; cursor: pointer; transition: opacity .15s; }
+.hs-btn:hover { opacity: .88; }
