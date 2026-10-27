@@ -8,11 +8,13 @@ const status = document.getElementById('status')
 const segmentedGlider = document.getElementById('segmented-glider')
 const scopeBtns = document.querySelectorAll('.segmented-btn')
 const scopeIndicator = document.getElementById('scope-indicator')
-const themeBtns = document.querySelectorAll('.theme-pill-btn')
+const themeBtns = document.querySelectorAll('.theme-pill-btn:not(.mode-btn)')
+const modeBtns = document.querySelectorAll('.mode-btn')
 
 let enabled = true
 let currentScope = 'all' // 'all' | 'home' | 'watch'
 let currentTheme = 'dark' // 'dark' | 'light' | 'auto'
+let currentMode = 'currentTab' // 'currentTab' | 'detail' | 'newTab'
 
 // Storage Helper with safe fallback
 const storage = {
@@ -62,6 +64,21 @@ function updateScopeUI(scope) {
   }
 }
 
+
+function updateModeUI(mode) {
+  modeBtns.forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.modeVal === mode)
+  })
+}
+
+async function saveMode(mode) {
+  const res = await storage.get([STATE_KEY])
+  const state = res[STATE_KEY] || {}
+  await storage.set({
+    [STATE_KEY]: { ...state, preferences: { ...(state.preferences || {}), openMode: mode } }
+  })
+}
+
 function updateThemeUI(theme) {
   themeBtns.forEach(btn => {
     btn.classList.toggle('active', btn.dataset.themeVal === theme)
@@ -93,9 +110,12 @@ storage.get(['margin-enabled', 'margin-scope', 'margin-theme', STATE_KEY]).then(
   const pageTheme = state[STATE_KEY]?.preferences?.theme
   currentTheme = state['margin-theme'] === 'auto' ? 'auto' : (pageTheme === 'light' || pageTheme === 'dark' ? pageTheme : 'dark')
 
+  currentMode = state[STATE_KEY]?.preferences?.openMode || 'currentTab'
+
   updateToggleUI()
   updateScopeUI(currentScope)
   updateThemeUI(currentTheme)
+  updateModeUI(currentMode)
 })
 
 // Toggle Engine Switch
@@ -125,5 +145,17 @@ themeBtns.forEach(btn => {
     updateThemeUI(theme)
     await saveTheme(theme)
     status.textContent = `主题已切换为：${btn.textContent}，刷新页面后生效`
+  })
+})
+
+
+// Mode Pills Switch
+modeBtns.forEach(btn => {
+  btn.addEventListener('click', async () => {
+    const mode = btn.dataset.modeVal
+    currentMode = mode
+    updateModeUI(mode)
+    await saveMode(mode)
+    status.textContent = `播放方式已设为：${btn.textContent}`
   })
 })
