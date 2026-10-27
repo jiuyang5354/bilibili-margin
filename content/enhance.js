@@ -472,3 +472,171 @@ html.m21-reveal::view-transition-new(root){animation:m21-reveal .68s cubic-bezie
   setInterval(ensure, 1500);
   window.__marginOpenFoot = () => { const r = document.getElementById('margin-extension')?.shadowRoot; if (r) open(r); };
 })();
+
+/* 映间 MARGIN · 收藏夹：玻璃文件夹卡片 */
+(() => {
+  if (window.__marginFav) return;
+  window.__marginFav = true;
+  const API = 'https://api.bilibili.com';
+  const j = (u) => fetch(API + u, { credentials: 'include' }).then((r) => r.json());
+  const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const https = (u) => String(u || '').replace(/^http:/, 'https:').replace(/^\/\//, 'https:');
+  const BACK = "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 340 272' preserveAspectRatio='none'%3E%3Cpath d='M0 52Q0 34 18 34H150C168 34 170 0 196 0H320Q340 0 340 20V272H0Z'/%3E%3C/svg%3E\")";
+  const FRONT = "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 340 272' preserveAspectRatio='none'%3E%3Cpath d='M0 94Q0 74 20 74H118C140 74 142 106 166 106H320Q340 106 340 126V252Q340 272 320 272H20Q0 272 0 252Z'/%3E%3C/svg%3E\")";
+  const CSS = `
+.m21-fav-mask{position:fixed;inset:0;z-index:50;overflow:auto;background:rgb(8 9 11 / .72);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);animation:m21-fade .2s ease;
+  background-image:radial-gradient(rgb(255 255 255 / .07) 1px,transparent 1.2px);background-size:22px 22px}
+.m21-fav{max-width:1180px;margin:0 auto;padding:64px 40px 80px;color:#f3f3f5}
+.m21-fav-head{display:flex;align-items:baseline;gap:14px;margin-bottom:34px}
+.m21-fav-head h2{margin:0;font-size:24px;font-weight:600;letter-spacing:.01em}
+.m21-fav-head small{font:12px ui-monospace,SFMono-Regular,Menlo,monospace;color:rgb(255 255 255 / .5)}
+.m21-fav-head .sp{flex:1}
+.m21-fav-x,.m21-fav-back{height:34px;padding:0 14px;border-radius:10px;border:1px solid rgb(255 255 255 / .14);background:rgb(255 255 255 / .06);color:#eee;font-size:13px;cursor:pointer}
+.m21-fav-x:hover,.m21-fav-back:hover{background:rgb(255 255 255 / .12)}
+.m21-fav-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:44px 40px;perspective:1100px}
+.m21-folder{position:relative;aspect-ratio:340/272;cursor:pointer;transform-style:preserve-3d;transition:transform .35s cubic-bezier(.2,.8,.2,1);outline:none;animation:m21-up .45s cubic-bezier(.2,.9,.25,1) both}
+.m21-folder .bk{position:absolute;inset:0;-webkit-mask:${BACK} 0 0/100% 100% no-repeat;mask:${BACK} 0 0/100% 100% no-repeat;background:#d9dbe0 center/cover no-repeat;border-radius:18px}
+.m21-folder .bk::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgb(255 255 255 / .1),rgb(0 0 0 / .15))}
+.m21-folder .pp{position:absolute;left:8%;right:8%;top:18%;height:44%;border-radius:10px;background:#fff center/cover no-repeat;box-shadow:0 6px 18px rgb(0 0 0 / .25);transform:translateY(16px) rotate(0);transition:transform .45s cubic-bezier(.2,.9,.25,1)}
+.m21-folder .pp.p2{left:14%;right:12%;opacity:.9;transform:translateY(20px) rotate(0)}
+.m21-folder .fr{position:absolute;inset:0;-webkit-mask:${FRONT} 0 0/100% 100% no-repeat;mask:${FRONT} 0 0/100% 100% no-repeat;background:linear-gradient(160deg,rgb(255 255 255 / .82),rgb(244 245 248 / .7));backdrop-filter:blur(22px) saturate(1.4);-webkit-backdrop-filter:blur(22px) saturate(1.4);box-shadow:inset 0 1px 0 rgb(255 255 255 / .8)}
+.m21-folder.dark .fr{background:linear-gradient(160deg,rgb(40 40 44 / .78),rgb(18 18 20 / .72))}
+.m21-folder .meta{position:absolute;left:9%;bottom:12%;right:30%;color:#16171a;transform:translateZ(30px)}
+.m21-folder.dark .meta{color:#f2f2f4}
+.m21-folder .meta b{display:block;font-size:19px;font-weight:500;line-height:1.3;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.m21-folder .meta small{font:11px ui-monospace,SFMono-Regular,Menlo,monospace;opacity:.55}
+.m21-folder .go{position:absolute;right:7%;bottom:9%;width:58px;height:58px;border-radius:16px;display:grid;place-items:center;background:linear-gradient(180deg,#2a2b2f,#0b0b0d);color:#fff;font-size:22px;box-shadow:0 10px 24px rgb(0 0 0 / .35),inset 0 1px 0 rgb(255 255 255 / .18);transform:translateZ(40px);transition:transform .25s}
+.m21-folder.dark .go{background:linear-gradient(180deg,#fff,#e6e7ea);color:#111}
+.m21-folder:hover .pp{transform:translateY(-22px) rotate(-4deg)}
+.m21-folder:hover .pp.p2{transform:translateY(-8px) rotate(5deg)}
+.m21-folder:hover .go{transform:translateZ(40px) scale(1.06)}
+.m21-folder:focus-visible{box-shadow:0 0 0 2px #00aeec;border-radius:18px}
+.m21-fav-hint{margin-top:46px;text-align:center;font:11px ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.24em;color:rgb(255 255 255 / .35)}
+.m21-fav-empty{padding:80px 0;text-align:center;color:rgb(255 255 255 / .6);font-size:14px}
+.m21-fav-empty a{color:#00aeec}
+.m21-fav-vids{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:26px 22px}
+.m21-fav-vid{color:#eee;text-decoration:none;animation:m21-up .35s ease both}
+.m21-fav-vid .c{position:relative;aspect-ratio:16/9;border-radius:10px;overflow:hidden;background:#222 center/cover no-repeat;transition:transform .25s}
+.m21-fav-vid:hover .c{transform:translateY(-3px)}
+.m21-fav-vid .c span{position:absolute;right:6px;bottom:6px;padding:2px 6px;border-radius:5px;font-size:11px;background:rgb(0 0 0 / .6)}
+.m21-fav-vid p{margin:9px 0 2px;font-size:13.5px;line-height:1.45;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.m21-fav-vid small{font-size:12px;color:rgb(255 255 255 / .5)}
+.m21-fav-more{display:block;margin:34px auto 0}
+@media (prefers-reduced-motion: reduce){.m21-folder,.m21-folder .pp{transition:none;animation:none}}`;
+
+  const dur = (s) => { s = Number(s) || 0; const h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60), x = s % 60; return (h ? h + ':' + String(m).padStart(2, '0') : m) + ':' + String(x).padStart(2, '0'); };
+  let state = null;
+
+  function shell(root) {
+    root.querySelector('.m21-fav-mask')?.remove();
+    const mask = document.createElement('div');
+    mask.className = 'm21-fav-mask';
+    mask.tabIndex = -1;
+    mask.innerHTML = '<div class="m21-fav"></div>';
+    mask.addEventListener('click', (e) => { if (e.target === mask || e.target.closest('.m21-fav-x')) mask.remove(); });
+    mask.addEventListener('keydown', (e) => { if (e.key === 'Escape') { if (state?.folder) showFolders(mask); else mask.remove(); } });
+    root.appendChild(mask);
+    mask.focus();
+    return mask;
+  }
+
+  function lean(el) {
+    el.addEventListener('pointermove', (e) => {
+      const b = el.getBoundingClientRect();
+      const x = (e.clientX - b.left) / b.width - 0.5, y = (e.clientY - b.top) / b.height - 0.5;
+      el.style.transform = `rotateY(${x * 14}deg) rotateX(${-y * 12}deg) translateZ(6px)`;
+    });
+    el.addEventListener('pointerleave', () => { el.style.transform = ''; });
+  }
+
+  function showFolders(mask) {
+    state.folder = null;
+    const box = mask.querySelector('.m21-fav');
+    const fs = state.folders;
+    box.innerHTML = `<div class="m21-fav-head"><h2>我的收藏夹</h2><small>${fs.length} folders · ${fs.reduce((a, f) => a + (f.media_count || 0), 0)} items</small><span class="sp"></span><button class="m21-fav-x">关闭</button></div>
+      <div class="m21-fav-grid">${fs.map((f, i) => `<div class="m21-folder${i % 3 === 2 ? ' dark' : ''}" tabindex="0" data-id="${f.id}" style="animation-delay:${i * 40}ms">
+        <div class="bk" style="background-image:url('${esc(https(f.cover))}')"></div>
+        <div class="pp p2" style="background-image:url('${esc(https(f.cover))}')"></div>
+        <div class="pp" style="background-image:url('${esc(https(f.cover))}')"></div>
+        <div class="fr"></div>
+        <div class="meta"><b>${esc(f.title)}</b><small>${f.media_count || 0} items${f.attr & 1 ? ' · 私密' : ''}</small></div>
+        <div class="go" aria-hidden="true">○○○</div></div>`).join('')}</div>
+      <div class="m21-fav-hint">HOVER TO LEAN · CLICK TO OPEN · ESC TO CLOSE</div>`;
+    box.querySelectorAll('.m21-folder').forEach((el) => {
+      lean(el);
+      const openIt = () => showFolder(mask, fs.find((f) => String(f.id) === el.dataset.id));
+      el.addEventListener('click', openIt);
+      el.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openIt(); } });
+    });
+  }
+
+  async function showFolder(mask, f) {
+    state.folder = f;
+    const box = mask.querySelector('.m21-fav');
+    box.innerHTML = `<div class="m21-fav-head"><button class="m21-fav-back">← 收藏夹</button><h2>${esc(f.title)}</h2><small>${f.media_count || 0} items</small><span class="sp"></span><button class="m21-fav-x">关闭</button></div><div class="m21-fav-vids"></div>`;
+    box.querySelector('.m21-fav-back').addEventListener('click', () => showFolders(mask));
+    const grid = box.querySelector('.m21-fav-vids');
+    let pn = 1;
+    const load = async () => {
+      box.querySelector('.m21-fav-more')?.remove();
+      let r;
+      try { r = await j(`/x/v3/fav/resource/list?media_id=${f.id}&pn=${pn}&ps=20&order=mtime&type=0&tid=0&platform=web`); } catch (_) { r = null; }
+      if (state.folder !== f) return;
+      const list = r?.data?.medias || [];
+      if (!list.length && pn === 1) { grid.outerHTML = '<div class="m21-fav-empty">这个收藏夹还是空的</div>'; return; }
+      grid.insertAdjacentHTML('beforeend', list.map((m, i) => {
+        const gone = m.attr === 9 || m.attr === 1;
+        const href = m.bvid ? `https://www.bilibili.com/video/${m.bvid}` : (m.link || '#');
+        return `<a class="m21-fav-vid" href="${esc(href)}" target="_blank" rel="noopener" style="animation-delay:${i * 25}ms"><div class="c" style="background-image:url('${esc(https(m.cover))}')">${m.duration ? `<span>${dur(m.duration)}</span>` : ''}</div><p>${esc(gone ? '（已失效）' + m.title : m.title)}</p><small>${esc(m.upper?.name || '')}</small></a>`;
+      }).join(''));
+      if (r?.data?.has_more) {
+        pn++;
+        const b = document.createElement('button'); b.className = 'm21-fav-back m21-fav-more'; b.textContent = '加载更多';
+        b.addEventListener('click', load); box.appendChild(b);
+      }
+    };
+    load();
+  }
+
+  async function open(root) {
+    const mask = shell(root);
+    const box = mask.querySelector('.m21-fav');
+    box.innerHTML = '<div class="m21-fav-empty">正在读取收藏夹…</div>';
+    try {
+      const nav = await j('/x/web-interface/nav');
+      if (!nav?.data?.isLogin) { box.innerHTML = '<div class="m21-fav-head"><h2>我的收藏夹</h2><span class="sp"></span><button class="m21-fav-x">关闭</button></div><div class="m21-fav-empty">登录 B 站后才能看到你的收藏夹 · <a href="https://passport.bilibili.com/login" target="_blank" rel="noopener">去登录</a></div>'; return; }
+      const mid = nav.data.mid;
+      const folders = [];
+      for (let pn = 1; pn <= 5; pn++) {
+        const r = await j(`/x/v3/fav/folder/created/list?up_mid=${mid}&pn=${pn}&ps=50`);
+        const l = r?.data?.list || [];
+        folders.push(...l);
+        if (!r?.data?.has_more) break;
+      }
+      state = { folders, folder: null };
+      if (!folders.length) { box.innerHTML = '<div class="m21-fav-empty">还没有收藏夹</div>'; return; }
+      showFolders(mask);
+    } catch (_) {
+      box.innerHTML = '<div class="m21-fav-head"><h2>我的收藏夹</h2><span class="sp"></span><button class="m21-fav-x">关闭</button></div><div class="m21-fav-empty">收藏夹读取失败，稍后再试</div>';
+    }
+  }
+
+  const ICON = '<svg xmlns="http://www.w3.org/2000/svg" class="mi" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M3 7.5A2.5 2.5 0 0 1 5.5 5H9l2 2.2h7.5A2.5 2.5 0 0 1 21 9.7v7.8a2.5 2.5 0 0 1-2.5 2.5h-13A2.5 2.5 0 0 1 3 17.5z"/><path d="M3 11h18"/></svg>';
+  function ensure() {
+    const root = document.getElementById('margin-extension')?.shadowRoot;
+    if (!root) return;
+    if (!root.getElementById('margin-fav-css')) { const s = document.createElement('style'); s.id = 'margin-fav-css'; s.textContent = CSS; root.appendChild(s); }
+    const rail = root.querySelector('.v2-rail');
+    if (rail && !rail.querySelector('.m21-fav-btn')) {
+      const b = document.createElement('button');
+      b.className = 'v2-rail-button m21-fav-btn';
+      b.setAttribute('aria-label', '我的收藏夹');
+      b.innerHTML = ICON + '<span class="v2-rail-tooltip">我的收藏夹<kbd>B 站</kbd></span>';
+      b.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); open(root); });
+      const foot = rail.querySelector('.m21-foot-btn') || rail.querySelector('.v2-rail-divider');
+      rail.insertBefore(b, foot || null);
+    }
+  }
+  ensure();
+  setInterval(ensure, 1500);
+})();
