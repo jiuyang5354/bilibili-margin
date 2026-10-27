@@ -55,13 +55,14 @@ function svg(cls: string, w: number, hh: number, d: string, stroke?: string, def
 }
 
 /** 生成纹理画布：先占位模糊，画好后淡入（全页共用一个分帧绘制队列） */
-function artCanvas(art: ArtPreset, seed: number, w: number, hh: number, density: number, priority: number, cls: string): HTMLCanvasElement {
+function artCanvas(art: ArtPreset, seed: number, w: number, hh: number, density: number, priority: number, cls: string, onReady?: () => void): HTMLCanvasElement {
   const c = h('canvas', { class: cls, 'aria-hidden': 'true', style: `width:${w}px;height:${hh}px;max-width:none` }) as HTMLCanvasElement;
   paint(recipeOf(art), seed, Math.round(w * density), Math.round(hh * density), priority).then((src) => {
     c.width = src.width;
     c.height = src.height;
     c.getContext('2d')?.drawImage(src, 0, 0);
     c.dataset.ready = '';
+    onReady?.();
   });
   return c;
 }
@@ -82,7 +83,7 @@ export function glassFolder(o: GFOptions): GlassFolderApi {
   // 后板与封面
   const back = h('div', { class: 'gf-back', style: `clip-path:path('${BACK_PATH}')`, 'aria-hidden': 'true' });
   if (o.image) back.append(h('img', { class: 'gf-art', src: o.image, alt: '', width: W + 24, height: H + 24, draggable: 'false', referrerpolicy: 'no-referrer' }));
-  else if (o.art && o.art !== 'none') back.append(artCanvas(o.art, o.seed ?? 3, W + 24, H + 24, density, 0, 'gf-art'));
+  else if (o.art && o.art !== 'none') back.append(artCanvas(o.art, o.seed ?? 3, W + 24, H + 24, density, 0, 'gf-art', () => syncFrost()));
   back.append(h('div', { class: 'gf-back-sheen' }));
 
   // 毛玻璃前板（底边铰链）
@@ -90,7 +91,12 @@ export function glassFolder(o: GFOptions): GlassFolderApi {
   grad.innerHTML = `<linearGradient id="${uid}-rim" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".95"/><stop offset=".35" stop-color="#fff" stop-opacity=".35"/><stop offset="1" stop-color="#fff" stop-opacity=".12"/></linearGradient>`;
   const hit = h('button', { type: 'button', class: 'gf-hit', 'aria-expanded': 'false' }) as HTMLButtonElement;
   const metaEl = h('span', { class: 'gf-meta' });
+  // 毛玻璃不用 backdrop-filter：Chromium 里它在缩放 / 变换 / 滚动容器中会只模糊一块矩形，
+  // 图片从玻璃里漏出来。改成把后板和视频复制一份放进前板里，用普通 filter 模糊这份副本
+  // （与液态玻璃的「副本折射」同一思路），所有浏览器表现一致。
+  const frost = h('div', { class: 'gf-frost', 'aria-hidden': 'true' });
   const front = h('div', { class: 'gf-front', style: `clip-path:path('${FRONT_PATH}')` },
+    frost,
     h('div', { class: 'gf-tint', 'aria-hidden': 'true' }),
     h('div', { class: 'gf-spec', 'aria-hidden': 'true' }),
     svg('gf-rim gf-front-rim', W, FRONT_H, FRONT_PATH, `url(#${uid}-rim)`, grad),
@@ -115,6 +121,24 @@ export function glassFolder(o: GFOptions): GlassFolderApi {
   tilt.append(h('div', { class: 'gf-shadow', 'aria-hidden': 'true' }), back, svg('gf-rim gf-back-rim', W, H, BACK_PATH), front, filesEl, key, menu);
   stage.append(tilt);
   root.append(stage);
+
+  let frostRaf = 0;
+  function syncFrost() {
+    if (frostRaf) return;
+    frostRaf = requestAnimationFrame(() => {
+      frostRaf = 0;
+      const b = back.cloneNode(true) as HTMLElement;
+      const f = filesEl.cloneNode(true) as HTMLElement;
+      f.removeAttribute('role');
+      f.toggleAttribute('inert', true);
+      for (const [src, dst] of [[back, b], [filesEl, f]] as const) {
+        const a = src.querySelectorAll('canvas');
+        const c = dst.querySelectorAll('canvas');
+        a.forEach((cv, i) => { const d = c[i]; d.width = cv.width; d.height = cv.height; if (cv.width > 1) d.getContext('2d')?.drawImage(cv, 0, 0); });
+      }
+      frost.replaceChildren(b, f);
+    });
+  }
 
   let metaNode = metaEl;
   const setMeta = (text: string) => {
@@ -171,7 +195,7 @@ export function glassFolder(o: GFOptions): GlassFolderApi {
         file.image
           ? h('img', { class: 'gf-sheet-art', src: file.image, alt: '', width: SHEET_W, height: SHEET_H, draggable: 'false', loading: 'lazy', referrerpolicy: 'no-referrer' })
           : file.art
-            ? artCanvas(file.art, hashString(file.name) % 997, SHEET_W, SHEET_H, Math.min(density, 1.25), 1, 'gf-sheet-art')
+            ? artCanvas(file.art, hashString(file.name) % 997, SHEET_W, SHEET_H, Math.min(density, 1.25), 1, 'gf-sheet-art', () => syncFrost())
             : h('span', { class: 'gf-lines', 'aria-hidden': 'true' }, ...[86, 92, 64, 88, 42].map((w) => h('i', { style: `width:${w}%` }))),
         h('span', { class: 'gf-sheet-head' }, h('span', { class: 'gf-sheet-name' }, file.name), file.meta ? h('span', { class: 'gf-sheet-meta' }, file.meta) : null),
       ];
@@ -186,6 +210,7 @@ export function glassFolder(o: GFOptions): GlassFolderApi {
     }));
     if (!o.meta) setMeta(`${files.length} 项`);
     label();
+    syncFrost();
   }
 
   // 指针：光斑与视差跟随，不触发重排
