@@ -122,14 +122,14 @@ export class BackgroundLayer {
   }
 
   /** 透镜元素在画布上的矩形（画布像素，y 向上）；不可见时返回 null */
-  private lensRect(): { x: number; y: number; w: number; h: number; r: number } | null {
+  private lensRect(): { x: number; y: number; w: number; h: number; r: number; px: number } | null {
     const el = this.lensEl;
     if (!el || !el.hasAttribute('data-lens')) return null;
     const b = this.el.getBoundingClientRect(), r = el.getBoundingClientRect();
     if (r.bottom < b.top || r.top > b.bottom || r.width < 2) return null;
     const k = this.canvas.width / Math.max(1, b.width);
     const rad = parseFloat(getComputedStyle(el).borderTopLeftRadius) || 18;
-    return { x: (r.left - b.left) * k, y: (b.bottom - r.bottom) * k, w: r.width * k, h: r.height * k, r: rad * k };
+    return { x: (r.left - b.left) * k, y: (b.bottom - r.bottom) * k, w: r.width * k, h: r.height * k, r: rad * k, px: k };
   }
 
   private loop = (): void => {
