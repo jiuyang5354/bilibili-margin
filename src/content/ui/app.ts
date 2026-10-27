@@ -102,7 +102,7 @@ export class MarginApp {
     this.fav = createFavorites((g) => attachPreview(g, () => this.settings.hoverPreview));
 
     const header = h('header', { class: 'top' },
-      h('a', { class: 'brand', href: '/', title: '映间 MARGIN' }, h('span', { class: 'mark' }, icon(ICONS.logo)), h('b', {}, '映间'), h('small', {}, 'MARGIN')),
+      h('a', { class: 'brand', href: '/', title: '映间 MARGIN', 'aria-label': '映间 MARGIN 首页' }, h('span', { class: 'mark' }, icon(ICONS.logo))),
       search,
       h('nav', { class: 'acts' },
         link('https://t.bilibili.com/', '动态', ICONS.moments),
