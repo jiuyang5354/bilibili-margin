@@ -1,12 +1,29 @@
 import { loadSettings, onSettingsChange } from '../shared/settings';
 import { MarginApp } from './ui/app';
 import { startTracking } from './footprint/store';
+import { WatchSkin } from './ui/watch';
 
 const isHome = () => location.hostname === 'www.bilibili.com' && /^\/(?:[a-z]{2}(?:-[A-Za-z]{2,4})?\/?)?(?:index\.html)?$/.test(location.pathname);
 
+const isWatch = () => location.hostname === 'www.bilibili.com' && /^\/(?:[a-z]{2}(?:-[A-Za-z]{2,4})?\/)?video\/(?:BV|av)/i.test(location.pathname);
+const offByUrl = () => new URLSearchParams(location.search).get('margin') === 'off';
+
+async function startWatch(): Promise<void> {
+  if (sessionStorage.getItem('margin:off') || offByUrl()) { sessionStorage.removeItem('margin:off'); return; }
+  const settings = await loadSettings();
+  if (!settings.enabled || !settings.watch) return;
+  // document_start 就挂上，避免先闪一下原版
+  const skin = new WatchSkin(settings);
+  onSettingsChange((next, prev) => {
+    if (next.enabled !== prev.enabled || next.watch !== prev.watch) location.reload();
+    else skin.update(next);
+  });
+}
+
 async function start(): Promise<void> {
   startTracking(); // 足迹在所有 B 站页面记录，不只首页
-  if (!isHome() || sessionStorage.getItem('margin:off')) {
+  if (isWatch()) return startWatch();
+  if (!isHome() || sessionStorage.getItem('margin:off') || offByUrl()) {
     sessionStorage.removeItem('margin:off');
     return;
   }
