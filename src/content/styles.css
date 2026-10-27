@@ -336,7 +336,7 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
   --gf-py: 0;
   --gf-ease: cubic-bezier(.2, .8, .2, 1);
   --gf-spring: cubic-bezier(.34, 1.36, .5, 1);
-  --gf-hinge: 0deg;
+  --gf-hinge: 1;
   --gf-lift: 42px;
   --gf-spread: 0px;
   --gf-fan: 0deg;
@@ -353,8 +353,8 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
   isolation: isolate;
 }
 .app[data-theme="dark"] .gf-root { --gf-ink: #f5f5f7; --gf-ink-soft: rgba(245, 245, 247, .58); }
-.gf-root:hover, .gf-root:focus-within { --gf-hinge: -11deg; --gf-lift: -34px; --gf-spread: 8px; --gf-fan: 1.4deg; --gf-stack: 10px; }
-.gf-root[data-open] { --gf-hinge: -24deg; --gf-lift: -96px; --gf-spread: 20px; --gf-fan: 4.5deg; --gf-stack: 30px; }
+.gf-root:hover, .gf-root:focus-within { --gf-hinge: .95; --gf-lift: -34px; --gf-spread: 8px; --gf-fan: 1.4deg; --gf-stack: 10px; }
+.gf-root[data-open] { --gf-hinge: .86; --gf-lift: -96px; --gf-spread: 20px; --gf-fan: 4.5deg; --gf-stack: 30px; }
 
 .gf-stage {
   position: absolute;
@@ -367,18 +367,18 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
 .gf-tilt {
   position: absolute;
   inset: 0;
-  transform: perspective(1400px) rotateX(calc(var(--gf-py) * -3deg)) rotateY(calc(var(--gf-px) * 4deg));
+  transform: translate(calc(var(--gf-px) * 3px), calc(var(--gf-py) * 2px));
   transition: transform .9s var(--gf-ease);
 }
 
 .gf-shadow {
   position: absolute;
-  left: 18px;
-  right: 18px;
-  bottom: -6px;
-  height: 60px;
+  left: 44px;
+  right: 44px;
+  bottom: -16px;
+  height: 40px;
   border-radius: 40px;
-  background: rgba(16, 18, 24, .34);
+  background: rgba(16, 18, 24, .3);
   filter: blur(22px);
   transform: translateX(calc(var(--gf-px) * -8px));
   transition: transform .9s var(--gf-ease), opacity .9s var(--gf-ease);
@@ -558,9 +558,9 @@ canvas.gf-sheet-art[data-ready] { opacity: 1; filter: none; }
   width: 340px;
   height: 198px;
   z-index: 10;
-  backdrop-filter: blur(22px) saturate(1.5);
+  overflow: hidden;
   transform-origin: 50% 100%;
-  transform: perspective(760px) rotateX(var(--gf-hinge));
+  transform: scaleY(var(--gf-hinge));
   transition: transform .8s var(--gf-spring), translate 1s var(--gf-ease), opacity 1s var(--gf-ease);
 }
 .gf-front--bump { animation: gf-bump .7s var(--gf-ease) .38s both; }
@@ -570,6 +570,25 @@ canvas.gf-sheet-art[data-ready] { opacity: 1; filter: none; }
   70% { scale: .996 1.006; }
   100% { scale: 1; }
 }
+.gf-frost {
+  position: absolute;
+  left: 0;
+  top: -74px;
+  width: 340px;
+  height: 272px;
+  pointer-events: none;
+  filter: blur(22px) saturate(1.5);
+  transform-origin: 50% 272px;
+  transform: scaleY(calc(1 / var(--gf-hinge)));
+  transition: transform .8s var(--gf-spring);
+}
+.gf-frost > * { pointer-events: none; }
+/* 副本模糊到边缘会变透明，垫一层底色，免得真实的视频从玻璃底部透出来 */
+.gf-front { background: linear-gradient(180deg, #e9e9ec, #dcdce0); }
+.app[data-theme="dark"] .gf-root .gf-front { background: linear-gradient(180deg, #232327, #121214); }
+.app[data-palette="mist"] .gf-root .gf-front { background: linear-gradient(180deg, #dfe8fb, #cddcf8); }
+.app[data-palette="mist"][data-theme="dark"] .gf-root .gf-front { background: linear-gradient(180deg, #172554, #0b1020); }
+.gf-frost .gf-sheet { transition: transform .75s var(--gf-spring) calc(var(--gf-depth) * 40ms); }
 .gf-tint {
   position: absolute;
   inset: 0;
