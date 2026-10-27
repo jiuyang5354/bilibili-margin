@@ -139,7 +139,7 @@ export class MarginApp {
       h('button', { class: 'hs-btn', type: 'submit' }, '搜索'));
     hero.querySelector('.hs-kbd')!.addEventListener('click', () => palette.open(''));
     hotSearch().then((hot) => { const k = hot[0]?.keyword; if (k) { heroInput.dataset.hot = k; heroInput.placeholder = `大家都在搜：${k}`; } }).catch(() => {});
-    const bar = h('div', { class: 'bar' }, h('div', { class: 'eyebrow' }, h('span', {}, todayLabel()), h('span', {}, 'BILIBILI · 首页')), h('div', { class: 'bar-row' }, tabs, refresh));
+    const bar = h('div', { class: 'bar' }, h('div', { class: 'eyebrow' }, h('span', {}, todayLabel()), h('span', {}, 'FOR YOU'), h('span', { class: 'no' }, issueNo())), h('div', { class: 'bar-row' }, tabs, refresh));
 
     this.grid = h('section', { class: 'grid', 'aria-live': 'polite' });
     this.status = h('div', { class: 'status' });
@@ -282,6 +282,12 @@ export class MarginApp {
     if (gen === this.gen && added < 6 && attempt < 4) this.load(attempt + 1);
     else requestAnimationFrame(() => this.fillIfShort());
   }
+}
+
+/** 杂志刊号式的眉标：一年中的第几天 */
+function issueNo(): string {
+  const d = new Date(), y = new Date(d.getFullYear(), 0, 0);
+  return `NO. ${String(Math.floor((d.getTime() - y.getTime()) / 864e5)).padStart(3, '0')}`;
 }
 
 function todayLabel(): string {
