@@ -107,6 +107,8 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
 .bg-img { background: center / cover no-repeat; display: none; }
 .bg[data-mode="image"] .bg-img { display: block; }
 .bg[data-mode="image"] canvas, .bg[data-mode="off"] { display: none; }
+.bg[data-composite] { opacity: 1; transition: none; }
+.bg[data-composite] .bg-scrim { display: none; }
 .bg-scrim { position: absolute; inset: 0; background: linear-gradient(180deg, transparent, color-mix(in srgb, var(--canvas) 55%, transparent) 55%, color-mix(in srgb, var(--canvas) 88%, transparent)); }
 .app:not([data-bg="off"]) .card .body { text-shadow: 0 0 18px var(--canvas); }
 
