@@ -1,4 +1,3 @@
-import { nav } from '../api/http';
 import { popular, recommended, type Video } from '../api/feed';
 import type { Settings } from '../../shared/settings';
 import { saveSettings } from '../../shared/settings';
@@ -8,9 +7,9 @@ import { videoCard, skeleton } from './card';
 import { toast } from './controls';
 import { h, icon, ICONS } from './dom';
 import { createFavorites } from './favorites';
-import { createExpandableTabs } from './expandable-tabs';
+import { createHeader } from './header';
 import { createFootprintCard } from './footprint';
-import { createSunMoon, type SunMoon } from './sun-moon';
+import type { SunMoon } from './sun-moon';
 import { attachPreview } from './preview';
 import { createSettingsPanel, type SettingsPanel } from './settings-panel';
 import type { Sheet } from './sheet';
@@ -78,29 +77,10 @@ export class MarginApp {
   }
 
   private render(): void {
-    const user = h('a', { class: 'user', href: 'https://passport.bilibili.com/login', target: '_blank', rel: 'noopener' }, '登录');
-    nav().then((n) => {
-      if (!n?.isLogin) return;
-      user.href = `https://space.bilibili.com/${n.mid}`;
-      user.title = n.uname ?? '';
-      user.replaceChildren(h('img', { src: `${(n.face ?? '').replace(/^http:/, 'https:')}@80w_80h_1c.webp`, alt: n.uname ?? '', referrerpolicy: 'no-referrer' }));
-      user.classList.add('in');
-    }).catch(() => {});
-
-    const input = h('input', { type: 'search', placeholder: '搜索视频、UP 主', autocomplete: 'off', 'aria-label': '搜索' });
-    const search = h('form', {
-      class: 'search', role: 'search',
-      onsubmit: (e: Event) => {
-        e.preventDefault();
-        const q = input.value.trim();
-        if (q) window.open(`https://search.bilibili.com/all?keyword=${encodeURIComponent(q)}`, '_blank', 'noopener');
-      },
-    }, icon(ICONS.search), input, h('kbd', {}, '/'));
-
     this.panel = createSettingsPanel(() => this.settings, () => this.bg.shader);
     this.fav = createFavorites((g) => attachPreview(g, () => this.settings.hoverPreview));
     this.foot = createFootprintCard();
-    const tabsNav = createExpandableTabs([
+    const head = createHeader({ onTheme: () => this.toggleTheme(), tabs: [
       { title: '动态', icon: ICONS.moments, href: 'https://t.bilibili.com/' },
       { title: '消息', icon: ICONS.message, href: 'https://message.bilibili.com/' },
       { title: '历史', icon: ICONS.history, href: 'https://www.bilibili.com/history' },
@@ -108,14 +88,9 @@ export class MarginApp {
       { title: '收藏', icon: ICONS.fav, run: () => this.fav.open() },
       { title: '足迹', icon: ICONS.heat, run: () => { this.app.scrollTo({ top: 0, behavior: 'smooth' }); this.foot.animate([{ boxShadow: '0 0 0 2px var(--accent)' }, { boxShadow: '0 0 0 0 transparent' }], { duration: 1200, easing: 'ease-out' }); } },
       { title: '设置', icon: ICONS.gear, run: () => this.panel.sheet.open() },
-    ]);
-    this.sunMoon = createSunMoon(() => this.toggleTheme());
-
-    const header = h('header', { class: 'top' },
-      h('a', { class: 'brand', href: '/', title: '映间 MARGIN', 'aria-label': '映间 MARGIN 首页' }, h('span', { class: 'mark' }, icon(ICONS.logo))),
-      search,
-      h('div', { class: 'acts' }, tabsNav.el, this.sunMoon.el, user),
-    );
+    ] });
+    this.sunMoon = head.sunMoon;
+    const header = head.el;
 
     const tabs = h('div', { class: 'tabs', role: 'tablist' });
     const mkTab = (id: Tab, label: string) => {
@@ -150,10 +125,6 @@ export class MarginApp {
     this.root.append(this.app);
 
     new IntersectionObserver((es) => { if (es.some((e) => e.isIntersecting)) this.load(); }, { root: this.app, rootMargin: '900px 0px' }).observe(this.sentinel);
-
-    addEventListener('keydown', (e) => {
-      if (e.key === '/' && !e.composedPath().some((n) => n instanceof HTMLInputElement)) { e.preventDefault(); input.focus(); }
-    });
 
     this.load();
   }
