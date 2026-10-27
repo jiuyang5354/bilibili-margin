@@ -1,6 +1,6 @@
 import type { Background, Palette, ShaderId } from '../../shared/settings';
 import { BG_IMAGE_KEY } from '../../shared/settings';
-import { fragment, MIST, PALETTES, SHADER_IDS } from './shaders';
+import { fragment, PALETTES, SHADER_IDS } from './shaders';
 import { h } from '../ui/dom';
 
 const VERT = 'attribute vec2 p;void main(){gl_Position=vec4(p,0.,1.);}';
@@ -102,7 +102,7 @@ export class BackgroundLayer {
   private draw(now: number): void {
     const gl = this.gl;
     if (!gl || !this.prog || !this.current) return;
-    const pal = this.palette === 'mist' ? MIST[this.theme] : PALETTES[this.theme][this.current];
+    const pal = PALETTES[this.theme][this.current];
     gl.uniform2f(this.loc.u_res, this.canvas.width, this.canvas.height);
     gl.uniform1f(this.loc.u_t, this.reduced.matches ? 12 : (now - this.start) / 1000);
     gl.uniform3fv(this.loc.u_bg, pal.bg);
