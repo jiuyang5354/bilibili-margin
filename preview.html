@@ -1,0 +1,1184 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>映间 MARGIN · 21st 组件交互原型与设计系统展台</title>
+  <style>
+    /* ==========================================================================
+       设计系统 (DESIGN SYSTEM TOKENS)
+       ========================================================================== */
+    :root {
+      --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Plus Jakarta Sans", "PingFang SC", "Segoe UI", sans-serif;
+      --font-mono: "SF Mono", "Cascadia Code", "JetBrains Mono", Consolas, monospace;
+      
+      /* Dark Matter (默认深色) */
+      --bg-canvas: #090b0e;
+      --bg-surface: #12151c;
+      --bg-surface-raised: #181d27;
+      --bg-glass: rgba(18, 22, 30, 0.65);
+      --border-subtle: rgba(255, 255, 255, 0.08);
+      --border-glass: rgba(255, 255, 255, 0.14);
+      --border-active: rgba(255, 255, 255, 0.35);
+      
+      --text-main: #f1f3f7;
+      --text-muted: #8e95a2;
+      --text-subtle: #565d6c;
+      
+      --primary: #f97316;
+      --primary-glow: rgba(249, 115, 22, 0.35);
+      --primary-contrast: #ffffff;
+      
+      --accent-emerald: #10b981;
+      --accent-cyan: #06b6d4;
+      
+      --glass-blur: 24px;
+      --glass-refraction: 1;
+      --card-radius: 18px;
+      
+      --shadow-ambient: 0 24px 64px -16px rgba(0, 0, 0, 0.65);
+      --shadow-glow: 0 0 28px -4px var(--primary-glow);
+      --spring-ease: cubic-bezier(0.16, 1, 0.3, 1);
+      --spring-bouncy: cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    /* Paper Light (纸白质感) */
+    html[data-theme="light"] {
+      --bg-canvas: #f8fafc;
+      --bg-surface: #ffffff;
+      --bg-surface-raised: #f1f5f9;
+      --bg-glass: rgba(255, 255, 255, 0.78);
+      --border-subtle: rgba(0, 0, 0, 0.08);
+      --border-glass: rgba(0, 0, 0, 0.12);
+      --border-active: rgba(0, 0, 0, 0.3);
+      
+      --text-main: #0f172a;
+      --text-muted: #475569;
+      --text-subtle: #94a3b8;
+      
+      --primary: #ea580c;
+      --primary-glow: rgba(234, 88, 12, 0.22);
+      --primary-contrast: #ffffff;
+      
+      --shadow-ambient: 0 20px 50px -12px rgba(15, 23, 42, 0.12);
+    }
+
+    /* Emerald Cyber (黑客绿高亮) */
+    html[data-theme="emerald"] {
+      --bg-canvas: #060e0a;
+      --bg-surface: #0c1a14;
+      --bg-surface-raised: #12261d;
+      --bg-glass: rgba(12, 26, 20, 0.72);
+      --border-subtle: rgba(16, 185, 129, 0.15);
+      --border-glass: rgba(16, 185, 129, 0.28);
+      --border-active: rgba(16, 185, 129, 0.6);
+      
+      --text-main: #e6fcf5;
+      --text-muted: #72a390;
+      --text-subtle: #3d6655;
+      
+      --primary: #10b981;
+      --primary-glow: rgba(16, 185, 129, 0.45);
+      --primary-contrast: #060e0a;
+      
+      --shadow-ambient: 0 24px 64px -16px rgba(0, 0, 0, 0.8);
+      --shadow-glow: 0 0 32px -4px rgba(16, 185, 129, 0.4);
+    }
+
+    /* 全局基底 */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-canvas);
+      color: var(--text-main);
+      font-family: var(--font-sans);
+      min-height: 100vh;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+      transition: background-color 0.35s var(--spring-ease), color 0.35s var(--spring-ease);
+    }
+
+    /* 背景光学网格与氛围光斑 */
+    .ambient-mesh {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      overflow: hidden;
+    }
+
+    .ambient-orb {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(90px);
+      opacity: 0.28;
+      transition: opacity 0.5s ease;
+    }
+
+    .orb-1 {
+      top: -10vw;
+      left: 15vw;
+      width: 45vw;
+      height: 45vw;
+      background: radial-gradient(circle, var(--primary) 0%, transparent 70%);
+    }
+
+    .orb-2 {
+      top: 40vh;
+      right: -10vw;
+      width: 40vw;
+      height: 40vw;
+      background: radial-gradient(circle, var(--accent-cyan) 0%, transparent 70%);
+      opacity: 0.18;
+    }
+
+    /* 主视口布局 */
+    .app-viewport {
+      position: relative;
+      z-index: 1;
+      max-width: 1440px;
+      margin: 0 auto;
+      padding: 24px 32px 120px;
+    }
+
+    /* 顶部悬浮毛玻璃导航条 (21st Liquid Glass Navigation) */
+    .glass-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 68px;
+      padding: 0 24px;
+      border-radius: 20px;
+      background: var(--bg-glass);
+      backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+      -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+      border: 1px solid var(--border-glass);
+      box-shadow: var(--shadow-ambient), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+      margin-bottom: 40px;
+      position: sticky;
+      top: 16px;
+      z-index: 20;
+    }
+
+    .header-brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      text-decoration: none;
+      color: inherit;
+    }
+
+    .brand-logo-pill {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, rgba(255,255,255,0.18), rgba(255,255,255,0.02));
+      border: 1px solid var(--border-glass);
+      display: grid;
+      place-items: center;
+      box-shadow: inset 0 1px 1px rgba(255,255,255,0.2);
+    }
+
+    .brand-title {
+      font-size: 15px;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+    }
+
+    .brand-tag {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      color: var(--primary);
+      background: rgba(249, 115, 22, 0.12);
+      border: 1px solid rgba(249, 115, 22, 0.25);
+      border-radius: 6px;
+      padding: 2px 7px;
+      margin-left: 6px;
+    }
+
+    /* 21st Halaska Segmented View Selector */
+    .segmented-control {
+      display: flex;
+      position: relative;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: 12px;
+      padding: 3px;
+      isolation: isolate;
+    }
+
+    .segmented-item {
+      position: relative;
+      z-index: 1;
+      padding: 6px 16px;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-muted);
+      border: 0;
+      background: transparent;
+      border-radius: 9px;
+      cursor: pointer;
+      transition: color 0.2s var(--spring-ease);
+    }
+
+    .segmented-item:hover {
+      color: var(--text-main);
+    }
+
+    .segmented-item.active {
+      color: var(--text-main);
+    }
+
+    .segmented-pill {
+      position: absolute;
+      top: 3px;
+      bottom: 3px;
+      left: 3px;
+      background: var(--bg-surface-raised);
+      border: 1px solid var(--border-glass);
+      border-radius: 9px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+      transition: transform 0.3s var(--spring-ease), width 0.3s var(--spring-ease);
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    /* 21st Button with Nested Icon Pill */
+    .btn-island {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 6px 14px 6px 18px;
+      border-radius: 9999px;
+      background: var(--text-main);
+      color: var(--bg-canvas);
+      text-decoration: none;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      border: 1px solid var(--border-glass);
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+      cursor: pointer;
+      transition: transform 0.2s var(--spring-ease), box-shadow 0.2s var(--spring-ease);
+    }
+
+    .btn-island:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 22px rgba(0, 0, 0, 0.3);
+    }
+
+    .btn-island .icon-circle {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: var(--bg-canvas);
+      color: var(--text-main);
+      display: grid;
+      place-items: center;
+      font-size: 11px;
+    }
+
+    /* 调参台切换浮动按钮 */
+    .btn-tweaks-toggle {
+      width: 38px;
+      height: 38px;
+      border-radius: 12px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-glass);
+      color: var(--text-muted);
+      cursor: pointer;
+      display: grid;
+      place-items: center;
+      transition: all 0.2s;
+    }
+
+    .btn-tweaks-toggle:hover {
+      color: var(--primary);
+      border-color: var(--primary);
+    }
+
+    /* Hero 展台引导区 */
+    .hero-banner {
+      display: grid;
+      grid-template-columns: 1.4fr 1fr;
+      gap: 32px;
+      align-items: center;
+      margin-bottom: 48px;
+    }
+
+    .hero-eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 4px 12px;
+      border-radius: 9999px;
+      background: rgba(249, 115, 22, 0.1);
+      border: 1px solid rgba(249, 115, 22, 0.25);
+      font-size: 11px;
+      font-family: var(--font-mono);
+      color: var(--primary);
+      margin-bottom: 16px;
+    }
+
+    .hero-title {
+      font-size: clamp(32px, 4vw, 48px);
+      font-weight: 650;
+      line-height: 1.18;
+      letter-spacing: -0.02em;
+      margin-bottom: 16px;
+    }
+
+    .hero-title span {
+      background: linear-gradient(135deg, var(--text-main) 30%, var(--primary));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .hero-description {
+      font-size: 15px;
+      color: var(--text-muted);
+      line-height: 1.7;
+      max-width: 580px;
+      margin-bottom: 24px;
+    }
+
+    .hero-badges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .badge-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
+      border-radius: 8px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    /* 展台右侧：实机 Popup 模拟器 */
+    .popup-simulator-card {
+      display: flex;
+      justify-content: center;
+      perspective: 1000px;
+    }
+
+    .mock-popup-frame {
+      width: 340px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-glass);
+      border-radius: 24px;
+      padding: 8px;
+      box-shadow: var(--shadow-ambient), 0 0 40px var(--primary-glow);
+      transform: rotateY(-4deg) rotateX(2deg);
+      transition: transform 0.4s var(--spring-ease), box-shadow 0.4s;
+    }
+
+    .mock-popup-frame:hover {
+      transform: none;
+    }
+
+    /* Bento 核心视觉展示区 (21st Asymmetrical Bento Grid) */
+    .section-title-wrap {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      margin-bottom: 24px;
+      padding-bottom: 14px;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .section-title {
+      font-size: 22px;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+    }
+
+    .section-sub {
+      font-size: 12px;
+      color: var(--text-muted);
+      font-family: var(--font-mono);
+    }
+
+    .bento-grid {
+      display: grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap: 24px;
+      margin-bottom: 60px;
+    }
+
+    /* 21st Double-Bezel Hardware Card Architecture */
+    .bento-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-glass);
+      border-radius: var(--card-radius);
+      padding: 20px;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      transition: transform 0.3s var(--spring-ease), border-color 0.3s, box-shadow 0.3s;
+    }
+
+    .bento-card:hover {
+      transform: translateY(-4px);
+      border-color: var(--border-active);
+      box-shadow: var(--shadow-ambient);
+    }
+
+    /* 特色巨幅视频卡片 (Span 8) */
+    .card-feature-video {
+      grid-column: span 8;
+      min-height: 420px;
+    }
+
+    .video-preview-box {
+      width: 100%;
+      height: 270px;
+      border-radius: 12px;
+      background: #000;
+      position: relative;
+      overflow: hidden;
+      margin-bottom: 18px;
+    }
+
+    .video-preview-box img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      opacity: 0.85;
+      transition: transform 0.5s var(--spring-ease), opacity 0.3s;
+    }
+
+    .video-preview-box:hover img {
+      transform: scale(1.03);
+      opacity: 1;
+    }
+
+    .video-badge-overlay {
+      position: absolute;
+      bottom: 12px;
+      right: 12px;
+      padding: 4px 8px;
+      border-radius: 6px;
+      background: rgba(0, 0, 0, 0.75);
+      backdrop-filter: blur(8px);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: #fff;
+    }
+
+    .video-play-orb {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      background: rgba(0, 0, 0, 0.25);
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+
+    .video-preview-box:hover .video-play-orb {
+      opacity: 1;
+    }
+
+    .play-icon-glass {
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      background: var(--bg-glass);
+      backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.4);
+      display: grid;
+      place-items: center;
+      color: #fff;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+      transition: transform 0.2s var(--spring-bouncy);
+    }
+
+    .play-icon-glass:hover {
+      transform: scale(1.1);
+    }
+
+    .card-meta-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-top: auto;
+    }
+
+    .author-avatar {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      background: var(--bg-surface-raised);
+      border: 1px solid var(--border-glass);
+      display: grid;
+      place-items: center;
+      font-weight: 600;
+      font-size: 13px;
+      color: var(--primary);
+    }
+
+    .card-copy h3 {
+      font-size: 16px;
+      font-weight: 600;
+      line-height: 1.4;
+      margin-bottom: 4px;
+    }
+
+    .card-copy p {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    /* 侧边控件矩阵卡片 (Span 4) */
+    .card-control-matrix {
+      grid-column: span 4;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .control-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 14px;
+      background: var(--bg-surface-raised);
+      border-radius: 12px;
+      border: 1px solid var(--border-subtle);
+    }
+
+    .control-row-info h4 {
+      font-size: 13px;
+      font-weight: 500;
+    }
+
+    .control-row-info p {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    /* 21st Base UI Spring Switch Component */
+    .switch-ui {
+      width: 44px;
+      height: 24px;
+      border-radius: 9999px;
+      background-image: linear-gradient(to right, var(--primary) 35%, rgba(107, 114, 128, 0.25) 65%);
+      background-size: 120px 100%;
+      background-position-x: 100%;
+      position: relative;
+      cursor: pointer;
+      border: 0;
+      padding: 2px;
+      transition: background-position 0.28s var(--spring-ease), box-shadow 0.28s;
+      outline: none;
+    }
+
+    .switch-ui[data-state="checked"] {
+      background-position-x: 0%;
+      box-shadow: 0 0 14px var(--primary-glow);
+    }
+
+    .switch-thumb-ui {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: #ffffff;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+      display: block;
+      transform: translateX(0);
+      transition: transform 0.28s var(--spring-bouncy);
+    }
+
+    .switch-ui[data-state="checked"] .switch-thumb-ui {
+      transform: translateX(20px);
+    }
+
+    /* 底部 3 列精选卡片 */
+    .card-small {
+      grid-column: span 4;
+    }
+
+    .card-small .video-thumb-mini {
+      height: 160px;
+      border-radius: 10px;
+      background: #111;
+      overflow: hidden;
+      position: relative;
+      margin-bottom: 14px;
+    }
+
+    .card-small .video-thumb-mini img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform 0.4s var(--spring-ease);
+    }
+
+    .card-small:hover .video-thumb-mini img {
+      transform: scale(1.04);
+    }
+
+    /* 悬浮 Dock 导航栏 (21st Floating Dock Navigation) */
+    .dock-container {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 50;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 14px;
+      border-radius: 24px;
+      background: var(--bg-glass);
+      backdrop-filter: blur(28px) saturate(180%);
+      -webkit-backdrop-filter: blur(28px) saturate(180%);
+      border: 1px solid var(--border-glass);
+      box-shadow: var(--shadow-ambient), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+    }
+
+    .dock-item {
+      width: 44px;
+      height: 44px;
+      border-radius: 14px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-muted);
+      display: grid;
+      place-items: center;
+      cursor: pointer;
+      position: relative;
+      transition: transform 0.2s var(--spring-bouncy), background-color 0.2s, color 0.2s;
+    }
+
+    .dock-item:hover {
+      transform: translateY(-8px) scale(1.15);
+      color: var(--primary);
+      border-color: var(--primary);
+      box-shadow: 0 8px 20px var(--primary-glow);
+    }
+
+    .dock-item.active {
+      background: var(--primary);
+      color: var(--primary-contrast);
+      border-color: var(--primary);
+    }
+
+    .dock-tooltip {
+      position: absolute;
+      bottom: calc(100% + 12px);
+      left: 50%;
+      transform: translateX(-50%);
+      padding: 4px 10px;
+      border-radius: 6px;
+      background: var(--bg-surface-raised);
+      border: 1px solid var(--border-glass);
+      font-size: 10px;
+      font-family: var(--font-mono);
+      white-space: nowrap;
+      color: var(--text-main);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.18s, transform 0.18s;
+    }
+
+    .dock-item:hover .dock-tooltip {
+      opacity: 1;
+      transform: translateX(-50%) translateY(-3px);
+    }
+
+    .dock-divider {
+      width: 1px;
+      height: 24px;
+      background: var(--border-subtle);
+      margin: 0 4px;
+    }
+
+    /* 实时调参面板 (Tweaks Control Panel) */
+    .tweaks-drawer {
+      position: fixed;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      width: 320px;
+      background: var(--bg-surface);
+      border-left: 1px solid var(--border-glass);
+      box-shadow: var(--shadow-ambient);
+      z-index: 100;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      transform: translateX(100%);
+      transition: transform 0.35s var(--spring-ease);
+    }
+
+    .tweaks-drawer.open {
+      transform: translateX(0);
+    }
+
+    .tweaks-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .tweaks-header h3 {
+      font-size: 15px;
+      font-weight: 600;
+    }
+
+    .btn-close-tweaks {
+      background: none;
+      border: 0;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 18px;
+    }
+
+    .tweak-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .tweak-group label {
+      font-size: 11px;
+      font-family: var(--font-mono);
+      color: var(--text-muted);
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .tweak-range {
+      width: 100%;
+      accent-color: var(--primary);
+    }
+
+    .theme-preset-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+    }
+
+    .theme-preset-btn {
+      padding: 8px;
+      border-radius: 8px;
+      border: 1px solid var(--border-subtle);
+      background: var(--bg-surface-raised);
+      color: var(--text-muted);
+      font-size: 11px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .theme-preset-btn.active, .theme-preset-btn:hover {
+      border-color: var(--primary);
+      color: var(--text-main);
+    }
+
+    /* 移动端响应式处理 (Banned Fixed Layout Override) */
+    @media (max-width: 900px) {
+      .hero-banner {
+        grid-template-columns: 1fr;
+      }
+      .card-feature-video {
+        grid-column: span 12;
+      }
+      .card-control-matrix {
+        grid-column: span 12;
+      }
+      .card-small {
+        grid-column: span 12;
+      }
+      .popup-simulator-card {
+        margin-top: 24px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 光学流体背景 -->
+  <div class="ambient-mesh">
+    <div class="ambient-orb orb-1"></div>
+    <div class="ambient-orb orb-2"></div>
+  </div>
+
+  <!-- 主视口 -->
+  <div class="app-viewport">
+    
+    <!-- 顶部 21st 毛玻璃悬浮导航条 -->
+    <header class="glass-header">
+      <a href="#" class="header-brand">
+        <div class="brand-logo-pill">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect width="18" height="18" x="3" y="3" rx="4"/>
+            <path d="M7 3v18M17 3v18"/>
+          </svg>
+        </div>
+        <div>
+          <span class="brand-title">映间 MARGIN</span>
+          <span class="brand-tag">21st.dev UI Spec</span>
+        </div>
+      </a>
+
+      <!-- 视图分类分段选择器 (Segmented Control) -->
+      <nav class="segmented-control" id="nav-segmented">
+        <div class="segmented-pill" id="segmented-pill"></div>
+        <button class="segmented-item active" data-index="0">推荐聚焦</button>
+        <button class="segmented-item" data-index="1">热门趋势</button>
+        <button class="segmented-item" data-index="2">番剧放映</button>
+        <button class="segmented-item" data-index="3">关注动态</button>
+      </nav>
+
+      <div class="header-actions">
+        <button class="btn-tweaks-toggle" id="btn-open-tweaks" title="打开实时调参面板">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+          </svg>
+        </button>
+
+        <a href="https://github.com/jiuyang5354/bilibili-margin" target="_blank" class="btn-island">
+          <span>GitHub 仓库</span>
+          <span class="icon-circle">↗</span>
+        </a>
+      </div>
+    </header>
+
+    <!-- Hero 引导区 -->
+    <section class="hero-banner">
+      <div>
+        <div class="hero-eyebrow">
+          <span>● ENGINE ACTIVE</span>
+          <span>·</span>
+          <span>21st OPTICAL SUITE</span>
+        </div>
+        <h1 class="hero-title">
+          重构 B 站视觉视界<br>
+          <span>极致纯净，光学质感</span>
+        </h1>
+        <p class="hero-description">
+          基于 21st.dev 顶尖设计语言重构：集成双层物理边框（Double-Bezel）、斯涅尔定律光学折射模拟（Liquid Glass）、弹簧缓动滑块（Spring Switch）与非对称 Bento 媒体流。
+        </p>
+        <div class="hero-badges">
+          <div class="badge-item">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+            <span>零破坏原生播放器</span>
+          </div>
+          <div class="badge-item">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12h20M12 2v20"/></svg>
+            <span>暗物质 / 纸白双模</span>
+          </div>
+          <div class="badge-item">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>
+            <span>100% 隐私零外呼</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 实机 Popup 交互模拟器 -->
+      <div class="popup-simulator-card">
+        <div class="mock-popup-frame">
+          <!-- 嵌入已美化的扩展实际组件 -->
+          <iframe src="popup/index.html" style="width: 100%; height: 380px; border: 0; border-radius: 18px; overflow: hidden;" scrolling="no"></iframe>
+        </div>
+      </div>
+    </section>
+
+    <!-- Bento Grid 组件展示 -->
+    <div class="section-title-wrap">
+      <div>
+        <h2 class="section-title">重构动态矩阵</h2>
+        <span class="section-sub">ASYMMETRIC BENTO STREAM · BILIBILI FEED</span>
+      </div>
+      <div style="font-size: 12px; color: var(--text-muted); font-family: var(--font-mono);">
+        LIVE PREVIEW 2026-10-27
+      </div>
+    </div>
+
+    <div class="bento-grid">
+      <!-- 特色大卡片 (Span 8) -->
+      <div class="bento-card card-feature-video">
+        <div class="video-preview-box">
+          <img src="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=1200&q=80" alt="Cover">
+          <div class="video-badge-overlay">42:15 · 4K HDR</div>
+          <div class="video-play-orb">
+            <div class="play-icon-glass">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                <polygon points="5 3 19 12 5 21 5 3"/>
+              </svg>
+            </div>
+          </div>
+        </div>
+        <div class="card-meta-row">
+          <div class="author-avatar">M</div>
+          <div class="card-copy">
+            <h3>【21st 视觉解构】当 Apple 动态流遇上当代极简播放终端</h3>
+            <p>UP主：MARGIN 官方工坊 · 128.4万次播放 · 2小时前</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- 控件矩阵卡片 (Span 4) -->
+      <div class="bento-card card-control-matrix">
+        <h3 style="font-size: 15px; font-weight: 600; margin-bottom: 4px;">21st 交互控件实验台</h3>
+        
+        <div class="control-row">
+          <div class="control-row-info">
+            <h4>原生弹幕流重构</h4>
+            <p>半透明双通道字符防遮挡</p>
+          </div>
+          <button class="switch-ui" id="switch-danmaku" data-state="checked">
+            <span class="switch-thumb-ui"></span>
+          </button>
+        </div>
+
+        <div class="control-row">
+          <div class="control-row-info">
+            <h4>首页纯净流排版</h4>
+            <p>移除推广卡片与双语杂讯</p>
+          </div>
+          <button class="switch-ui" id="switch-clean" data-state="checked">
+            <span class="switch-thumb-ui"></span>
+          </button>
+        </div>
+
+        <div class="control-row">
+          <div class="control-row-info">
+            <h4>物理液态玻璃反射</h4>
+            <p>60FPS GPU 加速滤镜</p>
+          </div>
+          <button class="switch-ui" id="switch-glass" data-state="checked">
+            <span class="switch-thumb-ui"></span>
+          </button>
+        </div>
+
+        <div style="margin-top: auto; padding: 12px; background: var(--bg-surface-raised); border-radius: 12px; border: 1px dashed var(--border-glass);">
+          <div style="font-size: 11px; font-family: var(--font-mono); color: var(--primary); margin-bottom: 4px;">⚡ PERFORMANCE AUDIT</div>
+          <div style="font-size: 12px; color: var(--text-muted);">Frame rate: 120 FPS · Zero DOM Re-render · Memory: 14MB</div>
+        </div>
+      </div>
+
+      <!-- 底部 3 联卡片 -->
+      <div class="bento-card card-small">
+        <div class="video-thumb-mini">
+          <img src="https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&w=600&q=80" alt="Video">
+          <div class="video-badge-overlay">18:04</div>
+        </div>
+        <div class="card-copy">
+          <h3 style="font-size: 14px;">从零构建跨平台高质感扩展程序</h3>
+          <p>UP主：极客漫步 · 48.6万播放</p>
+        </div>
+      </div>
+
+      <div class="bento-card card-small">
+        <div class="video-thumb-mini">
+          <img src="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=600&q=80" alt="Video">
+          <div class="video-badge-overlay">09:32</div>
+        </div>
+        <div class="card-copy">
+          <h3 style="font-size: 14px;">Web 动效编排哲学：阻尼、质量与触感反馈</h3>
+          <p>UP主：MotionCrafter · 21.2万播放</p>
+        </div>
+      </div>
+
+      <div class="bento-card card-small">
+        <div class="video-thumb-mini">
+          <img src="https://images.unsplash.com/photo-1634017839464-5c339ebe3cb4?auto=format&fit=crop&w=600&q=80" alt="Video">
+          <div class="video-badge-overlay">27:50</div>
+        </div>
+        <div class="card-copy">
+          <h3 style="font-size: 14px;">Vue 3 + Chrome MV3 架构重构最佳实践</h3>
+          <p>UP主：前端架构视界 · 35.8万播放</p>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- 21st Apple-style 悬浮 Dock 导航栏 -->
+  <nav class="dock-container">
+    <div class="dock-item active" data-name="首页">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      <span class="dock-tooltip">主页 Home</span>
+    </div>
+    <div class="dock-item" data-name="播放页">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+      <span class="dock-tooltip">视频播放 Watch</span>
+    </div>
+    <div class="dock-item" data-name="动态">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 11a9 9 0 0 1 9 9"/><path d="M4 4a16 16 0 0 1 16 16"/><circle cx="5" cy="19" r="1"/></svg>
+      <span class="dock-tooltip">动态 Feed</span>
+    </div>
+    <div class="dock-divider"></div>
+    <div class="dock-item" id="dock-btn-settings" data-name="调参">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      <span class="dock-tooltip">调参台 Tweaks</span>
+    </div>
+  </nav>
+
+  <!-- 实时调参侧边抽屉 (Tweaks Panel) -->
+  <aside class="tweaks-drawer" id="tweaks-drawer">
+    <div class="tweaks-header">
+      <h3>实时调参控制台 (Tweaks)</h3>
+      <button class="btn-close-tweaks" id="btn-close-tweaks">×</button>
+    </div>
+
+    <!-- 主题方案切换 -->
+    <div class="tweak-group">
+      <label>视觉主题预设</label>
+      <div class="theme-preset-grid">
+        <button class="theme-preset-btn active" data-theme="dark">暗物质</button>
+        <button class="theme-preset-btn" data-theme="light">纸白</button>
+        <button class="theme-preset-btn" data-theme="emerald">黑客绿</button>
+      </div>
+    </div>
+
+    <!-- 玻璃模糊度滑块 -->
+    <div class="tweak-group">
+      <label>
+        <span>毛玻璃虚化 (Blur)</span>
+        <span id="label-blur">24px</span>
+      </label>
+      <input type="range" class="tweak-range" id="range-blur" min="4" max="48" value="24">
+    </div>
+
+    <!-- 圆角策略 -->
+    <div class="tweak-group">
+      <label>
+        <span>卡片倒角 (Border Radius)</span>
+        <span id="label-radius">18px</span>
+      </label>
+      <input type="range" class="tweak-range" id="range-radius" min="6" max="32" value="18">
+    </div>
+
+    <!-- 光学折射率模拟 -->
+    <div class="tweak-group">
+      <label>
+        <span>光学折射率 (Refraction)</span>
+        <span id="label-refraction">1.0x</span>
+      </label>
+      <input type="range" class="tweak-range" id="range-refraction" min="0.2" max="2.0" step="0.1" value="1.0">
+    </div>
+
+    <div style="margin-top: auto; padding: 12px; background: var(--bg-surface-raised); border-radius: 10px; font-size: 11px; color: var(--text-muted); font-family: var(--font-mono);">
+      ● 所有调节项实时更新 CSS Custom Properties 变量，无刷新生效。
+    </div>
+  </aside>
+
+  <!-- 交互逻辑 -->
+  <script>
+    // 1. 分段选择器指示器动画
+    const segmentedItems = document.querySelectorAll('#nav-segmented .segmented-item');
+    const segmentedPill = document.getElementById('segmented-pill');
+
+    function updateSegmentedPill(item) {
+      segmentedPill.style.width = `${item.offsetWidth}px`;
+      segmentedPill.style.transform = `translateX(${item.offsetLeft - 3}px)`;
+    }
+
+    segmentedItems.forEach(item => {
+      item.addEventListener('click', () => {
+        segmentedItems.forEach(i => i.classList.remove('active'));
+        item.classList.add('active');
+        updateSegmentedPill(item);
+      });
+    });
+
+    // 初始化 Pill 位置
+    window.addEventListener('DOMContentLoaded', () => {
+      const activeItem = document.querySelector('#nav-segmented .segmented-item.active');
+      if (activeItem) updateSegmentedPill(activeItem);
+    });
+
+    // 2. 21st Switch 弹簧开关交互
+    const switches = document.querySelectorAll('.switch-ui');
+    switches.forEach(sw => {
+      sw.addEventListener('click', () => {
+        const isChecked = sw.getAttribute('data-state') === 'checked';
+        sw.setAttribute('data-state', isChecked ? 'unchecked' : 'checked');
+      });
+    });
+
+    // 3. 调参抽屉开关
+    const tweaksDrawer = document.getElementById('tweaks-drawer');
+    const btnOpenTweaks = document.getElementById('btn-open-tweaks');
+    const btnCloseTweaks = document.getElementById('btn-close-tweaks');
+    const dockBtnSettings = document.getElementById('dock-btn-settings');
+
+    function toggleTweaks(open) {
+      tweaksDrawer.classList.toggle('open', open);
+    }
+
+    btnOpenTweaks.addEventListener('click', () => toggleTweaks(true));
+    dockBtnSettings.addEventListener('click', () => toggleTweaks(true));
+    btnCloseTweaks.addEventListener('click', () => toggleTweaks(false));
+
+    // 4. 主题切换
+    const themeButtons = document.querySelectorAll('.theme-preset-btn');
+    themeButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        themeButtons.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        const theme = btn.dataset.theme;
+        document.documentElement.setAttribute('data-theme', theme);
+      });
+    });
+
+    // 5. 实时滑块调参
+    const rangeBlur = document.getElementById('range-blur');
+    const labelBlur = document.getElementById('label-blur');
+    rangeBlur.addEventListener('input', (e) => {
+      const val = `${e.target.value}px`;
+      document.documentElement.style.setProperty('--glass-blur', val);
+      labelBlur.textContent = val;
+    });
+
+    const rangeRadius = document.getElementById('range-radius');
+    const labelRadius = document.getElementById('label-radius');
+    rangeRadius.addEventListener('input', (e) => {
+      const val = `${e.target.value}px`;
+      document.documentElement.style.setProperty('--card-radius', val);
+      labelRadius.textContent = val;
+    });
+
+    const rangeRefraction = document.getElementById('range-refraction');
+    const labelRefraction = document.getElementById('label-refraction');
+    rangeRefraction.addEventListener('input', (e) => {
+      const val = e.target.value;
+      document.documentElement.style.setProperty('--glass-refraction', val);
+      labelRefraction.textContent = `${val}x`;
+    });
+
+    // 6. Dock 交互状态切换
+    const dockItems = document.querySelectorAll('.dock-item:not(#dock-btn-settings)');
+    dockItems.forEach(item => {
+      item.addEventListener('click', () => {
+        dockItems.forEach(d => d.classList.remove('active'));
+        item.classList.add('active');
+      });
+    });
+  </script>
+</body>
+</html>

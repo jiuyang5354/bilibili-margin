@@ -1,2 +1,84 @@
 <!doctype html>
-<html lang="zh-CN"><head><meta charset="UTF-8"><link rel="stylesheet" href="popup.css"><title>映间 MARGIN</title></head><body><header><img src="../assets/icon-128.png" alt=""><div><strong>映间 MARGIN</strong></div></header><button id="toggle" aria-pressed="true">正在读取…</button><p id="status" role="status">偏好保存在当前浏览器。</p><a href="https://www.bilibili.com/" target="_blank" rel="noopener noreferrer">打开 B 站首页 ↗</a><footer>独立预览版 v0.6.0<br>基于 BewlyBewly · MIT</footer><script src="popup.js"></script></body></html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="popup.css">
+  <title>映间 MARGIN · 控制中心</title>
+</head>
+<body>
+  <!-- 21st Double-Bezel Hardware Enclosure -->
+  <div class="bezel-tray">
+    <div class="bezel-core">
+      
+      <!-- Header with Brand & Engine Status -->
+      <header class="popup-header">
+        <div class="brand-meta">
+          <div class="brand-icon-wrap">
+            <img class="brand-icon" src="../assets/icon-128.png" alt="MARGIN">
+          </div>
+          <div class="brand-text">
+            <h1>映间 MARGIN</h1>
+            <div class="brand-badge">BILIBILI REDESIGN</div>
+          </div>
+        </div>
+
+        <div id="engine-status" class="engine-status-pill">
+          <span class="status-dot"></span>
+          <span id="engine-text">已生效</span>
+        </div>
+      </header>
+
+      <!-- 21st Spring Switch Main Toggle -->
+      <div class="control-card">
+        <div class="control-info">
+          <span class="control-title">全局重设计引擎</span>
+          <span class="control-desc" id="toggle-desc">净化原生首页与播放页</span>
+        </div>
+        <button id="toggle" class="switch-root" role="switch" aria-checked="true" aria-label="切换全局重设计引擎">
+          <span class="switch-thumb"></span>
+        </button>
+      </div>
+
+      <!-- 21st Halaska Segmented Scope Switch -->
+      <div class="segmented-wrap">
+        <div class="segmented-label">
+          <span>重构作用域</span>
+          <span id="scope-indicator" style="font-family: var(--font-mono); font-size: 9px;">全部页面</span>
+        </div>
+        <div class="segmented-bar" role="tablist">
+          <div class="segmented-glider" id="segmented-glider"></div>
+          <button class="segmented-btn active" data-scope="all" role="tab">全部</button>
+          <button class="segmented-btn" data-scope="home" role="tab">仅首页</button>
+          <button class="segmented-btn" data-scope="watch" role="tab">仅播放页</button>
+        </div>
+      </div>
+
+      <!-- Theme Selector -->
+      <div class="theme-row">
+        <span class="theme-title">视觉风格</span>
+        <div class="theme-pills">
+          <button class="theme-pill-btn active" data-theme-val="dark">暗物质</button>
+          <button class="theme-pill-btn" data-theme-val="light">纸白</button>
+          <button class="theme-pill-btn" data-theme-val="auto">跟随系统</button>
+        </div>
+      </div>
+
+      <!-- 21st Glow Island CTA Button -->
+      <a class="island-cta-btn" href="https://www.bilibili.com/" target="_blank" rel="noopener noreferrer">
+        <span>进入重设计 B 站首页</span>
+        <span class="nested-arrow-pill">↗</span>
+      </a>
+
+      <!-- Footer & Status -->
+      <footer class="popup-footer">
+        <span class="status-message" id="status">偏好实时同步至本地存储</span>
+        <span class="footer-version">v0.6.0 · 21st UI</span>
+      </footer>
+
+    </div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
