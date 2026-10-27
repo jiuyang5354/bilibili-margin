@@ -149,12 +149,14 @@ export class WatchSkin {
     this.settings = await saveSettings({ theme: next });
     // B 站页面元素成千上万、评论区还在各自的 Shadow DOM 里，逐元素 transition 会各走各的、
     // 卡出半亮半暗。改用 View Transition 整页（含顶栏）一次交叉淡化；新画面是实时的，日月动画照常跑。
-    const vt = (document as Document & { startViewTransition?: (cb: () => void) => { finished: Promise<void> } }).startViewTransition;
+    const vt = (document as Document & { startViewTransition?: (cb: () => void) => { finished: Promise<void>; skipTransition: () => void } }).startViewTransition;
     if (reduce || !vt) { this.applyTheme(true); return; }
     de.style.setProperty('--m-vt', `${Math.round(ms * 0.42)}ms`);
     de.classList.add('margin-vt');
     const t = vt.call(document, () => this.applyTheme(true));
-    t.finished.finally(() => de.classList.remove('margin-vt'));
+    // 保险：页面卡顿时最多等 1.6s，过时直接跳到终态，不让整页停在快照上
+    const guard = window.setTimeout(() => t.skipTransition(), 1600);
+    t.finished.finally(() => { clearTimeout(guard); de.classList.remove('margin-vt'); });
   }
 
   /** 网页全屏 / 全屏时收起顶栏，不挡播放器 */
