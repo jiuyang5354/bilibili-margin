@@ -3,6 +3,7 @@ import { BG_IMAGE_KEY } from '../../shared/settings';
 import { SHADER_IDS } from './shaders';
 import { setupQuad, ShaderProgram } from './program';
 import { h } from '../ui/dom';
+import { GlassLens } from './lens';
 
 const LAST_KEY = 'margin:last-shader';
 
@@ -21,6 +22,9 @@ export class BackgroundLayer {
   private palette: Palette = 'classic';
   private cfg!: Background;
   private reduced = matchMedia('(prefers-reduced-motion: reduce)');
+  private lens: GlassLens | null = null;
+  private lensEl: HTMLElement | null = null;
+  private pending = 0;
 
   constructor() {
     this.el.append(this.canvas, this.img, h('div', { class: 'bg-scrim' }));
@@ -36,9 +40,9 @@ export class BackgroundLayer {
     this.theme = theme;
     this.el.dataset.mode = cfg.mode;
     this.el.style.setProperty('--bg-o', String(cfg.intensity));
-    if (cfg.mode === 'off') { this.stop(); return; }
+    if (cfg.mode === 'off') { this.stop(); this.syncLens(); return; }
     if (cfg.mode === 'image') {
-      this.stop();
+      this.stop(); this.syncLens();
       const r = await chrome.storage.local.get(BG_IMAGE_KEY);
       const url = r[BG_IMAGE_KEY] as string | undefined;
       this.img.style.backgroundImage = url ? `url("${url}")` : '';
@@ -55,11 +59,30 @@ export class BackgroundLayer {
       } else id = this.current;
     }
     this.use(id);
+    this.syncLens();
     this.draw(performance.now());
     this.loop();
   }
 
   get shader(): ShaderId | null { return this.current; }
+
+  /** 让某个元素成为「液态玻璃」：背景着色器在它的位置做透镜折射（bubbbly GitHub Glass Card 的做法） */
+  setLens(el: HTMLElement | null): void {
+    this.lensEl?.removeAttribute('data-lens');
+    this.lensEl = el;
+    this.syncLens();
+  }
+
+  /** 滚动等让透镜位置变化时调用：下一帧立刻重画，不等 30fps 节拍 */
+  redraw(): void {
+    if (this.pending || !this.lensEl) return;
+    this.pending = requestAnimationFrame(() => { this.pending = 0; this.draw(performance.now()); });
+  }
+
+  private syncLens(): void {
+    const on = !!this.lensEl && !!this.prog && (this.cfg?.mode === 'random' || this.cfg?.mode === 'fixed');
+    this.lensEl?.toggleAttribute('data-lens', on);
+  }
 
   private use(id: ShaderId): void {
     if (!this.gl) {
@@ -87,7 +110,26 @@ export class BackgroundLayer {
 
   private draw(now: number): void {
     if (!this.gl || !this.prog) return;
-    this.prog.draw(this.canvas.width, this.canvas.height, this.reduced.matches ? 12 : (now - this.start) / 1000, this.theme);
+    const gl = this.gl, w = this.canvas.width, hh = this.canvas.height;
+    const t = this.reduced.matches ? 12 : (now - this.start) / 1000;
+    const rect = this.lensRect();
+    if (!rect) { this.prog.bind(); this.prog.draw(w, hh, t, this.theme); return; }
+    this.lens ??= new GlassLens(gl);
+    this.lens.target(w, hh);
+    this.prog.bind();
+    this.prog.draw(w, hh, t, this.theme);
+    this.lens.present(w, hh, rect, this.theme);
+  }
+
+  /** 透镜元素在画布上的矩形（画布像素，y 向上）；不可见时返回 null */
+  private lensRect(): { x: number; y: number; w: number; h: number; r: number } | null {
+    const el = this.lensEl;
+    if (!el || !el.hasAttribute('data-lens')) return null;
+    const b = this.el.getBoundingClientRect(), r = el.getBoundingClientRect();
+    if (r.bottom < b.top || r.top > b.bottom || r.width < 2) return null;
+    const k = this.canvas.width / Math.max(1, b.width);
+    const rad = parseFloat(getComputedStyle(el).borderTopLeftRadius) || 18;
+    return { x: (r.left - b.left) * k, y: (b.bottom - r.bottom) * k, w: r.width * k, h: r.height * k, r: rad * k };
   }
 
   private loop = (): void => {
