@@ -86,6 +86,8 @@ html.margin-watch .bpx-player-container[data-screen="wide"] .bpx-player-video-ar
 html.margin-watch .bpx-player-container[data-screen="normal"] .bpx-player-primary-area,
 html.margin-watch .bpx-player-container[data-screen="wide"] .bpx-player-primary-area { border-radius: var(--m-radius); background: transparent !important; }
 html.margin-watch .bpx-player-sending-area { background: var(--m-surface) !important; border-radius: 0 0 var(--m-radius) var(--m-radius); }
+/* 发送栏自己有一层直角底色，会盖住外层的下圆角 */
+html.margin-watch .bpx-player-sending-area .bpx-player-sending-bar { background: transparent !important; border-radius: 0 0 var(--m-radius) var(--m-radius) !important; }
 
 /* 互动条：点赞 / 投币 / 收藏 / 分享做成胶囊 */
 html.margin-watch .video-toolbar-container { border-bottom: 0 !important; padding: 18px 0 6px !important; }
