@@ -33,10 +33,9 @@ html.margin-watch[data-margin-theme="dark"] {
 }
 html.margin-watch body { background: var(--m-canvas) !important; color: var(--m-ink); }
 
-/* 主题切换：页面颜色和日月按钮同长淡入淡出 */
-html.margin-fading, html.margin-fading *, html.margin-fading *::before, html.margin-fading *::after {
-  transition-property: color, background-color, border-color, fill, stroke, box-shadow !important;
-  transition-duration: var(--m-fade, 1.7s) !important; transition-timing-function: cubic-bezier(.65, 0, .35, 1) !important; transition-delay: 0s !important;
+/* 主题切换：整页 View Transition 交叉淡化（新画面实时，日月动画照常跑） */
+html.margin-vt::view-transition-old(root), html.margin-vt::view-transition-new(root) {
+  animation-duration: var(--m-vt, 720ms); animation-timing-function: cubic-bezier(.65, 0, .35, 1);
 }
 
 /* 顶栏：原生顶栏隐藏，换成 MARGIN 顶栏（#margin-watch-top，Shadow DOM） */
