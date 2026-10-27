@@ -54,7 +54,7 @@ export class MarginApp {
       this.keep = compileFilter(s.filters);
       this.repaint();
     }
-    if (prev.theme !== s.theme || JSON.stringify(prev.bg) !== JSON.stringify(s.bg)) this.applyTheme();
+    if (prev.theme !== s.theme || prev.palette !== s.palette || JSON.stringify(prev.bg) !== JSON.stringify(s.bg)) this.applyTheme();
     this.panel.sync(s);
   }
 
@@ -66,10 +66,11 @@ export class MarginApp {
   private applyTheme(): void {
     const t = this.resolvedTheme();
     this.app.dataset.theme = t;
+    this.app.dataset.palette = this.settings.palette;
     this.app.dataset.bg = this.settings.bg.mode;
     this.themeBtn.replaceChildren(icon(t === 'dark' ? ICONS.sun : ICONS.moon));
     this.themeBtn.title = t === 'dark' ? '切换到亮色' : '切换到暗色';
-    this.bg.apply(this.settings.bg, t).then(() => this.panel?.sync(this.settings));
+    this.bg.apply(this.settings.bg, t, this.settings.palette).then(() => this.panel?.sync(this.settings));
   }
 
   private render(): void {
@@ -122,7 +123,7 @@ export class MarginApp {
       return b;
     };
     tabs.append(mkTab('rcmd', '推荐'), mkTab('popular', '热门'));
-    const refresh = h('button', { class: 'ghost', type: 'button', title: '换一批', onclick: () => this.reload() }, icon(ICONS.refresh), h('span', {}, '换一批'));
+    const refresh = h('button', { class: 'ghost refresh', type: 'button', title: '换一批', onclick: () => this.reload() }, icon(ICONS.refresh), h('span', {}, '换一批'));
 
     this.grid = h('section', { class: 'grid', 'aria-live': 'polite' });
     this.status = h('div', { class: 'status' });
