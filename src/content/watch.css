@@ -1,0 +1,159 @@
+/* 映间 MARGIN · 播放页外观（全局样式，只在 html.margin-watch 下生效）
+   做法：改写 B 站自己的主题变量（--bg1 / --text1 …，能穿透评论区 Shadow DOM），
+   再整理版式。不改原生播放器、弹幕、评论、账号操作的任何行为。 */
+
+html.margin-watch {
+  --m-canvas: #f5f4f1; --m-surface: #ffffff; --m-ink: #17181a; --m-muted: #6f7177; --m-faint: #a3a5aa;
+  --m-line: rgb(23 24 26 / .09); --m-chip: rgb(23 24 26 / .05); --m-accent: #00aeec;
+  --m-serif: "Noto Serif SC", "Source Han Serif SC", "Songti SC", "STSong", serif;
+  --m-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  --m-radius: 16px;
+
+  --bg1: #ffffff; --bg2: #f5f4f1; --bg3: #efeeea; --bg1_float: #ffffff; --bg2_float: #f1f0ec;
+  --text1: #17181a; --text2: #55575c; --text3: #8d8f94; --text4: #c4c5c8;
+  --text_link: #0089c0; --text_hover: #6f7177; --text_active: #55575c;
+  --line_light: #ecebe7; --line_regular: #e3e2dd; --line_bold: #cfcdc8; --line_border: #cfcdc8;
+  --graph_white: #ffffff; --graph_bg_thin: #f5f4f1; --graph_bg_regular: #efeeea; --graph_bg_thick: #e3e2dd;
+  --graph_weak: #cfcdc8; --graph_medium: #8d8f94; --graph_icon: #55575c;
+  --brand_blue: #00aeec; --brand_blue_thin: #e3f5fc;
+  background: var(--m-canvas) !important;
+}
+html.margin-watch[data-margin-theme="dark"] {
+  --m-canvas: #111112; --m-surface: #1a1a1c; --m-ink: #ededee; --m-muted: #9a9ba0; --m-faint: #64656a;
+  --m-line: rgb(255 255 255 / .08); --m-chip: rgb(255 255 255 / .06);
+
+  --bg1: #1a1a1c; --bg2: #111112; --bg3: #232326; --bg1_float: #1f1f22; --bg2_float: #2a2a2d;
+  --text1: #ededee; --text2: #b4b5b9; --text3: #8a8b90; --text4: #55565a;
+  --text_link: #4cc3f0; --text_hover: #c9cacd; --text_active: #b4b5b9;
+  --line_light: #222225; --line_regular: #2c2c30; --line_bold: #3a3a3f; --line_border: #3a3a3f;
+  --graph_white: #1a1a1c; --graph_bg_thin: #18181a; --graph_bg_regular: #232326; --graph_bg_thick: #2c2c30;
+  --graph_weak: #3a3a3f; --graph_medium: #6a6b70; --graph_icon: #a0a1a6;
+  --brand_blue_thin: #0c2c38;
+  color-scheme: dark;
+}
+html.margin-watch body { background: var(--m-canvas) !important; color: var(--m-ink); }
+
+/* 主题切换：页面颜色和日月按钮同长淡入淡出 */
+html.margin-fading, html.margin-fading *, html.margin-fading *::before, html.margin-fading *::after {
+  transition-property: color, background-color, border-color, fill, stroke, box-shadow !important;
+  transition-duration: var(--m-fade, 1.7s) !important; transition-timing-function: cubic-bezier(.65, 0, .35, 1) !important; transition-delay: 0s !important;
+}
+
+/* 顶栏：原生顶栏隐藏，换成 MARGIN 顶栏（#margin-watch-top，Shadow DOM） */
+html.margin-watch #biliMainHeader,
+html.margin-watch .bili-header.fixed-header { display: none !important; }
+#margin-watch-top { position: fixed; top: 0; left: 0; right: 0; z-index: 10000; height: 72px; }
+#margin-watch-top[hidden] { display: none !important; }
+html.margin-watch .video-container-v1 { padding-top: 96px !important; }
+
+/* 广告与推广 */
+html.margin-watch .ad-report, html.margin-watch .slide-ad-exp, html.margin-watch .video-card-ad-small,
+html.margin-watch .ad-floor-exp, html.margin-watch #slide_ad, html.margin-watch .pop-live-small-mode,
+html.margin-watch .video-page-game-card-small, html.margin-watch .video-page-special-card-small,
+html.margin-watch .activity-m-v1, html.margin-watch .reply-notice, html.margin-watch .vcd { display: none !important; }
+
+/* 标题与信息 */
+html.margin-watch .video-info-container { height: auto !important; padding-top: 0 !important; margin-bottom: 18px; }
+html.margin-watch .video-info-title { height: auto !important; margin-bottom: 10px; }
+html.margin-watch h1.video-title, html.margin-watch .video-info-title .video-title {
+  font: 600 26px/1.38 var(--m-serif) !important; letter-spacing: .01em; color: var(--m-ink) !important;
+  white-space: normal !important; overflow: visible !important; height: auto !important; max-height: none !important; -webkit-line-clamp: unset !important;
+}
+html.margin-watch .video-info-detail, html.margin-watch .video-info-detail-list,
+html.margin-watch .video-info-detail .item, html.margin-watch .pubdate-ip-text {
+  font-family: var(--m-mono) !important; font-size: 12px !important; letter-spacing: .02em; color: var(--m-faint) !important;
+}
+html.margin-watch .video-info-detail svg, html.margin-watch .video-info-detail .icon { color: var(--m-faint) !important; fill: currentColor; }
+
+/* 播放器：圆角卡片 + 柔和阴影（只在普通 / 宽屏模式） */
+html.margin-watch #playerWrap { border-radius: var(--m-radius); }
+html.margin-watch .bpx-player-container[data-screen="normal"],
+html.margin-watch .bpx-player-container[data-screen="wide"] {
+  border-radius: var(--m-radius) !important; overflow: hidden;
+  box-shadow: 0 1px 0 var(--m-line), 0 24px 60px -28px rgb(0 0 0 / .45) !important;
+}
+html.margin-watch .bpx-player-sending-area { background: var(--m-surface) !important; }
+
+/* 互动条：点赞 / 投币 / 收藏 / 分享做成胶囊 */
+html.margin-watch .video-toolbar-container { border-bottom: 0 !important; padding: 18px 0 6px !important; }
+html.margin-watch .video-toolbar-left-main { gap: 10px; }
+html.margin-watch .toolbar-left-item-wrap { margin-right: 10px !important; }
+html.margin-watch .video-toolbar-left-item {
+  height: 38px; padding: 0 16px !important; border-radius: 999px; background: var(--m-surface);
+  border: 1px solid var(--m-line); color: var(--m-muted) !important; width: auto !important;
+  transition: background .2s, color .2s, border-color .2s;
+}
+html.margin-watch .video-toolbar-left-item:hover { color: var(--m-ink) !important; border-color: color-mix(in srgb, var(--m-ink) 18%, transparent); }
+html.margin-watch .video-toolbar-left-item.on { color: var(--m-accent) !important; border-color: color-mix(in srgb, var(--m-accent) 35%, transparent); background: color-mix(in srgb, var(--m-accent) 8%, var(--m-surface)); }
+html.margin-watch .video-toolbar-left-item .video-toolbar-item-text { font-family: var(--m-mono); font-size: 13px !important; }
+
+/* 简介 / 标签 / 评论：表面卡片 */
+html.margin-watch .video-desc-container,
+html.margin-watch #commentapp {
+  background: var(--m-surface); border: 1px solid var(--m-line); border-radius: var(--m-radius);
+}
+html.margin-watch .video-desc-container { margin: 14px 0 0 !important; padding: 16px 20px !important; }
+html.margin-watch .basic-desc-info, html.margin-watch .desc-info-text { color: var(--text2) !important; line-height: 1.75 !important; font-size: 14px !important; }
+html.margin-watch .video-tag-container { border-bottom: 0 !important; padding: 14px 0 6px !important; margin: 0 !important; }
+html.margin-watch .video-tag-container .tag-panel .tag { background: none !important; padding: 0 !important; border: 0 !important; height: auto !important; margin: 0 10px 10px 0 !important; }
+html.margin-watch .tag-link {
+  border-radius: 999px !important; background: var(--m-chip) !important; color: var(--m-muted) !important; height: 30px !important; line-height: 30px !important; padding: 0 14px !important;
+}
+html.margin-watch .tag-link:hover { color: var(--m-accent) !important; }
+html.margin-watch #commentapp { margin-top: 18px; padding: 8px 24px 24px; }
+
+/* 右栏：UP 主卡片、弹幕列表、推荐列表 */
+html.margin-watch .up-panel-container {
+  background: var(--m-surface); border: 1px solid var(--m-line); border-radius: var(--m-radius);
+  padding: 14px 16px; margin-bottom: 14px; height: auto !important;
+}
+html.margin-watch .up-info-container { margin: 0 !important; }
+html.margin-watch .up-detail-top .up-name { font-weight: 600 !important; color: var(--m-ink) !important; }
+html.margin-watch .up-avatar-wrap .bili-avatar { box-shadow: 0 0 0 1px var(--m-line); border-radius: 50%; }
+html.margin-watch .follow-btn, html.margin-watch .follow-btn-inner { border-radius: 999px !important; }
+html.margin-watch .follow-btn.following, html.margin-watch .follow-btn.following .follow-btn-inner { background: var(--m-chip) !important; color: var(--m-muted) !important; }
+html.margin-watch .charge-btn, html.margin-watch .old-charge-btn { border-radius: 999px !important; }
+
+html.margin-watch #danmukuBox .bui-collapse-wrap, html.margin-watch #danmukuBox .bui-collapse-header,
+html.margin-watch .bui-collapse-wrap { border-radius: 12px !important; overflow: hidden; }
+html.margin-watch #danmukuBox { margin-bottom: 14px !important; }
+
+html.margin-watch .video-pod, html.margin-watch .base-video-sections-v1, html.margin-watch .multi-page-v1 {
+  background: var(--m-surface) !important; border: 1px solid var(--m-line) !important; border-radius: var(--m-radius) !important;
+}
+
+html.margin-watch .recommend-list-v1 .rec-title, html.margin-watch .next-play .rec-title {
+  font: 600 15px/1 var(--m-serif) !important; letter-spacing: .04em; color: var(--m-ink) !important;
+}
+html.margin-watch .video-page-card-small { margin-bottom: 4px !important; }
+html.margin-watch .video-page-card-small .card-box {
+  padding: 8px !important; margin: 0 -8px; border-radius: 14px; transition: background .2s;
+}
+html.margin-watch .video-page-card-small .card-box:hover { background: var(--m-surface); box-shadow: 0 0 0 1px var(--m-line); }
+html.margin-watch .video-page-card-small .pic-box { border-radius: 10px !important; overflow: hidden; }
+html.margin-watch .video-page-card-small .pic-box img { transition: transform .5s cubic-bezier(.2, .8, .2, 1); }
+html.margin-watch .video-page-card-small .card-box:hover .pic-box img { transform: scale(1.05); }
+html.margin-watch .video-page-card-small .duration {
+  font-family: var(--m-mono) !important; border-radius: 6px !important; background: rgb(0 0 0 / .62) !important; padding: 2px 6px !important;
+}
+html.margin-watch .video-page-card-small .title {
+  font-size: 14px !important; line-height: 1.45 !important; font-weight: 500 !important; color: var(--m-ink) !important;
+}
+html.margin-watch .video-page-card-small .card-box:hover .title { color: var(--m-accent) !important; }
+html.margin-watch .video-page-card-small .upname, html.margin-watch .video-page-card-small .playinfo,
+html.margin-watch .video-page-card-small .name { color: var(--m-faint) !important; font-size: 12px !important; }
+html.margin-watch .video-page-card-small .playinfo { font-family: var(--m-mono); }
+html.margin-watch .next-play { border-bottom: 1px solid var(--m-line); padding-bottom: 10px; margin-bottom: 14px; }
+html.margin-watch .rec-footer {
+  height: 38px !important; line-height: 38px !important; border-radius: 999px !important; background: var(--m-surface) !important;
+  border: 1px solid var(--m-line); color: var(--m-muted) !important; margin-top: 8px;
+}
+html.margin-watch .rec-footer:hover { color: var(--m-ink) !important; }
+
+/* 右下角工具 */
+html.margin-watch .fixed-sidenav-storage-item {
+  border-radius: 12px !important; background: var(--m-surface) !important; border: 1px solid var(--m-line) !important; color: var(--m-muted) !important;
+}
+
+/* 滚动条 */
+html.margin-watch { scrollbar-width: thin; scrollbar-color: color-mix(in srgb, var(--m-ink) 22%, transparent) transparent; }
