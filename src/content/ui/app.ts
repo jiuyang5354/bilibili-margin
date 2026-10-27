@@ -10,6 +10,7 @@ import { h, icon, ICONS } from './dom';
 import { createFavorites } from './favorites';
 import { createExpandableTabs } from './expandable-tabs';
 import { createFootprintCard } from './footprint';
+import { createSunMoon, type SunMoon } from './sun-moon';
 import { attachPreview } from './preview';
 import { createSettingsPanel, type SettingsPanel } from './settings-panel';
 import type { Sheet } from './sheet';
@@ -24,7 +25,8 @@ export class MarginApp {
   private grid!: HTMLElement;
   private status!: HTMLElement;
   private sentinel!: HTMLElement;
-  private themeBtn!: HTMLButtonElement;
+  private sunMoon!: SunMoon;
+  private fadeTimer = 0;
   private bg = new BackgroundLayer();
   private panel!: SettingsPanel;
   private fav!: Sheet;
@@ -71,10 +73,7 @@ export class MarginApp {
     this.app.dataset.theme = t;
     this.app.dataset.palette = this.settings.palette;
     this.app.dataset.bg = this.settings.bg.mode;
-    this.themeBtn.querySelector('svg')?.replaceWith(icon(t === 'dark' ? ICONS.sun : ICONS.moon));
-    this.themeBtn.title = t === 'dark' ? '切换到亮色' : '切换到暗色';
-    this.themeBtn.setAttribute('aria-label', this.themeBtn.title);
-    this.themeBtn.querySelector('span')!.textContent = t === 'dark' ? '亮色' : '暗色';
+    this.sunMoon.set(t);
     this.bg.apply(this.settings.bg, t, this.settings.palette).then(() => this.panel?.sync(this.settings));
   }
 
@@ -109,14 +108,13 @@ export class MarginApp {
       { title: '收藏', icon: ICONS.fav, run: () => this.fav.open() },
       { title: '足迹', icon: ICONS.heat, run: () => { this.app.scrollTo({ top: 0, behavior: 'smooth' }); this.foot.animate([{ boxShadow: '0 0 0 2px var(--accent)' }, { boxShadow: '0 0 0 0 transparent' }], { duration: 1200, easing: 'ease-out' }); } },
       { title: '设置', icon: ICONS.gear, run: () => this.panel.sheet.open() },
-      { title: '主题', icon: ICONS.moon, run: () => this.toggleTheme() },
     ]);
-    this.themeBtn = tabsNav.buttons[tabsNav.buttons.length - 1] as HTMLButtonElement;
+    this.sunMoon = createSunMoon(() => this.toggleTheme());
 
     const header = h('header', { class: 'top' },
       h('a', { class: 'brand', href: '/', title: '映间 MARGIN', 'aria-label': '映间 MARGIN 首页' }, h('span', { class: 'mark' }, icon(ICONS.logo))),
       search,
-      h('div', { class: 'acts' }, tabsNav.el, user),
+      h('div', { class: 'acts' }, tabsNav.el, this.sunMoon.el, user),
     );
 
     const tabs = h('div', { class: 'tabs', role: 'tablist' });
@@ -162,10 +160,15 @@ export class MarginApp {
 
   private async toggleTheme(): Promise<void> {
     const next = this.resolvedTheme() === 'dark' ? 'light' : 'dark';
-    const doc = document as Document & { startViewTransition?: (cb: () => void) => unknown };
+    // 页面颜色和日月动画用同一时长淡入淡出（替代原来的 View Transition 圆形揭幕，它会冻结按钮动画）
+    if (!matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      this.app.classList.add('theme-fading');
+      this.app.style.setProperty('--fade', `${this.sunMoon.duration}ms`);
+      clearTimeout(this.fadeTimer);
+      this.fadeTimer = window.setTimeout(() => this.app.classList.remove('theme-fading'), this.sunMoon.duration + 100);
+    }
     this.settings = await saveSettings({ theme: next });
-    if (doc.startViewTransition && !matchMedia('(prefers-reduced-motion: reduce)').matches) doc.startViewTransition(() => this.applyTheme());
-    else this.applyTheme();
+    this.applyTheme();
   }
 
   private switchTab(id: Tab, tabs: HTMLElement): void {
