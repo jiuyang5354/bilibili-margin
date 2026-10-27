@@ -885,8 +885,17 @@ var $ = { exports: {} };
 })($);
 var q = $.exports;
 const I = /* @__PURE__ */ U(q);
-function N(i) {
-  return i.json();
+async function N(i) {
+  try {
+    const text = await i.text();
+    try {
+      return JSON.parse(text);
+    } catch {
+      return { code: i.status || -1, message: "Bilibili API 响应非 JSON (可能需登录或触发风控验证)", raw: text };
+    }
+  } catch (err) {
+    return { code: -1, message: err?.message || "网络请求失败" };
+  }
 }
 function W(i) {
   return i;
