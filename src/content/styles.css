@@ -975,3 +975,51 @@ canvas.gf-sheet-art[data-ready] { opacity: 1; filter: none; }
 .dw-empty p { margin: 0; }
 .dw-foot { padding: 12px 20px; border-top: 1px solid var(--line); display: flex; justify-content: flex-end; }
 @media (prefers-reduced-motion: reduce) { .dw-item { animation: none; transition: none; } }
+
+/* ── 足迹玻璃卡（21st Glass Card 移植） ── */
+.gc { --gc-r: 22px; --gc-rim: 12px; --gc-tint: color-mix(in srgb, var(--surface) 64%, transparent); --gc-shade: rgb(0 0 0 / .05);
+  position: relative; isolation: isolate; border-radius: var(--gc-r); overflow: hidden;
+  box-shadow: 0 26px 60px -30px rgb(0 0 0 / .32), 0 10px 26px -20px rgb(0 0 0 / .25);
+  transition: transform .3s cubic-bezier(.2, .8, .2, 1), box-shadow .3s; }
+.app[data-theme="dark"] .gc { --gc-tint: rgb(255 255 255 / .05); --gc-shade: rgb(0 0 0 / .2); box-shadow: 0 26px 60px -26px rgb(0 0 0 / .6), 0 10px 26px -18px rgb(0 0 0 / .45); }
+@media (hover: hover) and (pointer: fine) { .gc:hover { transform: translateY(-3px) scale(1.006); } }
+.gc-svg { position: absolute; width: 0; height: 0; pointer-events: none; }
+.gc-body { position: absolute; inset: var(--gc-rim); border-radius: calc(var(--gc-r) - var(--gc-rim)); background: var(--gc-tint); backdrop-filter: blur(11px) saturate(160%) brightness(1.02); box-shadow: inset 0 1px 0 rgb(255 255 255 / .22), inset 0 0 0 1px rgb(255 255 255 / .07); z-index: -1; }
+.gc-ring { position: absolute; inset: 0; border-radius: inherit; box-sizing: border-box; padding: var(--gc-rim);
+  mask-image: linear-gradient(#000, #000), linear-gradient(#000, #000); mask-clip: content-box, border-box; mask-composite: exclude; }
+.gc-rim { z-index: -1; background: color-mix(in srgb, var(--gc-tint) 60%, transparent); }
+.gc-light { position: absolute; inset: 0; border-radius: inherit; overflow: hidden; isolation: isolate; pointer-events: none; z-index: -1; }
+.gc-chroma { background: linear-gradient(125deg, oklch(.84 .12 215 / .4) 0%, transparent 36%, transparent 64%, oklch(.78 .15 340 / .34) 100%); mix-blend-mode: plus-lighter; }
+.app:not([data-theme="dark"]) .gc-chroma { mix-blend-mode: normal; opacity: .55; }
+.gc-spec { position: absolute; left: 30%; top: 28%; width: 260px; height: 260px; margin: -130px 0 0 -130px; background: radial-gradient(closest-side, rgb(255 255 255 / .3), rgb(255 255 255 / .07) 48%, transparent 74%); mix-blend-mode: plus-lighter; will-change: transform; }
+.app:not([data-theme="dark"]) .gc-spec { mix-blend-mode: soft-light; opacity: .9; }
+.gc-sweep { position: absolute; top: 0; left: 29%; width: 42%; height: calc(var(--gc-rim) + 2px); background: linear-gradient(to bottom, rgb(255 255 255 / .92), rgb(255 255 255 / .22) 55%, transparent); mask-image: linear-gradient(90deg, transparent, #000 42%, #000 58%, transparent); mix-blend-mode: plus-lighter; will-change: transform; }
+.gc-shade { position: absolute; inset: 0; background: linear-gradient(to bottom, transparent 48%, var(--gc-shade)); }
+.gc-ringline { position: absolute; inset: 0; border-radius: inherit; pointer-events: none; box-shadow: inset 0 1px 0 rgb(255 255 255 / .55), inset 0 0 0 1px rgb(255 255 255 / .15), inset 0 -1px 0 rgb(255 255 255 / .12); }
+.app:not([data-theme="dark"]) .gc-ringline { box-shadow: inset 0 1px 0 rgb(255 255 255 / .9), inset 0 0 0 1px color-mix(in srgb, var(--ink) 8%, transparent); }
+.fp-glass { margin-top: 26px; }
+.fp-glass .fp-card { margin: 0; background: transparent; border: 0; border-radius: inherit; padding: 30px 34px 26px; }
+@media (prefers-reduced-motion: reduce) { .gc { transition: none; } .gc:hover { transform: none; } }
+
+/* ── 流光骨架（21st Skeleton Loader 移植：底色 + 1.5s 来回扫过的高光） ── */
+.card.sk .cover, .card.sk .line, .dw-item.sk .dw-cover, .dw-item.sk .line { position: relative; overflow: hidden; animation: none; background: var(--chip); }
+.card.sk .cover::after, .card.sk .line::after, .dw-item.sk .dw-cover::after, .dw-item.sk .line::after {
+  content: ""; position: absolute; inset: 0; transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, var(--sk-hi, rgb(255 255 255 / .55)), transparent);
+  animation: sk-shimmer 1.5s ease-in-out infinite; }
+.app[data-theme="dark"] { --sk-hi: rgb(255 255 255 / .07); }
+@keyframes sk-shimmer { to { transform: translateX(100%); } }
+@media (prefers-reduced-motion: reduce) { .card.sk .cover::after, .card.sk .line::after, .dw-item.sk .dw-cover::after, .dw-item.sk .line::after { animation: none; } }
+
+/* ── 刻度尺滚动进度（21st Scroll Bars 移植，播放页右缘） ── */
+.sr { position: fixed; right: 4px; top: 50%; z-index: 25; transform: translateY(-50%); padding: 14px 8px 14px 6px; opacity: 0; transition: opacity .3s; }
+.sr[data-on="true"] { opacity: 1; }
+.sr-track { position: relative; display: flex; flex-direction: column; align-items: flex-end; gap: 4px; cursor: pointer; }
+.sr-track i { display: block; height: 1px; width: 0; background: color-mix(in srgb, var(--ink) 30%, transparent); transition: width .5s cubic-bezier(.34, 1.56, .64, 1), background .2s; transition-delay: var(--d); }
+.sr[data-on="true"] .sr-track i { width: 9px; }
+.sr[data-on="true"] .sr-track i.major { width: 15px; background: color-mix(in srgb, var(--ink) 55%, transparent); }
+.sr[data-on="true"] .sr-track i.lit { width: 18px; background: var(--ink); }
+.sr-ind { position: absolute; right: 0; top: -1px; width: 26px; height: 3px; border-radius: 3px; background: var(--accent); box-shadow: 0 0 0 2px var(--canvas); }
+.sr-pct { position: absolute; right: 32px; top: -9px; padding: 3px 6px; border-radius: 6px; background: var(--surface); box-shadow: 0 0 0 1px var(--line); font: 11px/1 var(--mono); color: var(--ink); white-space: nowrap; opacity: 0; transition: opacity .2s; pointer-events: none; }
+.sr:hover .sr-pct { opacity: 1; }
+.sr:not([data-on="true"]) .sr-track i { transition-delay: 0s; }
