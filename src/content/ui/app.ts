@@ -74,7 +74,7 @@ export class MarginApp {
 
   private render(): void {
     const link = (href: string, label: string, ic: string) =>
-      h('a', { class: 'act', href, target: '_blank', rel: 'noopener', title: label }, icon(ic), h('span', {}, label));
+      h('a', { class: 'act opt', href, target: '_blank', rel: 'noopener', title: label }, icon(ic), h('span', {}, label));
     const btn = (label: string, ic: string, run: () => void) =>
       h('button', { class: 'act', type: 'button', title: label, onclick: run }, icon(ic), h('span', {}, label));
 
