@@ -2,6 +2,7 @@ import { loadSettings, onSettingsChange } from '../shared/settings';
 import { MarginApp } from './ui/app';
 import { startTracking } from './footprint/store';
 import { WatchSkin, type SkinKind } from './ui/watch';
+import { injectFonts } from './fonts';
 
 const isHome = () => location.hostname === 'www.bilibili.com' && /^\/(?:[a-z]{2}(?:-[A-Za-z]{2,4})?\/?)?(?:index\.html)?$/.test(location.pathname);
 
@@ -25,6 +26,7 @@ async function startWatch(kind: SkinKind = 'watch'): Promise<void> {
 }
 
 async function start(): Promise<void> {
+  injectFonts();
   startTracking(); // 足迹在所有 B 站页面记录，不只首页
   if (isWatch()) return startWatch();
   if (isSearch()) return startWatch('search');
