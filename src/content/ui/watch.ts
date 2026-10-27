@@ -14,6 +14,7 @@ import { createCommandPalette } from './command-palette';
 import { createContextMenu } from './context-menu';
 import { bindCardMenu } from './card-menu';
 import { createLaterDrawer } from './drawer';
+import { createScrollRuler } from './scroll-ruler';
 import css from '../styles.css?inline';
 import pageCss from '../watch.css?inline';
 
@@ -83,7 +84,7 @@ export class WatchSkin {
       { label: '宽屏模式', run: () => click('.bpx-player-ctrl-wide') },
       { label: '收藏夹', run: () => this.fav.open() },
     ]);
-    this.app = h('div', { class: 'app wt', 'data-bg': 'off' }, this.head.el, quick.el, this.panel.sheet.el, this.fav.el, palette.el, later.el, cm.el);
+    this.app = h('div', { class: 'app wt', 'data-bg': 'off' }, this.head.el, quick.el, createScrollRuler(), this.panel.sheet.el, this.fav.el, palette.el, later.el, cm.el);
     root.append(this.app);
     const lg = filtersIn(root);
     this.head.glass.forEach((g) => attachGlass(g, lg));
