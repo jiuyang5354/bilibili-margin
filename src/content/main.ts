@@ -3,6 +3,9 @@ import { MarginApp } from './ui/app';
 import { startTracking } from './footprint/store';
 import { WatchSkin, type SkinKind } from './ui/watch';
 import { injectFonts } from './fonts';
+import { hideOriginal } from './ui/shell';
+import { SpaceApp } from './ui/space';
+import { MessageApp } from './ui/message';
 
 const isHome = () => location.hostname === 'www.bilibili.com' && /^\/(?:[a-z]{2}(?:-[A-Za-z]{2,4})?\/?)?(?:index\.html)?$/.test(location.pathname);
 
@@ -11,6 +14,9 @@ const isSearch = () => location.hostname === 'search.bilibili.com';
 /** 其他接管的页面：除首页、播放页外的 B 站页面（空间、番剧、动态、历史、专栏、稍后再看…） */
 const SKIP = /^\/(?:[a-z]{2}(?:-[A-Za-z]{2,4})?\/)?(?:blackboard|correspond|v\/topic|festival|bnj|ssr)/;
 const isPage = () => /^(www|space|t)\.bilibili\.com$/.test(location.hostname) && !SKIP.test(location.pathname) && window.top === window;
+const LOC = '(?:[a-z]{2}(?:-[A-Za-z]{2,4})?/)?';
+const spaceMatch = () => location.hostname === 'space.bilibili.com' ? location.pathname.match(new RegExp(`^/${LOC}(\\d+)(?:/(video|upload/video|dynamic|upload))?/?$`)) : null;
+const isMessage = () => location.hostname === 'message.bilibili.com' && window.top === window;
 const offByUrl = () => new URLSearchParams(location.search).get('margin') === 'off';
 
 async function startWatch(kind: SkinKind = 'watch'): Promise<void> {
@@ -29,6 +35,9 @@ async function start(): Promise<void> {
   injectFonts();
   startTracking(); // 足迹在所有 B 站页面记录，不只首页
   if (isWatch()) return startWatch();
+  const sm = spaceMatch();
+  if (sm) return takeover((st) => new SpaceApp(st, Number(sm[1]), sm[2] === 'dynamic' ? 'dynamic' : 'video'));
+  if (isMessage()) return takeover((st) => new MessageApp(st));
   if (isSearch()) return startWatch('search');
   if (!isHome() && isPage()) return startWatch('page');
   if (!isHome() || sessionStorage.getItem('margin:off') || offByUrl()) {
@@ -50,6 +59,20 @@ async function start(): Promise<void> {
   onSettingsChange((next, prev) => {
     if (next.enabled !== prev.enabled) location.reload();
     else app.update(next);
+  });
+}
+
+/** 接管式页面：先藏原版，再挂映间页面；设置里关掉「其他页面重设计」就保留原版 */
+async function takeover(make: (s: Awaited<ReturnType<typeof loadSettings>>) => { shell: { host: HTMLElement }; update(s: Awaited<ReturnType<typeof loadSettings>>): void }): Promise<void> {
+  if (sessionStorage.getItem('margin:off') || offByUrl()) { sessionStorage.removeItem('margin:off'); return; }
+  const hide = hideOriginal();
+  const settings = await loadSettings();
+  if (!settings.enabled || !settings.watch) { hide.remove(); return; }
+  const page = make(settings);
+  document.documentElement.append(page.shell.host);
+  onSettingsChange((next, prev) => {
+    if (next.enabled !== prev.enabled || next.watch !== prev.watch) location.reload();
+    else page.update(next);
   });
 }
 
