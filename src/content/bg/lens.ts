@@ -68,7 +68,7 @@ void main() {
 }`;
 
 /** movements.dev Glass 的参数（CSS 像素）；默认值即官网默认 */
-export const LENS = { rim: 18, bend: 60, blur: 2, aberration: 12, tint: 0.1 };
+export const LENS = { rim: 18, bend: 36, blur: 2, aberration: 5, tint: 0.1 };  // 用户：边缘不要太明显 → bend/aberration 调低
 
 export class GlassLens {
   private prog: WebGLProgram;
