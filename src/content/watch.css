@@ -128,8 +128,15 @@ html.margin-watch .follow-btn, html.margin-watch .follow-btn-inner { border-radi
 html.margin-watch .follow-btn.following, html.margin-watch .follow-btn.following .follow-btn-inner { background: var(--m-chip) !important; color: var(--m-muted) !important; }
 html.margin-watch .charge-btn, html.margin-watch .old-charge-btn { border-radius: 999px !important; }
 
-html.margin-watch #danmukuBox .bui-collapse-wrap, html.margin-watch #danmukuBox .bui-collapse-header,
-html.margin-watch .bui-collapse-wrap { border-radius: 12px !important; overflow: hidden; }
+/* 弹幕列表：外层一张圆角卡；标题栏不再单独圆角/描边/底色（之前收起时四角和外框错位） */
+html.margin-watch #danmukuBox .bui-collapse-wrap, html.margin-watch .bui-collapse-wrap {
+  border-radius: var(--m-radius) !important; overflow: hidden; border: 1px solid var(--m-line) !important;
+  background: var(--m-surface) !important; box-shadow: none !important;
+}
+html.margin-watch #danmukuBox .bui-collapse-header {
+  border-radius: 0 !important; border: 0 !important; box-shadow: none !important; background: transparent !important;
+}
+html.margin-watch #danmukuBox .bui-collapse-body { border: 0 !important; border-top: 1px solid var(--m-line) !important; background: transparent !important; }
 html.margin-watch #danmukuBox { margin-bottom: 14px !important; }
 
 html.margin-watch .video-pod, html.margin-watch .base-video-sections-v1, html.margin-watch .multi-page-v1 {
@@ -173,3 +180,26 @@ html.margin-watch .fixed-sidenav-storage-item {
 html.margin-watch { scrollbar-width: thin; scrollbar-color: color-mix(in srgb, var(--m-ink) 22%, transparent) transparent; }
 /* 交叉淡化期间关掉逐元素 transition：否则 B 站自带的颜色过渡会把文字卡在半路色 */
 html.margin-vt *, html.margin-vt *::before, html.margin-vt *::after { transition: none !important; }
+
+/* 宽屏模式：右栏让到播放器下方 */
+html.margin-watch.margin-wide .right-container { padding-top: var(--m-wide-pad, 0px) !important; }
+
+/* 映间三连：藏掉原版长按动效（工具栏项里的附加层），用描边进度 + 弹起碎光代替 */
+html.margin-triple .toolbar-left-item-wrap > :not(.video-toolbar-left-item):not(.van-popover):not(.van-popper) { display: none !important; }
+html.margin-triple .video-like > :not(svg):not(.video-toolbar-item-text),
+html.margin-triple .video-coin > :not(svg):not(.video-toolbar-item-text),
+html.margin-triple .video-fav > :not(svg):not(.video-toolbar-item-text) { display: none !important; }
+html.margin-triple .video-toolbar-left-item { position: relative; overflow: visible !important; }
+html.margin-triple .video-toolbar-left-item .video-toolbar-item-icon { transition: color .25s, transform .25s; }
+html.margin-triple .mt-ring { position: absolute; inset: -1px; width: calc(100% + 2px); height: calc(100% + 2px); pointer-events: none; overflow: visible; display: block !important; }
+html.margin-triple .mt-ring rect { fill: none; stroke: var(--m-accent); stroke-width: 2; stroke-linecap: round; stroke-dasharray: 100; stroke-dashoffset: 100; filter: drop-shadow(0 0 4px color-mix(in srgb, var(--m-accent) 55%, transparent)); }
+html.margin-triple .video-toolbar-left-item.mt-charge { color: var(--m-accent) !important; }
+html.margin-triple .video-toolbar-left-item.mt-charge .video-toolbar-item-icon { transform: scale(1.06); }
+html.margin-triple .video-toolbar-left-item.mt-done { color: var(--m-accent) !important; border-color: var(--m-accent) !important; background: color-mix(in srgb, var(--m-accent) 10%, var(--m-surface)) !important; }
+.mt-spark { position: fixed; z-index: 100000; width: 5px; height: 5px; margin: -2.5px 0 0 -2.5px; border-radius: 50%; pointer-events: none; background: var(--m-accent, #00aeec); box-shadow: 0 0 8px var(--m-accent, #00aeec); }
+.mt-spark.mt-line { width: 10px; height: 2px; margin: -1px 0 0 -5px; border-radius: 2px; }
+.mt-tag { position: fixed; z-index: 100000; pointer-events: none; display: flex; align-items: baseline; gap: 8px; padding: 6px 12px; border-radius: 999px; white-space: nowrap;
+  background: var(--m-ink, #18191c); color: var(--m-canvas, #fff); box-shadow: 0 10px 30px -12px rgb(0 0 0 / .45); }
+.mt-tag b { font: 400 15px/1 var(--m-serif); letter-spacing: .08em; }
+.mt-tag span { font: 500 9.5px/1 var(--m-mono); letter-spacing: .2em; color: var(--m-accent, #00aeec); }
+@media (prefers-reduced-motion: reduce) { html.margin-triple .mt-ring rect { filter: none; } }
