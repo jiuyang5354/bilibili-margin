@@ -88,6 +88,8 @@ export function startTriple(): void {
       const local = Math.min(1, Math.max(0, (p - i * 0.3) / 0.4));
       r.style.strokeDashoffset = String(100 - local * 100);
       r.style.strokeWidth = String(1 + local * 1.5);
+      // 圆头线帽在进度为 0 时仍会画出一个点（之前按钮左上角的小蓝点），没进度时整条隐藏
+      r.style.strokeOpacity = local > 0 ? '1' : '0';
       el.style.scale = local > 0 && local < 1 ? String(1 - 0.05 * Math.sin(local * Math.PI)) : '';
       el.classList.toggle('mt-charge', local > 0);
     });

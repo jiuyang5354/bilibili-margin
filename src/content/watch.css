@@ -208,7 +208,7 @@ html.margin-triple .video-fav > :not(svg):not(.video-toolbar-item-text) { displa
 html.margin-triple .video-toolbar-left-item { position: relative; overflow: visible !important; }
 html.margin-triple .video-toolbar-left-item .video-toolbar-item-icon { transition: color .25s, transform .25s; }
 html.margin-triple .mt-ring { position: absolute; inset: -1px; width: calc(100% + 2px); height: calc(100% + 2px); pointer-events: none; overflow: visible; display: block !important; }
-html.margin-triple .mt-ring rect { fill: none; stroke: var(--m-accent); stroke-width: 2; stroke-linecap: round; stroke-dasharray: 100; stroke-dashoffset: 100; filter: drop-shadow(0 0 4px color-mix(in srgb, var(--m-accent) 55%, transparent)); }
+html.margin-triple .mt-ring rect { fill: none; stroke: var(--m-accent); stroke-width: 2; stroke-linecap: round; stroke-dasharray: 100; stroke-dashoffset: 100; stroke-opacity: 0; filter: drop-shadow(0 0 4px color-mix(in srgb, var(--m-accent) 55%, transparent)); }
 html.margin-triple .video-toolbar-left-item.mt-charge { color: var(--m-accent) !important; }
 html.margin-triple .video-toolbar-left-item.mt-charge .video-toolbar-item-icon { transform: scale(1.06); }
 html.margin-triple .video-toolbar-left-item.mt-done { color: var(--m-accent) !important; box-shadow: 0 0 0 1px var(--m-accent), var(--sh-xs) !important; background: color-mix(in srgb, var(--m-accent) 10%, var(--m-surface)) !important; }

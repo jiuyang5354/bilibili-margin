@@ -17,6 +17,7 @@ export function createSettingsPanel(get: () => Settings, currentShader: () => Sh
   const theme = segmented<Theme>([['auto', '跟随系统'], ['light', '亮色'], ['dark', '暗色']], s0.theme, (v) => save({ theme: v }));
   const watch = toggle(s0.watch, '其他页面重设计', (v) => save({ watch: v }));
   const preview = toggle(s0.hoverPreview, '悬停预览', (v) => save({ hoverPreview: v }));
+  const intro = toggle(s0.intro, '开场动画', (v) => save({ intro: v }));
 
   const kw = chipInput(s0.filters.keywords, '输入关键词，回车添加；/正则/ 也可以', (v) => save({ filters: { ...get().filters, keywords: v } }));
   const ups = chipInput(s0.filters.ups, 'UP 主昵称或 MID', (v) => save({ filters: { ...get().filters, ups: v } }));
@@ -79,6 +80,7 @@ export function createSettingsPanel(get: () => Settings, currentShader: () => Sh
     h('section', { class: 'group' }, h('h3', {}, '外观'),
       block('明暗', null, theme),
       row('封面悬停预览', '鼠标停留半秒后静音播放', preview),
+      row('开场动画', '每次打开浏览器后第一次进首页播放，点一下可跳过', intro),
       row('其他页面重设计', '播放页、搜索页、空间、动态等，只换外观不改功能', watch)),
     h('section', { class: 'group' }, h('h3', {}, '背景'),
       block('模式', '随机：每次打开换一款，不连续重复', mode),
@@ -97,6 +99,7 @@ export function createSettingsPanel(get: () => Settings, currentShader: () => Sh
     sync(s) {
       theme.set(s.theme);
       preview.setAttribute('aria-checked', String(s.hoverPreview));
+      intro.setAttribute('aria-checked', String(s.intro));
       watch.setAttribute('aria-checked', String(s.watch));
       kw.set(s.filters.keywords);
       ups.set(s.filters.ups);

@@ -8,6 +8,7 @@ import { toast } from './controls';
 import { h, icon, ICONS } from './dom';
 import { createFavorites } from './favorites';
 import { createHeader, SITE_LINKS } from './header';
+import { playIntro, shouldPlayIntro } from './intro/intro';
 import { hotSearch, rememberSearch, searchUrl } from '../api/search';
 import { createFootprintCard } from './footprint';
 import type { SunMoon } from './sun-moon';
@@ -166,6 +167,7 @@ export class MarginApp {
       cm.el,
     );
     this.root.append(this.app);
+    if (shouldPlayIntro(this.settings.intro)) playIntro(this.app, this.resolvedTheme());
     this.app.addEventListener('scroll', () => this.bg.redraw(), { passive: true });
     new ResizeObserver(() => this.bg.redraw()).observe(this.foot);
     const lg = filtersIn(this.root);

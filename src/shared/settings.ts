@@ -28,6 +28,8 @@ export interface Settings {
   hoverPreview: boolean;
   /** 重新设计视频播放页（保留 B 站原生播放器与评论） */
   watch: boolean;
+  /** 首页开场动画（每次打开浏览器后首次进入首页播放一次） */
+  intro: boolean;
   filters: Filters;
   bg: Background;
 }
@@ -38,6 +40,7 @@ export const DEFAULTS: Settings = {
   palette: 'classic',
   hoverPreview: true,
   watch: true,
+  intro: true,
   filters: { keywords: [], ups: [], minViews: 0, minDuration: 0 },
   bg: { mode: 'random', shader: 'aurora', intensity: 0.6 },
 };
