@@ -68,10 +68,10 @@ html.margin-watch .video-page-game-card-small, html.margin-watch .video-page-spe
 html.margin-watch .activity-m-v1, html.margin-watch .reply-notice, html.margin-watch .vcd { display: none !important; }
 
 /* 标题与信息 */
-html.margin-watch .video-info-container { height: auto !important; padding-top: 0 !important; margin-bottom: 18px; }
+html.margin-watch .video-info-container { height: auto !important; padding-top: 0 !important; margin-bottom: 20px; }
 html.margin-watch .video-info-title { height: auto !important; margin-bottom: 10px; }
 html.margin-watch h1.video-title, html.margin-watch .video-info-title .video-title {
-  font: 600 26px/1.38 var(--m-serif) !important; letter-spacing: .01em; color: var(--m-ink) !important;
+  font: 600 24px/1.38 var(--m-serif) !important; letter-spacing: .01em; color: var(--m-ink) !important;
   white-space: normal !important; overflow: visible !important; height: auto !important; max-height: none !important; -webkit-line-clamp: unset !important;
 }
 html.margin-watch .video-info-detail, html.margin-watch .video-info-detail-list,
@@ -105,7 +105,7 @@ html.margin-watch .bpx-player-sending-area { background: var(--m-surface) !impor
 html.margin-watch .bpx-player-sending-area .bpx-player-sending-bar { background: transparent !important; border-radius: 0 0 var(--m-radius) var(--m-radius) !important; }
 
 /* 互动条：点赞 / 投币 / 收藏 / 分享做成胶囊 */
-html.margin-watch .video-toolbar-container { border-bottom: 0 !important; padding: 18px 0 6px !important; }
+html.margin-watch .video-toolbar-container { border-bottom: 0 !important; padding: 20px 0 6px !important; }
 html.margin-watch .video-toolbar-left-main { gap: 10px; }
 html.margin-watch .toolbar-left-item-wrap { margin-right: 10px !important; }
 html.margin-watch .video-toolbar-left-item {
@@ -122,20 +122,20 @@ html.margin-watch .video-desc-container,
 html.margin-watch #commentapp {
   background: var(--m-surface); border: 0 !important; border-radius: var(--m-radius); box-shadow: var(--ring), var(--sh-sm);
 }
-html.margin-watch .video-desc-container { margin: 14px 0 0 !important; padding: 16px 20px !important; }
+html.margin-watch .video-desc-container { margin: 16px 0 0 !important; padding: 16px 20px !important; }
 html.margin-watch .basic-desc-info, html.margin-watch .desc-info-text { color: var(--text2) !important; line-height: 1.75 !important; font-size: 14px !important; }
-html.margin-watch .video-tag-container { border-bottom: 0 !important; padding: 14px 0 6px !important; margin: 0 !important; }
+html.margin-watch .video-tag-container { border-bottom: 0 !important; padding: 16px 0 6px !important; margin: 0 !important; }
 html.margin-watch .video-tag-container .tag-panel .tag { background: none !important; padding: 0 !important; border: 0 !important; height: auto !important; margin: 0 10px 10px 0 !important; }
 html.margin-watch .tag-link {
-  border-radius: 999px !important; background: var(--m-chip) !important; color: var(--m-muted) !important; height: 30px !important; line-height: 30px !important; padding: 0 14px !important;
+  border-radius: 999px !important; background: var(--m-chip) !important; color: var(--m-muted) !important; height: 30px !important; line-height: 30px !important; padding: 0 16px !important;
 }
 html.margin-watch .tag-link:hover { color: var(--m-accent) !important; }
-html.margin-watch #commentapp { margin-top: 18px; padding: 8px 24px 24px; }
+html.margin-watch #commentapp { margin-top: 20px; padding: 8px 24px 24px; }
 
 /* 右栏：UP 主卡片、弹幕列表、推荐列表 */
 html.margin-watch .up-panel-container {
   background: var(--m-surface); border: 1px solid var(--m-line); border-radius: var(--m-radius);
-  padding: 14px 16px; margin-bottom: 14px; height: auto !important;
+  padding: 16px 16px; margin-bottom: 16px; height: auto !important;
 }
 html.margin-watch .up-info-container { margin: 0 !important; }
 html.margin-watch .up-detail-top .up-name { font-weight: 600 !important; color: var(--m-ink) !important; }
@@ -153,7 +153,7 @@ html.margin-watch #danmukuBox .bui-collapse-header {
   border-radius: 0 !important; border: 0 !important; box-shadow: none !important; background: transparent !important;
 }
 html.margin-watch #danmukuBox .bui-collapse-body { border: 0 !important; border-top: 1px solid var(--m-line) !important; background: transparent !important; }
-html.margin-watch #danmukuBox { margin-bottom: 14px !important; }
+html.margin-watch #danmukuBox { margin-bottom: 16px !important; }
 /* 卡片外面那几层 B 站容器自带直角底色，收起时左侧露出直角：全部透明并跟随圆角 */
 html.margin-watch #danmukuBox, html.margin-watch #danmukuBox :has(.bui-collapse-wrap) {
   background: transparent !important; border-radius: var(--m-radius) !important; box-shadow: none !important;
@@ -164,7 +164,7 @@ html.margin-watch .video-pod, html.margin-watch .base-video-sections-v1, html.ma
 }
 
 html.margin-watch .recommend-list-v1 .rec-title, html.margin-watch .next-play .rec-title {
-  font: 600 15px/1 var(--m-serif) !important; letter-spacing: .04em; color: var(--m-ink) !important;
+  font: 600 16px/1 var(--m-serif) !important; letter-spacing: .04em; color: var(--m-ink) !important;
 }
 html.margin-watch .video-page-card-small { margin-bottom: 4px !important; }
 html.margin-watch .video-page-card-small .card-box {
@@ -184,7 +184,7 @@ html.margin-watch .video-page-card-small .card-box:hover .title { color: var(--m
 html.margin-watch .video-page-card-small .upname, html.margin-watch .video-page-card-small .playinfo,
 html.margin-watch .video-page-card-small .name { color: var(--m-faint) !important; font-size: 12px !important; }
 html.margin-watch .video-page-card-small .playinfo { font-family: var(--m-mono); }
-html.margin-watch .next-play { border-bottom: 1px solid var(--m-line); padding-bottom: 10px; margin-bottom: 14px; }
+html.margin-watch .next-play { border-bottom: 1px solid var(--m-line); padding-bottom: 10px; margin-bottom: 16px; }
 html.margin-watch .rec-footer {
   height: 38px !important; line-height: 38px !important; border-radius: 999px !important; background: var(--m-surface) !important;
   border: 1px solid var(--m-line); color: var(--m-muted) !important; margin-top: 8px;
@@ -217,9 +217,9 @@ html.margin-triple .video-toolbar-left-item.mt-charge { color: var(--m-accent) !
 html.margin-triple .video-toolbar-left-item.mt-charge .video-toolbar-item-icon { transform: scale(1.06); }
 html.margin-triple .video-toolbar-left-item.mt-done { color: var(--m-accent) !important; box-shadow: 0 0 0 1px var(--m-accent), var(--sh-xs) !important; background: color-mix(in srgb, var(--m-accent) 10%, var(--m-surface)) !important; }
 .mt-spark { position: fixed; z-index: 100000; width: 5px; height: 5px; margin: -2.5px 0 0 -2.5px; border-radius: 50%; pointer-events: none; background: var(--m-accent, #00aeec); box-shadow: 0 0 8px var(--m-accent, #00aeec); }
-.mt-spark.mt-line { width: 10px; height: 2px; margin: -1px 0 0 -5px; border-radius: 2px; }
+.mt-spark.mt-line { width: 10px; height: 2px; margin: -1px 0 0 -4px; border-radius: 2px; }
 .mt-tag { position: fixed; z-index: 100000; pointer-events: none; display: flex; align-items: baseline; gap: 8px; padding: 6px 12px; border-radius: 999px; white-space: nowrap;
   background: var(--m-ink, #18191c); color: var(--m-canvas, #fff); box-shadow: var(--sh-md); }
-.mt-tag b { font: 400 15px/1 var(--m-serif); letter-spacing: .08em; }
-.mt-tag span { font: 500 9.5px/1 var(--m-mono); letter-spacing: .2em; color: var(--m-accent, #00aeec); }
+.mt-tag b { font: 400 16px/1 var(--m-serif); letter-spacing: .08em; }
+.mt-tag span { font: 500 10px/1 var(--m-mono); letter-spacing: .2em; color: var(--m-accent, #00aeec); }
 @media (prefers-reduced-motion: reduce) { html.margin-triple .mt-ring rect { filter: none; } }

@@ -97,7 +97,7 @@ export class SpaceApp {
         h('div', { class: 'sp-who' },
           h('div', { class: 'sp-kicker' },
             h('img', { class: 'sp-face', src: `${i.face}@120w_120h_1c.webp`, alt: '', referrerpolicy: 'no-referrer' }),
-            h('div', { class: 'eyebrow' }, h('span', { class: 'en' }, 'Space'), h('span', {}, `UID ${i.mid}`), h('span', { class: 'no' }, `LV${i.level}`), i.vip ? h('span', { class: 'sp-vip' }, i.vip) : null)),
+            h('div', { class: 'eyebrow' }, h('span', { class: 'en' }, 'Space'), h('span', { class: 'caps' }, `UID ${i.mid}`), h('span', { class: 'no' }, `LV${i.level}`), i.vip ? h('span', { class: 'sp-vip' }, i.vip) : null)),
           h('h1', {}, i.name),
           i.official ? h('p', { class: 'sp-official' }, i.official) : null,
           i.sign ? h('p', { class: 'sp-sign' }, i.sign) : null),

@@ -19,8 +19,8 @@ export function injectFonts(): void {
     face('Margin Sans SC', 'MarginSans-SC.woff2', '400 700'),
     face('Margin Serif SC', 'MarginSerif-SC.woff2', '400'),
     // 只覆盖拉丁字符，中文自动落到 Margin Serif SC
-    face('Instrument Serif', 'InstrumentSerif.woff2', '400', 'normal', ';size-adjust:112%;unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215'),
-    face('Instrument Serif', 'InstrumentSerif-Italic.woff2', '400', 'italic', ';size-adjust:112%;unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215'),
+    face('Instrument Serif', 'InstrumentSerif.woff2', '400', 'normal', ';size-adjust:112%;unicode-range:U+0020-002F,U+003A-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215'),
+    face('Instrument Serif', 'InstrumentSerif-Italic.woff2', '400', 'italic', ';size-adjust:112%;unicode-range:U+0020-002F,U+003A-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215'),
   ].join('');
   (document.head ?? document.documentElement).append(s);
 }
