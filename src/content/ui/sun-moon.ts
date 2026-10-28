@@ -67,11 +67,13 @@ export function createSunMoon(onToggle: () => void, duration = 1740): SunMoon {
     rest(moon, MOON, t === 'dark'); rest(sun, SUN, t === 'light');
     night.style.opacity = t === 'dark' ? '1' : '0';
     day.style.opacity = t === 'light' ? '1' : '0';
+    twinkle.forEach((a) => (t === 'dark' ? a.play() : a.pause()));  // 亮色时星星看不见，不必一直闪
   };
 
+  const twinkle: Animation[] = [];
   if (!reduced()) {
-    [...night.children].forEach((s, i) => (s as HTMLElement).animate([{ opacity: 0.35 }, { opacity: 1 }, { opacity: 0.35 }],
-      { duration: STARS[i].t, delay: -i * 530, iterations: Infinity, easing: 'ease-in-out' }));
+    [...night.children].forEach((s, i) => twinkle.push((s as HTMLElement).animate([{ opacity: 0.35 }, { opacity: 1 }, { opacity: 0.35 }],
+      { duration: STARS[i].t, delay: -i * 530, iterations: Infinity, easing: 'ease-in-out' })));
   }
 
   function swap(next: Theme) {

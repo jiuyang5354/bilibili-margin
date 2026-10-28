@@ -66,10 +66,14 @@ export function setupQuad(gl: WebGLRenderingContext): void {
   gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
 }
 
-/** 设置面板里的色块：用一张离屏画布把每款着色器真实渲染成缩略图 */
-const thumbCache = new Map<string, string>();
+/** 设置面板里的色块：用一张离屏画布把每款着色器真实渲染成缩略图。
+ *  编译 11 个着色器很贵，所以只在面板真的打开时才画，并缓存到 localStorage，之后的页面直接复用。 */
+const THUMB_KEY = 'margin:thumbs:v2';
+const thumbCache = new Map<string, string>(Object.entries((() => { try { return JSON.parse(localStorage.getItem(THUMB_KEY) || '{}') as Record<string, string>; } catch { return {}; } })()));
 let thumbGl: WebGLRenderingContext | null = null;
 let thumbCanvas: HTMLCanvasElement | null = null;
+let saveTimer = 0;
+export function cachedThumb(id: ShaderId, theme: 'light' | 'dark'): string | null { return thumbCache.get(`${id}:${theme}`) ?? null; }
 export function shaderThumb(id: ShaderId, theme: 'light' | 'dark'): string | null {
   const key = `${id}:${theme}`;
   if (thumbCache.has(key)) return thumbCache.get(key)!;
@@ -84,8 +88,10 @@ export function shaderThumb(id: ShaderId, theme: 'light' | 'dark'): string | nul
   p.bind();
   thumbGl.viewport(0, 0, 160, 120);
   p.draw(160, 120, 14, theme);
-  const url = thumbCanvas!.toDataURL('image/jpeg', 0.85);
+  const url = thumbCanvas!.toDataURL('image/jpeg', 0.8);
   thumbGl.deleteProgram(p.prog);
   thumbCache.set(key, url);
+  clearTimeout(saveTimer);
+  saveTimer = window.setTimeout(() => { try { localStorage.setItem(THUMB_KEY, JSON.stringify(Object.fromEntries(thumbCache))); } catch { /* 配额满就算了 */ } }, 500);
   return url;
 }

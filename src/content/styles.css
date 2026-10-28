@@ -95,7 +95,7 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
 .cover { position: relative; display: block; aspect-ratio: 16 / 9; border-radius: 12px; overflow: hidden; background: var(--chip); }
 .cover img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform .5s cubic-bezier(.2, .8, .2, 1); }
 .card:hover .cover img { transform: scale(1.04); }
-.dur { position: absolute; right: 8px; bottom: 8px; padding: 2px 7px; border-radius: 6px; font: 11px/1.5 var(--mono); color: #fff; background: rgb(0 0 0 / .55); backdrop-filter: blur(6px); }
+.dur { position: absolute; right: 8px; bottom: 8px; padding: 2px 7px; border-radius: 6px; font: 11px/1.5 var(--mono); color: #fff; background: rgb(0 0 0 / .62); }
 .body { padding: 10px 2px 0; }
 .title { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; font-size: 14.5px; font-weight: 500; line-height: 1.5; min-height: 3em; transition: color .2s; }
 .title:hover { color: var(--accent); }
@@ -126,9 +126,9 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
 
 /* card extras */
 .card.still { animation: none; }
-.card-block { position: absolute; top: 8px; right: 8px; display: flex; align-items: center; gap: 4px; height: 26px; padding: 0 9px; border-radius: 999px; font-size: 11px; color: #fff; background: rgb(0 0 0 / .45); backdrop-filter: blur(10px); opacity: 0; transform: translateY(-4px); transition: opacity .2s, transform .2s, background .2s; z-index: 3; }
+.card-block { position: absolute; top: 8px; right: 8px; display: flex; align-items: center; gap: 4px; height: 26px; padding: 0 9px; border-radius: 999px; font-size: 11px; color: #fff; background: rgb(0 0 0 / .55); opacity: 0; transform: translateY(-4px); transition: opacity .2s, transform .2s, background .2s; z-index: 3; }
 .card-block svg { width: 13px; height: 13px; }
-.card:hover .card-block, .card-block:focus-visible { opacity: 1; transform: none; }
+.card:hover .card-block, .card-block:focus-visible { opacity: 1; transform: none; backdrop-filter: blur(10px); }
 .card-block:hover { background: rgb(220 50 60 / .85); }
 .pv { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity .25s; z-index: 1; background: #000; }
 .cover.playing .pv { opacity: 1; }

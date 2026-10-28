@@ -28,16 +28,11 @@ vec3 seen(vec2 px) {
 
 float sdRound(vec2 p, vec2 b, float r) { vec2 q = abs(p) - b + r; return length(max(q, 0.0)) + min(max(q.x, q.y), 0.0) - r; }
 
-// 和 feDisplacementMap 一样：先在位移后的位置取样，再做模糊（3×3 高斯近似 blur(px)）
+// 和 feDisplacementMap 一样先位移再模糊。画布本身只有 ~0.45 倍分辨率，blur(2px) 只相当于 ~1 个画布像素，
+// 4 个半像素对角取样（借双线性插值）就够了，比 3×3 高斯省一半以上的取样
 vec3 tap(vec2 at) {
-  vec3 acc = vec3(0.0);
-  for (float i = -1.0; i <= 1.0; i++) {
-    for (float j = -1.0; j <= 1.0; j++) {
-      float w = (2.0 - abs(i)) * (2.0 - abs(j));
-      acc += seen(at + vec2(i, j) * u_blur) * w;
-    }
-  }
-  return acc / 16.0;
+  vec2 o = vec2(u_blur * 0.5);
+  return (seen(at + o) + seen(at - o) + seen(at + vec2(o.x, -o.y)) + seen(at + vec2(-o.x, o.y))) * 0.25;
 }
 
 void main() {

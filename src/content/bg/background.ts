@@ -56,7 +56,7 @@ export class BackgroundLayer {
     const prevMode = this.cfg?.mode;
     this.cfg = cfg;
     const target = theme === 'dark' ? 1 : 0;
-    if (!first && theme !== this.theme && !this.reduced.matches) { this.kFrom = this.kNow(performance.now()); this.kTo = target; this.kT0 = performance.now(); }
+    if (!first && theme !== this.theme && !this.reduced.matches && !this.soft) { this.kFrom = this.kNow(performance.now()); this.kTo = target; this.kT0 = performance.now(); }
     else { this.kFrom = this.kTo = target; this.kT0 = 0; }
     this.theme = theme;
     this.el.dataset.mode = cfg.mode;
@@ -97,11 +97,15 @@ export class BackgroundLayer {
   /** 滚动等让透镜位置变化时调用：下一帧立刻重画，不等 30fps 节拍 */
   redraw(): void {
     if (this.pending || !this.lensEl) return;
-    this.pending = requestAnimationFrame(() => { this.pending = 0; this.draw(performance.now()); });
+    this.pending = requestAnimationFrame(() => { this.pending = 0; this.draw(performance.now(), true); });
   }
 
+  /** 没有显卡加速（SwiftShader / llvmpipe 等软件渲染）时：背景只画静止的一帧，不做玻璃透镜。
+   *  软件合成下画布每变一次都要整张回读，动画和滚动时的透镜会把主线程拖到个位数帧率 */
+  private soft = false;
+
   private syncLens(): void {
-    const on = !!this.lensEl && !!this.prog && (this.cfg?.mode === 'random' || this.cfg?.mode === 'fixed');
+    const on = !this.soft && !!this.lensEl && !!this.prog && (this.cfg?.mode === 'random' || this.cfg?.mode === 'fixed');
     this.lensEl?.toggleAttribute('data-lens', on);
   }
 
@@ -110,6 +114,8 @@ export class BackgroundLayer {
       this.gl = this.canvas.getContext('webgl', { antialias: false, alpha: false, preserveDrawingBuffer: false, powerPreference: 'low-power' });
       if (!this.gl) { this.el.dataset.mode = 'off'; return; }
       setupQuad(this.gl);
+      this.soft = isSoftwareGl(this.gl);
+      if (this.soft) this.el.dataset.soft = '';
     }
     if (id === this.current && this.prog) return;
     if (this.prog) this.gl.deleteProgram(this.prog.prog);
@@ -130,19 +136,30 @@ export class BackgroundLayer {
     this.draw(performance.now());
   }
 
-  private draw(now: number): void {
+  /** 上一帧画进纹理的着色器状态；滚动时着色器本身不动，只需要把纹理按新位置重新做一次透镜 */
+  private texKey = '';
+  private hadRect = false;
+
+  private draw(now: number, moveOnly = false): void {
     if (!this.gl || !this.prog) return;
     const gl = this.gl, w = this.canvas.width, hh = this.canvas.height;
     const t = this.reduced.matches ? 12 : (now - this.start) / 1000;
     const rect = this.lensRect();
+    // 滚动触发、而玻璃一直在屏幕外：画面没有变化，什么都不用画
+    if (moveOnly && !rect && !this.hadRect) return;
+    this.hadRect = !!rect;
     // 有玻璃时由 GL 自己合成强度和遮罩（canvas 满不透明），没有时走原来的 CSS opacity + scrim
     this.el.toggleAttribute('data-composite', !!rect);
     const k = this.kNow(now);
-    if (!rect) { this.prog.bind(); this.prog.draw(w, hh, t, k); return; }
+    if (!rect) { this.texKey = ''; this.prog.bind(); this.prog.draw(w, hh, t, k); return; }
     this.lens ??= new GlassLens(gl);
-    this.lens.target(w, hh);
-    this.prog.bind();
-    this.prog.draw(w, hh, t, k);
+    const key = `${this.current}|${w}x${hh}|${k}`;
+    if (!moveOnly || this.texKey !== key) {
+      this.lens.target(w, hh);
+      this.prog.bind();
+      this.prog.draw(w, hh, t, k);
+      this.texKey = key;
+    }
     this.lens.present(w, hh, rect, k, this.cfg.intensity);
   }
 
@@ -158,6 +175,7 @@ export class BackgroundLayer {
   }
 
   private loop = (): void => {
+    if (this.soft) return;
     if (this.raf || !this.cfg || (this.cfg.mode !== 'random' && this.cfg.mode !== 'fixed') || document.hidden) return;
     const tick = (now: number) => {
       this.raf = requestAnimationFrame(tick);
@@ -186,4 +204,11 @@ export async function compressImage(file: File): Promise<string> {
   c.height = Math.round(bmp.height * k);
   c.getContext('2d')!.drawImage(bmp, 0, 0, c.width, c.height);
   return c.toDataURL('image/jpeg', 0.82);
+}
+
+function isSoftwareGl(gl: WebGLRenderingContext): boolean {
+  try { if (localStorage.getItem('margin:force-gl')) return false; } catch { /* ignore */ }
+  const ext = gl.getExtension('WEBGL_debug_renderer_info');
+  const r = String(ext ? gl.getParameter(ext.UNMASKED_RENDERER_WEBGL) : gl.getParameter(gl.RENDERER));
+  return /swiftshader|llvmpipe|softpipe|software|basic render/i.test(r);
 }
