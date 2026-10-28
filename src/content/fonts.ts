@@ -4,6 +4,7 @@
  * - Margin Sans SC：思源黑体 Noto Sans SC 可变字重 400–700 子集（OFL）
  * - Instrument Serif（OFL）：标题里的西文与数字、英文眉标的装饰斜体；size-adjust 让它和中文宋体等高
  * - Margin Serif SC：霞鹜新致宋 LXGW Neo ZhiSong 子集（IPA 1.0）
+ * - Margin Kai SC：霞鹜文楷 Medium，只含播放页快捷菜单用到的十几个字（OFL）；改菜单文案要重新子集化
  * Chrome 不认 shadow root 里的 @font-face，所以注册在 document 上，各处 shadow DOM 都能用。
  */
 export function injectFonts(): void {
@@ -18,6 +19,7 @@ export function injectFonts(): void {
     face('Geist Mono', 'GeistMono.woff2', '100 900'),
     face('Margin Sans SC', 'MarginSans-SC.woff2', '400 700'),
     face('Margin Serif SC', 'MarginSerif-SC.woff2', '400'),
+    face('Margin Kai SC', 'MarginKai-SC.woff2', '500'),
     // 只覆盖拉丁字符，中文自动落到 Margin Serif SC
     face('Instrument Serif', 'InstrumentSerif.woff2', '400', 'normal', ';size-adjust:112%;unicode-range:U+0020-002F,U+003A-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215'),
     face('Instrument Serif', 'InstrumentSerif-Italic.woff2', '400', 'italic', ';size-adjust:112%;unicode-range:U+0020-002F,U+003A-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215'),
