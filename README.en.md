@@ -17,7 +17,7 @@ This is an unofficial project with no affiliation to Bilibili. Data is requested
 - A local yearly activity heatmap records the first opening time and time spent each day. Signed-in viewing history can fill earlier dates.
 - Animated sun/moon theme switching, expandable header shortcuts, and a glass-folder favorites drawer with infinite loading.
 - Classic warm-white and serif styling, with light, dark, and system themes. Appearance changes synchronize with the popup.
-- Eleven shader backgrounds, random or fixed selection, uploaded images, and adjustable intensity. Rendering uses reduced resolution, pauses in hidden tabs, and respects reduced motion.
+- Eleven shader backgrounds, random or fixed selection, uploaded images, and adjustable intensity. Rendering uses reduced resolution and targets about 60fps, adapting to about 30 under load and recovering afterward. Backgrounds remain animated during scrolling and video playback, pause in hidden tabs, and respect reduced motion. v0.22.5 also reduces glass-map recomputation and reuses activity-view nodes; see [measurements and limitations](docs/performance-v0.22.5.md).
 - A command palette with Bilibili suggestions, recent searches, trending searches, and MARGIN commands. Open it from the search field, `/`, or `Ctrl/Command + K`; use arrows, Enter, and Tab to navigate.
 - Video context menus provide open-in-new-tab, watch later, copy link/BV ID, uploader space, and uploader blocking. Shift + right-click retains the browser menu.
 - A watch-later drawer shows viewing progress and allows removal. The watch page includes a floating quick menu and a scroll-position ruler.

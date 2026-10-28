@@ -38,10 +38,15 @@ export function createFootprintCard(): HTMLElement {
   let view: 'year' | 'month' = (() => { try { return localStorage.getItem(VIEW_KEY) === 'month' ? 'month' : 'year'; } catch { return 'year'; } })();
   let monthAt = new Date(); monthAt.setDate(1); monthAt.setHours(0, 0, 0, 0);
   let picked: string | null = null;
+  let activity: Activity = {};
+  let renderedKey = '', renderedCells: HTMLElement[] = [];
 
   function paint(data: Activity) {
+    activity = data;
     tip.hidden = true;
     const today = new Date(); today.setHours(0, 0, 0, 0);
+    const key = `${dayKey(today)}|${view}|${monthAt.getFullYear()}-${monthAt.getMonth()}`;
+    const sameView = renderedKey === key;
     const start = new Date(today); start.setDate(start.getDate() - 364 - today.getDay());
     const cells: HTMLElement[] = [];
     const months: [number, number][] = [];
@@ -53,10 +58,13 @@ export function createFootprintCard(): HTMLElement {
       const on = !future && (s > 0 || !!firstOf(rec));
       if (!future) { if (on) { active++; total += s; run++; best = Math.max(best, run); } else run = 0; }
       if (d.getDate() <= 7 && d.getDay() === 0 && d.getMonth() !== lastMonth) { months.push([Math.floor(i / 7), d.getMonth() + 1]); lastMonth = d.getMonth(); }
-      const c = h('i', { class: `fp-cell${future ? ' future' : ''}${+d === +today ? ' today' : ''}` });
-      c.dataset.k = k;
-      c.dataset.l = String(future ? 0 : level(s) || (on ? 1 : 0));
-      cells.push(c);
+      if (view === 'year') {
+        const c = (sameView && renderedCells[i]) || h('i', { class: `fp-cell${future ? ' future' : ''}${+d === +today ? ' today' : ''}` });
+        if (c.dataset.k !== k) c.dataset.k = k;
+        const l = String(future ? 0 : level(s) || (on ? 1 : 0));
+        if (c.dataset.l !== l) c.dataset.l = l;
+        cells.push(c);
+      }
     }
     let streak = 0;
     for (let i = 0; ; i++) {
@@ -69,6 +77,34 @@ export function createFootprintCard(): HTMLElement {
     const t = data[pk];
     const pd = new Date(`${pk}T00:00:00`);
     const pLabel = pk === dayKey(today) ? '今日' : `${pd.getMonth() + 1}月${pd.getDate()}日`;
+    if (sameView) {
+      const text = (selector: string, value: string) => {
+        const node = el.querySelector(selector)!;
+        if (node.textContent !== value) node.textContent = value;
+      };
+      text('.fp-head', `${active} 天打开过 B 站`);
+      [firstOf(t) ?? '—', fmt(secondsOf(t)), fmt(total), `${streak} 天`].forEach((v, i) => text(`.fp-stat:nth-child(${i + 1}) b`, v));
+      text('.fp-stat:nth-child(1) small', `${pLabel}首次打开`);
+      text('.fp-stat:nth-child(2) small', `${pLabel}时长`);
+      text('.fp-stat:last-child small', `当前连续 · 最长 ${best} 天`);
+      text('.fp-foot > span:first-child', note);
+      el.querySelectorAll<HTMLElement>('.fp-day-b').forEach((b) => {
+        const rec = data[b.dataset.k!], s = secondsOf(rec);
+        const l = String(b.hasAttribute('disabled') ? 0 : level(s) || (s > 0 || firstOf(rec) ? 1 : 0));
+        if (b.dataset.l !== l) b.dataset.l = l;
+        const pressed = String(picked === b.dataset.k);
+        if (b.getAttribute('aria-pressed') !== pressed) b.setAttribute('aria-pressed', pressed);
+      });
+      if (view === 'month') {
+        const selected = el.querySelector<HTMLElement>(picked ? '.fp-day-b[aria-pressed="true"]' : '.fp-day-b[data-today]');
+        if (selected) requestAnimationFrame(() => {
+          const col = selected.parentElement!, strip = col.parentElement!;
+          strip.scrollLeft = col.offsetLeft - strip.clientWidth / 2 + col.offsetWidth / 2;
+        });
+      }
+      return;
+    }
+    renderedKey = key; renderedCells = cells;
     const weeks = Math.ceil(cells.length / 7);
     const stat = (v: string, label: string) => h('div', { class: 'fp-stat' }, h('b', {}, v), h('small', {}, label));
     const legend = h('span', { class: 'fp-legend' }, '少', ...[0, 1, 2, 3, 4].map((l) => { const c = h('i', { class: 'fp-cell' }); c.dataset.l = String(l); return c; }), '多');
@@ -78,7 +114,7 @@ export function createFootprintCard(): HTMLElement {
       h('div', { class: 'fp-days' }, ...['', '一', '', '三', '', '五', ''].map((x) => h('span', {}, x))),
       h('div', { class: 'fp-cells' }, ...cells),
     );
-    const segBtn = (v: 'year' | 'month', label: string) => h('button', { type: 'button', class: 'fp-seg-b', 'aria-pressed': String(view === v), onclick: () => { if (view === v) return; view = v; try { localStorage.setItem(VIEW_KEY, v); } catch { /* ignore */ } paint(data); } }, label);
+    const segBtn = (v: 'year' | 'month', label: string) => h('button', { type: 'button', class: 'fp-seg-b', 'aria-pressed': String(view === v), onclick: () => { if (view === v) return; view = v; try { localStorage.setItem(VIEW_KEY, v); } catch { /* ignore */ } paint(activity); } }, label);
     const seg = h('div', { class: 'fp-seg', role: 'group', 'aria-label': '视图' }, segBtn('year', '年'), segBtn('month', '月'));
     el.dataset.view = view;
     el.replaceChildren(
@@ -106,7 +142,7 @@ export function createFootprintCard(): HTMLElement {
     graph.onpointerover = (e) => {
       const c = (e.target as HTMLElement).closest<HTMLElement>('.fp-cells .fp-cell');
       if (!c || c.classList.contains('future')) { tip.hidden = true; return; }
-      const r = data[c.dataset.k!], d = new Date(`${c.dataset.k}T00:00:00`), s = secondsOf(r), f = firstOf(r);
+      const r = activity[c.dataset.k!], d = new Date(`${c.dataset.k}T00:00:00`), s = secondsOf(r), f = firstOf(r);
       tip.replaceChildren(h('b', {}, `${d.getMonth() + 1}月${d.getDate()}日 ${WEEK[d.getDay()]}`), h('br'),
         s || f ? `首次打开 ${f ?? '—'} · 时长 ${fmt(s)}` : h('small', {}, '没有打开 B 站'));
       const b = c.getBoundingClientRect();
@@ -127,13 +163,14 @@ export function createFootprintCard(): HTMLElement {
       const on = s > 0 || !!firstOf(rec);
       const b = h('button', { type: 'button', class: 'fp-day-b', disabled: future, 'aria-pressed': String(picked === k), title: `${m + 1}月${i}日` }, String(i));
       b.dataset.l = String(future ? 0 : level(s) || (on ? 1 : 0));
+      b.dataset.k = k;
       if (+d === +today) b.dataset.today = '';
-      b.onclick = () => { picked = picked === k ? null : k; paint(data); };
+      b.onclick = () => { picked = picked === k ? null : k; paint(activity); };
       const col = h('div', { class: 'fp-day' }, h('span', {}, WEEK_1[d.getDay()]), b);
       if (picked === k || (!picked && +d === +today)) sel = col;
       strip.append(col);
     }
-    const go = (dm: number) => { monthAt = new Date(y, m + dm, 1); picked = null; paint(data); };
+    const go = (dm: number) => { monthAt = new Date(y, m + dm, 1); picked = null; paint(activity); };
     const nextOff = isThisMonth;
     const prevOff = +new Date(y, m, 1) <= +new Date(today.getFullYear() - 1, today.getMonth(), 1);
     requestAnimationFrame(() => { if (sel) strip.scrollLeft = sel.offsetLeft - strip.clientWidth / 2 + sel.offsetWidth / 2; });

@@ -70,27 +70,39 @@ export function attachGlass(el: HTMLElement, filters: SVGSVGElement, o: GlassOpt
   f.append(img, disp);
   filters.append(f);
 
-  let url = '', lastKey = '';
+  let url = '', lastKey = '', timer = 0, building = false;
   const build = () => {
     const w = Math.round(el.offsetWidth), h = Math.round(el.offsetHeight);
     if (w < 4 || h < 4) return;
     const key = `${w}x${h}`;
     if (key === lastKey) return;
     lastKey = key;
+    building = true;
     const radius = parseFloat(getComputedStyle(el).borderTopLeftRadius) || h / 2;
     const bezel = Math.min(h / 2, w / 2, 22);
     makeMap(w, h, radius, bezel).toBlob((b) => {
-      if (!b || key !== lastKey) return;
+      if (key !== lastKey) return;
+      building = false;
+      if (!b) return;
       if (url) URL.revokeObjectURL(url);
       url = URL.createObjectURL(b);
-      img.setAttribute('width', String(w)); img.setAttribute('height', String(h));
       img.setAttribute('href', url);
-      disp.setAttribute('scale', String(Math.round(h * (o.strength ?? 0.55))));
       el.style.backdropFilter = `blur(${o.blur ?? 6}px) url(#${id}) saturate(${o.sat ?? '150%'})`;
     });
   };
-  new ResizeObserver(() => build()).observe(el);
-  requestAnimationFrame(build);
+  const resize = () => {
+    const w = Math.round(el.offsetWidth), h = Math.round(el.offsetHeight);
+    if (w < 4 || h < 4) return;
+    // Keep the existing map stretched with the control during its width animation.
+    // Generate exact optics once the dimensions settle instead of on every frame.
+    img.setAttribute('width', String(w)); img.setAttribute('height', String(h));
+    disp.setAttribute('scale', String(Math.round(h * (o.strength ?? 0.55))));
+    clearTimeout(timer);
+    if (!url && !building) build();
+    else if (`${w}x${h}` !== lastKey) timer = window.setTimeout(build, 80);
+  };
+  new ResizeObserver(resize).observe(el);
+  requestAnimationFrame(resize);
 }
 
 /** 原版两张位移图（兜底 / 首帧），CSS 里可用 url(#lg-bar) / url(#lg-thumb) */

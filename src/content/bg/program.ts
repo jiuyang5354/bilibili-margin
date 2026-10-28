@@ -9,6 +9,9 @@ const hex = (s: string) => [1, 3, 5].map((i) => parseInt(s.slice(i, i + 2), 16) 
 export class ShaderProgram {
   readonly prog: WebGLProgram;
   private loc: Record<string, WebGLUniformLocation | null> = {};
+  private position: number;
+  private lastTheme = Number.NaN;
+  private configured = false;
   /** 流光：WebGPU 画好的帧（上传成的纹理）；为 null 时着色器画自带的近似版 */
   tex: WebGLTexture | null = null;
   constructor(private gl: WebGLRenderingContext, readonly id: ShaderId) {
@@ -18,6 +21,7 @@ export class ShaderProgram {
     gl.attachShader(prog, sh(gl.FRAGMENT_SHADER, fragment(id)));
     gl.linkProgram(prog);
     this.prog = prog;
+    this.position = gl.getAttribLocation(prog, 'p');
     const names = isBuilder(id) ? ['u_colors', 'u_scene', 'u_shape', 'u_surface', 'u_finish', 'u_transform', 'u_space', 'u_cursor'] : ['u_res', 'u_t', 'u_c1', 'u_c2', 'u_c3', 'u_bg', 'u_tex', 'u_has'];
     for (const n of names) this.loc[n] = gl.getUniformLocation(prog, n);
   }
@@ -25,7 +29,7 @@ export class ShaderProgram {
   bind(): void {
     const gl = this.gl;
     gl.useProgram(this.prog);
-    const a = gl.getAttribLocation(this.prog, 'p');
+    const a = this.position;
     gl.enableVertexAttribArray(a);
     gl.vertexAttribPointer(a, 2, gl.FLOAT, false, 0, 0);
   }
@@ -36,27 +40,36 @@ export class ShaderProgram {
     const gl = this.gl, L = this.loc;
     const k = typeof theme === 'number' ? theme : theme === 'dark' ? 1 : 0;
     const mix3 = (a: number[], b: number[]) => a.map((v, i) => v + (b[i] - v) * k);
+    const colorsChanged = this.lastTheme !== k;
+    this.lastTheme = k;
     if (isBuilder(this.id)) {
       const pr = BUILDER[this.id], u = pr.u;
-      const pad = (c: number[][]) => { const o = c.slice(); while (o.length < 8) o.push(o[o.length - 1]); return o; };
-      const lc = pad(pr.light.map(hex)), dc = pad(pr.dark.map(hex));
-      const cols = lc.map((c, i) => mix3(c, dc[i]));
-      gl.uniform3fv(L.u_colors, new Float32Array(cols.flat()));
+      if (colorsChanged) {
+        const pad = (c: number[][]) => { const o = c.slice(); while (o.length < 8) o.push(o[o.length - 1]); return o; };
+        const lc = pad(pr.light.map(hex)), dc = pad(pr.dark.map(hex));
+        const cols = lc.map((c, i) => mix3(c, dc[i]));
+        gl.uniform3fv(L.u_colors, new Float32Array(cols.flat()));
+      }
       gl.uniform4f(L.u_scene, w, h, t * u.timeScale, (k < 0.5 ? pr.light : pr.dark).length);
-      gl.uniform4f(L.u_shape, u.scale, u.intensity, u.paramA, u.warp);
-      gl.uniform4f(L.u_surface, u.detail, u.contrast, u.brightness, u.saturation);
-      gl.uniform4f(L.u_finish, u.hue, u.vignette, u.blur, u.grain);
-      gl.uniform4f(L.u_transform, u.seed, u.rotate, u.drift, u.oklab);
-      gl.uniform4f(L.u_space, u.offsetX, u.offsetY, 0, 0);
-      gl.uniform4f(L.u_cursor, 0, 0, 0, 0);
+      if (!this.configured) {
+        gl.uniform4f(L.u_shape, u.scale, u.intensity, u.paramA, u.warp);
+        gl.uniform4f(L.u_surface, u.detail, u.contrast, u.brightness, u.saturation);
+        gl.uniform4f(L.u_finish, u.hue, u.vignette, u.blur, u.grain);
+        gl.uniform4f(L.u_transform, u.seed, u.rotate, u.drift, u.oklab);
+        gl.uniform4f(L.u_space, u.offsetX, u.offsetY, 0, 0);
+        gl.uniform4f(L.u_cursor, 0, 0, 0, 0);
+        this.configured = true;
+      }
     } else {
       const a = PALETTES.light[this.id]!, b = PALETTES.dark[this.id]!;
       gl.uniform2f(L.u_res, w, h);
       gl.uniform1f(L.u_t, t);
-      gl.uniform3fv(L.u_bg, mix3(Array.from(a.bg), Array.from(b.bg)));
-      gl.uniform3fv(L.u_c1, mix3(Array.from(a.c[0]), Array.from(b.c[0])));
-      gl.uniform3fv(L.u_c2, mix3(Array.from(a.c[1]), Array.from(b.c[1])));
-      gl.uniform3fv(L.u_c3, mix3(Array.from(a.c[2]), Array.from(b.c[2])));
+      if (colorsChanged) {
+        gl.uniform3fv(L.u_bg, mix3(Array.from(a.bg), Array.from(b.bg)));
+        gl.uniform3fv(L.u_c1, mix3(Array.from(a.c[0]), Array.from(b.c[0])));
+        gl.uniform3fv(L.u_c2, mix3(Array.from(a.c[1]), Array.from(b.c[1])));
+        gl.uniform3fv(L.u_c3, mix3(Array.from(a.c[2]), Array.from(b.c[2])));
+      }
       if (L.u_has) {
         gl.uniform1f(L.u_has, this.tex ? 1 : 0);
         // 没有 WebGPU 帧时也要解绑：0 号纹理单元上可能是透镜的离屏纹理，会形成反馈环

@@ -31,14 +31,11 @@ export class BackgroundLayer {
     this.el.append(this.canvas, this.img, h('div', { class: 'bg-scrim' }));
     document.addEventListener('visibilitychange', () => (document.hidden ? this.stop() : this.loop()));
     new ResizeObserver(() => this.resize()).observe(this.el);
-    // 省电/防卡：滚动时、页面上有视频在播放时，背景暂停在当前帧（每帧重绘会让上层所有毛玻璃一起重新合成）
-    const busy = () => { this.quietUntil = performance.now() + 220; };
-    addEventListener('scroll', busy, { capture: true, passive: true });
-    addEventListener('wheel', busy, { capture: true, passive: true });
-    const vid = () => { this.videoPlaying = [...document.querySelectorAll('video')].some((v) => !v.paused && !v.ended && v.readyState > 2 && v.getBoundingClientRect().width > 320); };
-    for (const ev of ['play', 'playing', 'pause', 'ended', 'emptied']) document.addEventListener(ev, vid, true);
+    this.reduced.addEventListener('change', () => {
+      this.stop();
+      if (this.cfg?.mode === 'random' || this.cfg?.mode === 'fixed') { this.draw(performance.now()); this.loop(); }
+    });
   }
-  private quietUntil = 0;
   /** 昼夜切换的调色板插值，时长/缓动和日月按钮一致（1740ms，cubic-bezier(.65,0,.35,1)） */
   fadeMs = 1740;
   private kFrom = 0; private kTo = 0; private kT0 = 0;
@@ -49,7 +46,6 @@ export class BackgroundLayer {
     const e = x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;
     return this.kFrom + (this.kTo - this.kFrom) * e;
   }
-  private videoPlaying = false;
 
   async apply(cfg: Background, theme: 'light' | 'dark', palette: Palette = 'classic'): Promise<void> {
     this.palette = palette;
@@ -97,7 +93,7 @@ export class BackgroundLayer {
 
   /** 滚动等让透镜位置变化时调用：下一帧立刻重画，不等 30fps 节拍 */
   redraw(): void {
-    if (this.pending || !this.lensEl) return;
+    if (this.pending || !this.lensEl?.hasAttribute('data-lens') || document.hidden) return;
     this.pending = requestAnimationFrame(() => { this.pending = 0; this.draw(performance.now(), true); });
   }
 
@@ -232,28 +228,35 @@ export class BackgroundLayer {
   private radW = 0;
   private rad = 18;
   /** 帧间隔：默认约 60fps；连续掉帧（GPU 跟不上）时自动降到约 30fps，恢复后再升回去 */
-  private frameMs = 16;
+  private frameMs = 1000 / 60;
+  private nextFrame = 0;
   private slow = 0;
   private fastRun = 0;
 
   private loop = (): void => {
     if (this.soft) return;
     if (this.raf || !this.cfg || (this.cfg.mode !== 'random' && this.cfg.mode !== 'fixed') || document.hidden) return;
+    if (this.reduced.matches && !this.kT0) return;
     const tick = (now: number) => {
-      this.raf = requestAnimationFrame(tick);
+      this.raf = 0;
       const fading = !!this.kT0;
-      if (!fading && now - this.last < this.frameMs - 2) return;
-      if (!fading && (this.videoPlaying || now < this.quietUntil)) return;
-      const gap = now - this.last;
-      this.last = now;
-      const t0 = performance.now();
-      this.draw(now);
-      const cost = performance.now() - t0;
-      // 绘制本身 >6ms 或者实际帧距远大于目标：记一次慢帧；累计 30 次降档，快帧慢慢抵消
-      if (gap < 200 && (cost > 6 || gap > this.frameMs * 1.8)) this.slow++; else this.slow = Math.max(0, this.slow - 0.25);
-      if (this.slow > 30 && this.frameMs < 33) { this.frameMs = 33; this.slow = 0; }
-      else if (this.frameMs > 16 && this.slow === 0 && gap < 40) { this.fastRun += 1; if (this.fastRun > 600) { this.frameMs = 16; this.fastRun = 0; } }
-      if (this.reduced.matches && !this.kT0) this.stop();
+      if (fading || now + 0.1 >= this.nextFrame) {
+        const gap = now - this.last;
+        this.last = now;
+        const t0 = performance.now();
+        this.draw(now);
+        const cost = performance.now() - t0;
+        if (gap < 200 && (cost > 6 || gap > this.frameMs * 1.8)) this.slow++; else this.slow = Math.max(0, this.slow - 0.25);
+        if (this.slow > 30 && this.frameMs < 30) { this.frameMs = 1000 / 30; this.slow = 0; }
+        else if (this.frameMs > 30 && this.slow === 0 && gap < 40) { this.fastRun++; if (this.fastRun > 600) { this.frameMs = 1000 / 60; this.fastRun = 0; } }
+        else this.fastRun = 0;
+        // Advance the deadline instead of restarting the interval on each drawn frame.
+        // Restarting rounds 60fps down to 48fps on 144Hz displays.
+        if (fading || !this.nextFrame || now - this.nextFrame > this.frameMs * 2) this.nextFrame = now;
+        this.nextFrame += this.frameMs;
+      }
+      if (this.reduced.matches && !this.kT0) return;
+      this.raf = requestAnimationFrame(tick);
     };
     this.raf = requestAnimationFrame(tick);
   };
@@ -261,6 +264,7 @@ export class BackgroundLayer {
   private stop(): void {
     cancelAnimationFrame(this.raf);
     this.raf = 0;
+    this.nextFrame = 0;
   }
 }
 
