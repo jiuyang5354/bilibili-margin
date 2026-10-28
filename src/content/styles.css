@@ -779,9 +779,9 @@ canvas.gf-sheet-art[data-ready] { opacity: 1; filter: none; }
 .fp-card[data-view="month"] .fp-foot { padding-top: 16px; margin-top: 16px; border-top: 1px solid color-mix(in srgb, var(--ink) 12%, transparent); }
 .fp-tip small { opacity: .7; }
 @media (max-width: 1100px) { .fp-card { grid-template-columns: 1fr; gap: 20px; } .fp-stats { grid-template-columns: repeat(4, auto); justify-content: start; gap: 12px 28px; } }
-.theme-fading, .theme-fading *, .theme-fading *::before, .theme-fading *::after { transition-property: color, background-color, border-color, outline-color, text-decoration-color, fill, stroke, box-shadow !important; transition-duration: var(--fade) !important; transition-timing-function: cubic-bezier(.65, 0, .35, 1) !important; transition-delay: 0s !important; }
+.theme-fading, .theme-fading *, .theme-fading *::before, .theme-fading *::after { transition-property: color, background-color, border-color, outline-color, text-decoration-color, fill, stroke !important; transition-duration: var(--fade) !important; transition-timing-function: cubic-bezier(.65, 0, .35, 1) !important; transition-delay: 0s !important; }
 /* 日月主题切换（21st Sun Moon Theme Toggle，原生移植） */
-.sm-toggle { position: relative; isolation: isolate; display: inline-flex; flex: none; align-items: center; justify-content: center; width: 40px; height: 40px; overflow: hidden; border-radius: 50%; border: 1px solid var(--line); background: var(--surface); color: var(--ink); cursor: pointer; transition: filter .2s var(--ease-out); }
+.sm-toggle { position: relative; isolation: isolate; display: inline-flex; flex: none; align-items: center; justify-content: center; width: 40px; height: 40px; overflow: hidden; border-radius: 50%; border: 1px solid var(--line); background: var(--surface); color: var(--ink); cursor: pointer; transition: filter .15s cubic-bezier(.4, 0, .2, 1), background-color .15s cubic-bezier(.4, 0, .2, 1); }
 .sm-toggle:hover { filter: brightness(1.1); }
 .sm-sky { position: absolute; inset: 0; z-index: -1; pointer-events: none; }
 .sm-sky[data-sky="night"] { background: linear-gradient(180deg, #090f2a 0%, #16204b 60%, #2a2f66 100%); }

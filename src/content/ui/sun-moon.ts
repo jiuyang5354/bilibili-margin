@@ -67,7 +67,6 @@ export function createSunMoon(onToggle: () => void, duration = 1740): SunMoon {
     rest(moon, MOON, t === 'dark'); rest(sun, SUN, t === 'light');
     night.style.opacity = t === 'dark' ? '1' : '0';
     day.style.opacity = t === 'light' ? '1' : '0';
-    twinkle.forEach((a) => (t === 'dark' ? a.play() : a.pause()));  // 亮色时星星看不见，不必一直闪
   };
 
   const twinkle: Animation[] = [];
@@ -77,9 +76,10 @@ export function createSunMoon(onToggle: () => void, duration = 1740): SunMoon {
   }
 
   function swap(next: Theme) {
+    // 与原组件一致：静止样式先切到新主题，动画 fill: both 覆盖在上面；中途再点就倒放
+    restAll(next);
     if (flight.length) { flight.forEach((a) => a.reverse()); return; }
-    restAll(next === 'light' ? 'dark' : 'light');
-    if (reduced()) { restAll(next); return; }
+    if (reduced()) return;
     const toLight = next === 'light';
     const set = (toLight ? moon : sun).animate(toLight ? KF.moonSets : KF.sunSets, { duration: duration * 0.65, fill: 'both' });
     const rise = (toLight ? sun : moon).animate(toLight ? KF.sunRises : KF.moonRises, { duration: duration * 0.64, delay: duration * 0.36, fill: 'both' });
@@ -91,7 +91,6 @@ export function createSunMoon(onToggle: () => void, duration = 1740): SunMoon {
     Promise.all(pair.map((a) => a.finished)).then(() => {
       if (flight !== pair) return;
       flight = [];
-      restAll(theme!);
       pair.forEach((a) => a.cancel());
     }, () => {});
   }
