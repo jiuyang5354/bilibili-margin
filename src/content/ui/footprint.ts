@@ -1,5 +1,5 @@
 import { backfill, dayKey, firstOf, loadActivity, secondsOf, type Activity } from '../footprint/store';
-import { h } from './dom';
+import { h, icon } from './dom';
 
 const WEEK = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
 const fmt = (sec: number) => {
@@ -9,6 +9,10 @@ const fmt = (sec: number) => {
 const level = (s: number) => (s <= 0 ? 0 : s < 900 ? 1 : s < 2700 ? 2 : s < 5400 ? 3 : 4);
 
 const BF_KEY = 'margin:activity-bf';
+const VIEW_KEY = 'margin:fp-view';
+const MONTH_EN = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+const WEEK_1 = ['日', '一', '二', '三', '四', '五', '六'];
+const CHEV_L = '<path d="m14.5 6-6 6 6 6"/>', CHEV_R = '<path d="m9.5 6 6 6-6 6"/>';
 
 /** 首页上的「B 站足迹」卡片：近一年每天首次打开时间与停留时长的热力图 */
 export function createFootprintCard(): HTMLElement {
@@ -30,8 +34,13 @@ export function createFootprintCard(): HTMLElement {
   })();
   setInterval(refresh, 60_000);
   let ro: ResizeObserver | null = null;
+  // 21st「Glass Calendar」：年 / 月两种视图，月视图是一条可横向滑动的日期条，点哪天看哪天
+  let view: 'year' | 'month' = (() => { try { return localStorage.getItem(VIEW_KEY) === 'month' ? 'month' : 'year'; } catch { return 'year'; } })();
+  let monthAt = new Date(); monthAt.setDate(1); monthAt.setHours(0, 0, 0, 0);
+  let picked: string | null = null;
 
   function paint(data: Activity) {
+    tip.hidden = true;
     const today = new Date(); today.setHours(0, 0, 0, 0);
     const start = new Date(today); start.setDate(start.getDate() - 364 - today.getDay());
     const cells: HTMLElement[] = [];
@@ -56,7 +65,10 @@ export function createFootprintCard(): HTMLElement {
       if (secondsOf(r) > 0 || firstOf(r)) streak++;
       else if (i > 0) break;
     }
-    const t = data[dayKey(today)];
+    const pk = view === 'month' && picked ? picked : dayKey(today);
+    const t = data[pk];
+    const pd = new Date(`${pk}T00:00:00`);
+    const pLabel = pk === dayKey(today) ? '今日' : `${pd.getMonth() + 1}月${pd.getDate()}日`;
     const weeks = Math.ceil(cells.length / 7);
     const stat = (v: string, label: string) => h('div', { class: 'fp-stat' }, h('b', {}, v), h('small', {}, label));
     const legend = h('span', { class: 'fp-legend' }, '少', ...[0, 1, 2, 3, 4].map((l) => { const c = h('i', { class: 'fp-cell' }); c.dataset.l = String(l); return c; }), '多');
@@ -66,16 +78,21 @@ export function createFootprintCard(): HTMLElement {
       h('div', { class: 'fp-days' }, ...['', '一', '', '三', '', '五', ''].map((x) => h('span', {}, x))),
       h('div', { class: 'fp-cells' }, ...cells),
     );
+    const segBtn = (v: 'year' | 'month', label: string) => h('button', { type: 'button', class: 'fp-seg-b', 'aria-pressed': String(view === v), onclick: () => { if (view === v) return; view = v; try { localStorage.setItem(VIEW_KEY, v); } catch { /* ignore */ } paint(data); } }, label);
+    const seg = h('div', { class: 'fp-seg', role: 'group', 'aria-label': '视图' }, segBtn('year', '年'), segBtn('month', '月'));
+    el.dataset.view = view;
     el.replaceChildren(
       h('div', { class: 'fp-side' },
-        h('div', { class: 'eyebrow' }, h('span', { class: 'en' }, 'Footprint'), h('span', {}, '近一年')),
+        h('div', { class: 'fp-top' },
+          h('div', { class: 'eyebrow' }, h('span', { class: 'en' }, 'Footprint'), h('span', {}, view === 'year' ? '近一年' : '按月')),
+          seg),
         h('h3', { class: 'fp-head' }, `${active} 天打开过 B 站`),
         h('div', { class: 'fp-stats' },
-        stat(firstOf(t) ?? '—', '今日首次打开'),
-        stat(fmt(secondsOf(t)), '今日时长'),
+        stat(firstOf(t) ?? '—', `${pLabel}首次打开`),
+        stat(fmt(secondsOf(t)), `${pLabel}时长`),
         stat(fmt(total), '近一年累计'),
         stat(`${streak} 天`, `当前连续 · 最长 ${best} 天`))),
-      h('div', { class: 'fp-main' }, graph, h('div', { class: 'fp-foot' }, h('span', {}, note), legend)),
+      h('div', { class: 'fp-main' }, view === 'year' ? graph : monthView(data, today), h('div', { class: 'fp-foot' }, h('span', {}, note), legend)),
       tip,
     );
     const fit = () => {
@@ -84,10 +101,8 @@ export function createFootprintCard(): HTMLElement {
       graph.style.setProperty('--c', `${cs}px`);
       graph.scrollLeft = graph.scrollWidth;
     };
-    requestAnimationFrame(fit);
     ro?.disconnect();
-    ro = new ResizeObserver(fit);
-    ro.observe(el);
+    if (view === 'year') { requestAnimationFrame(fit); ro = new ResizeObserver(fit); ro.observe(el); }
     graph.onpointerover = (e) => {
       const c = (e.target as HTMLElement).closest<HTMLElement>('.fp-cells .fp-cell');
       if (!c || c.classList.contains('future')) { tip.hidden = true; return; }
@@ -100,6 +115,36 @@ export function createFootprintCard(): HTMLElement {
       tip.hidden = false;
     };
     graph.onpointerleave = () => { tip.hidden = true; };
+  }
+  function monthView(data: Activity, today: Date): HTMLElement {
+    const y = monthAt.getFullYear(), m = monthAt.getMonth();
+    const days = new Date(y, m + 1, 0).getDate();
+    const isThisMonth = y === today.getFullYear() && m === today.getMonth();
+    const strip = h('div', { class: 'fp-strip' });
+    let sel: HTMLElement | null = null;
+    for (let i = 1; i <= days; i++) {
+      const d = new Date(y, m, i), k = dayKey(d), future = d > today, rec = data[k], s = secondsOf(rec);
+      const on = s > 0 || !!firstOf(rec);
+      const b = h('button', { type: 'button', class: 'fp-day-b', disabled: future, 'aria-pressed': String(picked === k), title: `${m + 1}月${i}日` }, String(i));
+      b.dataset.l = String(future ? 0 : level(s) || (on ? 1 : 0));
+      if (+d === +today) b.dataset.today = '';
+      b.onclick = () => { picked = picked === k ? null : k; paint(data); };
+      const col = h('div', { class: 'fp-day' }, h('span', {}, WEEK_1[d.getDay()]), b);
+      if (picked === k || (!picked && +d === +today)) sel = col;
+      strip.append(col);
+    }
+    const go = (dm: number) => { monthAt = new Date(y, m + dm, 1); picked = null; paint(data); };
+    const nextOff = isThisMonth;
+    const prevOff = +new Date(y, m, 1) <= +new Date(today.getFullYear() - 1, today.getMonth(), 1);
+    requestAnimationFrame(() => { if (sel) strip.scrollLeft = sel.offsetLeft - strip.clientWidth / 2 + sel.offsetWidth / 2; });
+    strip.addEventListener('wheel', (e) => { if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) { strip.scrollLeft += e.deltaY; e.preventDefault(); } }, { passive: false });
+    return h('div', { class: 'fp-month' },
+      h('div', { class: 'fp-mhead' },
+        h('p', { class: 'fp-mname' }, h('span', { class: 'en' }, MONTH_EN[m]), h('small', {}, `${y} 年 ${m + 1} 月`)),
+        h('div', { class: 'fp-mnav' },
+          h('button', { type: 'button', 'aria-label': '上个月', disabled: prevOff, onclick: () => go(-1) }, icon(CHEV_L)),
+          h('button', { type: 'button', 'aria-label': '下个月', disabled: nextOff, onclick: () => go(1) }, icon(CHEV_R)))),
+      strip);
   }
   return el;
 }

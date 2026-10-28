@@ -8,7 +8,7 @@ import { GlassLens } from './lens';
 
 const LAST_KEY = 'margin:last-shader';
 
-/** 首页背景层：WebGL 着色器（半分辨率、约 30fps、隐藏时暂停）或自定义图片 */
+/** 首页背景层：WebGL 着色器（半分辨率、约 60fps（掉帧自动降到 30）、隐藏时暂停）或自定义图片 */
 export class BackgroundLayer {
   readonly el = h('div', { class: 'bg', 'aria-hidden': 'true' });
   private canvas = h('canvas', {});
@@ -222,9 +222,19 @@ export class BackgroundLayer {
     const b = this.el.getBoundingClientRect(), r = el.getBoundingClientRect();
     if (r.bottom < b.top || r.top > b.bottom || r.width < 2) return null;
     const k = this.canvas.width / Math.max(1, b.width);
-    const rad = parseFloat(getComputedStyle(el).borderTopLeftRadius) || 18;
+    // 圆角只在换元素/尺寸变化时读一次：每帧 getComputedStyle 会在滚动中强制样式重算
+    if (this.radFor !== el || this.radW !== r.width) { this.radFor = el; this.radW = r.width; this.rad = parseFloat(getComputedStyle(el).borderTopLeftRadius) || 18; }
+    const rad = this.rad;
     return { x: (r.left - b.left) * k, y: (b.bottom - r.bottom) * k, w: r.width * k, h: r.height * k, r: rad * k, px: k };
   }
+
+  private radFor: HTMLElement | null = null;
+  private radW = 0;
+  private rad = 18;
+  /** 帧间隔：默认约 60fps；连续掉帧（GPU 跟不上）时自动降到约 30fps，恢复后再升回去 */
+  private frameMs = 16;
+  private slow = 0;
+  private fastRun = 0;
 
   private loop = (): void => {
     if (this.soft) return;
@@ -232,10 +242,17 @@ export class BackgroundLayer {
     const tick = (now: number) => {
       this.raf = requestAnimationFrame(tick);
       const fading = !!this.kT0;
-      if (!fading && now - this.last < 42) return;
+      if (!fading && now - this.last < this.frameMs - 2) return;
       if (!fading && (this.videoPlaying || now < this.quietUntil)) return;
+      const gap = now - this.last;
       this.last = now;
+      const t0 = performance.now();
       this.draw(now);
+      const cost = performance.now() - t0;
+      // 绘制本身 >6ms 或者实际帧距远大于目标：记一次慢帧；累计 30 次降档，快帧慢慢抵消
+      if (gap < 200 && (cost > 6 || gap > this.frameMs * 1.8)) this.slow++; else this.slow = Math.max(0, this.slow - 0.25);
+      if (this.slow > 30 && this.frameMs < 33) { this.frameMs = 33; this.slow = 0; }
+      else if (this.frameMs > 16 && this.slow === 0 && gap < 40) { this.fastRun += 1; if (this.fastRun > 600) { this.frameMs = 16; this.fastRun = 0; } }
       if (this.reduced.matches && !this.kT0) this.stop();
     };
     this.raf = requestAnimationFrame(tick);
