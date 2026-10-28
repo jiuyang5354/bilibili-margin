@@ -1,3 +1,5 @@
+**中文** | [English](README.en.md)
+
 # 映间 MARGIN
 
 一个从零编写的 B 站首页浏览器扩展（Chrome / Edge，Manifest V3）。安静的排版、干净的推荐流。
