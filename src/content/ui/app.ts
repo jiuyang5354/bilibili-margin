@@ -111,6 +111,7 @@ export class MarginApp {
       { title: '收藏', icon: ICONS.fav, run: () => this.fav.open() },
       { title: '稍后', icon: ICONS.later, run: () => later.open() },
       { title: '足迹', icon: ICONS.heat, run: () => { this.app.scrollTo({ top: 0, behavior: 'smooth' }); this.foot.animate([{ boxShadow: '0 0 0 2px var(--accent)' }, { boxShadow: '0 0 0 0 transparent' }], { duration: 1200, easing: 'ease-out' }); } },
+      { title: '快捷命令', icon: ICONS.command, run: () => palette.open('') },
       { title: '设置', icon: ICONS.gear, run: () => this.panel.sheet.open() },
     ] });
     this.sunMoon = head.sunMoon;
@@ -129,7 +130,7 @@ export class MarginApp {
     head.el.classList.add('no-search');
     const barMark = h('div', { class: 'bar-mark', 'aria-hidden': 'true' });
     // 首页主搜索：居中大胶囊（和搜索页同款），顶栏的小搜索框在首页隐藏，避免两个入口
-    const heroS = createHeroSearch(() => this.app, () => palette.open(''));
+    const heroS = createHeroSearch(() => this.app);
     const hero = heroS.el;
     const bar = h('div', { class: 'bar' }, h('div', { class: 'eyebrow' }, h('span', {}, todayLabel()), h('span', { class: 'en' }, 'For You'), h('span', { class: 'no' }, issueNo())), h('div', { class: 'bar-row' }, tabs, refresh));
 

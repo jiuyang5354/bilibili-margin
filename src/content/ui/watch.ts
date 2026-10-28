@@ -15,6 +15,7 @@ import { createContextMenu } from './context-menu';
 import { bindCardMenu } from './card-menu';
 import { createLaterDrawer } from './drawer';
 import { createScrollRuler } from './scroll-ruler';
+import { skinComments } from './comment-skin';
 import css from '../styles.css?inline';
 import pageCss from '../watch.css?inline';
 import skinCss from '../pages.css?inline';
@@ -90,6 +91,7 @@ export class WatchSkin {
         'separator',
         { title: '收藏', icon: ICONS.fav, run: () => this.fav.open() },
         { title: '稍后', icon: ICONS.later, run: () => later.open() },
+        { title: '快捷命令', icon: ICONS.command, run: () => palette.open('') },
         { title: '设置', icon: ICONS.gear, run: () => this.panel.sheet.open() },
         { title: '原版', icon: ICONS.exit, run: () => { sessionStorage.setItem('margin:off', '1'); location.reload(); } },
       ],
@@ -104,6 +106,7 @@ export class WatchSkin {
     ]) : null;
     this.app = h('div', { class: 'app wt', 'data-bg': 'off' }, this.head.el, quick?.el ?? null, createScrollRuler(), this.panel.sheet.el, this.fav.el, palette.el, later.el, cm.el);
     root.append(this.app);
+    if (isWatch) skinComments();
     const lg = filtersIn(root);
     this.head.glass.forEach((g) => attachGlass(g, lg));
     attachGlass(this.head.thumb, lg, { blur: 2, strength: 0.4 });

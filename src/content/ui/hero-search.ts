@@ -12,7 +12,7 @@ export interface HeroSearch { el: HTMLElement; scrim: HTMLElement; focus: () => 
 const reduce = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
 const strip = (s: string) => s.replace(/<[^>]+>/g, '');
 
-export function createHeroSearch(app: () => HTMLElement, onPalette: () => void): HeroSearch {
+export function createHeroSearch(app: () => HTMLElement, _onPalette?: () => void): HeroSearch {
   const input = h('input', {
     class: 'hs-input', type: 'search', autocomplete: 'off', spellcheck: 'false', 'aria-label': '搜索视频、UP 主',
     role: 'combobox', 'aria-expanded': 'false', 'aria-controls': 'hs-list', 'aria-autocomplete': 'list',
@@ -20,13 +20,12 @@ export function createHeroSearch(app: () => HTMLElement, onPalette: () => void):
   const ph = h('div', { class: 'hs-ph', 'aria-hidden': 'true' });
   const canvas = h('canvas', { class: 'hs-vanish', 'aria-hidden': 'true' }) as HTMLCanvasElement;
   const clear = h('button', { class: 'hs-clear', type: 'button', title: '清空', 'aria-label': '清空' }, icon(ICONS.close));
-  const kbd = h('kbd', { class: 'hs-kbd', title: '命令面板' }, 'Ctrl K');
   const list = h('div', { class: 'hs-list', id: 'hs-list', role: 'listbox', 'aria-label': '搜索建议' });
   const box = h('form', { class: 'hero-search', role: 'search', 'data-open': 'false' },
     h('div', { class: 'hs-row' },
       icon(ICONS.search),
       h('div', { class: 'hs-field' }, input, ph, canvas),
-      clear, kbd,
+      clear,
       h('button', { class: 'hs-btn', type: 'submit' }, '搜索')),
     h('div', { class: 'hs-drop' }, h('div', { class: 'hs-drop-in' }, list)),
   );
@@ -192,7 +191,6 @@ export function createHeroSearch(app: () => HTMLElement, onPalette: () => void):
   });
   clear.addEventListener('pointerdown', (e) => e.preventDefault());
   clear.addEventListener('click', () => { input.value = ''; sync(); sugg = []; render(); input.focus(); });
-  kbd.addEventListener('click', () => { close(); onPalette(); });
   scrim.addEventListener('click', () => { close(); input.blur(); });
   box.addEventListener('submit', (e) => { e.preventDefault(); submit(); });
 
