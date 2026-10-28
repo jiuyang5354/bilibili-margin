@@ -779,18 +779,44 @@ canvas.gf-sheet-art[data-ready] { opacity: 1; filter: none; }
 .fp-card[data-view="month"] .fp-foot { padding-top: 16px; margin-top: 16px; border-top: 1px solid color-mix(in srgb, var(--ink) 12%, transparent); }
 .fp-tip small { opacity: .7; }
 @media (max-width: 1100px) { .fp-card { grid-template-columns: 1fr; gap: 20px; } .fp-stats { grid-template-columns: repeat(4, auto); justify-content: start; gap: 12px 28px; } }
-.theme-fading, .theme-fading *, .theme-fading *::before, .theme-fading *::after { transition-property: color, background-color, border-color, outline-color, text-decoration-color, fill, stroke !important; transition-duration: var(--fade) !important; transition-timing-function: cubic-bezier(.65, 0, .35, 1) !important; transition-delay: 0s !important; }
+.theme-fading, .theme-fading *:not(.ts, .ts *), .theme-fading *:not(.ts, .ts *)::before, .theme-fading *:not(.ts *)::after { transition-property: color, background-color, border-color, outline-color, text-decoration-color, fill, stroke !important; transition-duration: var(--fade) !important; transition-timing-function: cubic-bezier(.65, 0, .35, 1) !important; transition-delay: 0s !important; }
 /* 日月主题切换（21st Sun Moon Theme Toggle，原生移植） */
-.sm-toggle { position: relative; isolation: isolate; display: inline-flex; flex: none; align-items: center; justify-content: center; width: 40px; height: 40px; overflow: hidden; border-radius: 50%; border: 1px solid var(--line); background: var(--surface); color: var(--ink); cursor: pointer; transition: filter .15s cubic-bezier(.4, 0, .2, 1), background-color .15s cubic-bezier(.4, 0, .2, 1); }
-.sm-toggle:hover { filter: brightness(1.1); }
-.sm-sky { position: absolute; inset: 0; z-index: -1; pointer-events: none; }
-.sm-sky[data-sky="night"] { background: linear-gradient(180deg, #090f2a 0%, #16204b 60%, #2a2f66 100%); }
-.sm-sky[data-sky="day"] { background: linear-gradient(180deg, #4ea8ff 0%, #9fd3ff 60%, #e3f3ff 100%); }
-.sm-star { position: absolute; border-radius: 50%; background: #fff; opacity: .6; }
-.sm-body { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; pointer-events: none; }
-.sm-body svg { width: 50%; height: 50%; }
-.sm-moon { color: #fde68a; filter: drop-shadow(0 0 8px rgb(252 211 77 / .6)); }
-.sm-sun { color: #fb923c; filter: drop-shadow(0 0 10px rgb(251 146 60 / .7)); }
+/* 昼夜切换（v0.22，用户提供的 Uiverse theme-switch 原生移植；结构/比例/曲线照原代码，配色换成站点色调） */
+.ts { --toggle-size: 16px; --container-width: 5.625em; --container-height: 2.5em; --container-radius: 6.25em;
+  --container-light-bg: color-mix(in oklab, var(--accent) 78%, #0b2238); --container-night-bg: color-mix(in oklab, var(--accent) 9%, #141416);
+  --circle-container-diameter: 3.375em; --sun-moon-diameter: 2.125em; --sun-bg: #f2c14e; --moon-bg: #d5d8de; --spot-color: #a3a9b6;
+  --circle-container-offset: calc((var(--circle-container-diameter) - var(--container-height)) / 2 * -1);
+  --stars-color: #fff; --clouds-color: #fbfbfa; --back-clouds-color: color-mix(in oklab, var(--accent) 32%, #fff);
+  --ts-rim: rgb(255 255 255 / .94);
+  --transition: .5s cubic-bezier(0, -0.02, 0.4, 1.25); --circle-transition: .3s cubic-bezier(0, -0.02, 0.35, 1.17);
+  flex: none; display: block; padding: 0; border: 0; background: none; border-radius: var(--container-radius); cursor: pointer; font-size: var(--toggle-size); }
+.app[data-theme="dark"] .ts { --ts-rim: rgb(255 255 255 / .1); }
+.ts, .ts *, .ts *::before, .ts *::after { box-sizing: border-box; margin: 0; padding: 0; font-size: var(--toggle-size); }
+.ts > .ts-c { display: block; position: relative; width: var(--container-width); height: var(--container-height); border-radius: var(--container-radius); overflow: hidden; background-color: var(--container-light-bg);
+  box-shadow: 0 -0.062em 0.062em rgb(0 0 0 / .25), 0 0.062em 0.125em var(--ts-rim); transition: var(--transition); }
+.ts-c::before { content: ""; position: absolute; z-index: 1; inset: 0; border-radius: var(--container-radius); box-shadow: 0 0.05em 0.187em rgb(0 0 0 / .25) inset, 0 0.05em 0.187em rgb(0 0 0 / .25) inset; }
+.ts-circle { position: absolute; display: flex; width: var(--circle-container-diameter); height: var(--circle-container-diameter); left: var(--circle-container-offset); top: var(--circle-container-offset); border-radius: var(--container-radius); background-color: rgb(255 255 255 / .1);
+  box-shadow: inset 0 0 0 3.375em rgb(255 255 255 / .1), inset 0 0 0 3.375em rgb(255 255 255 / .1), 0 0 0 0.625em rgb(255 255 255 / .1), 0 0 0 1.25em rgb(255 255 255 / .1); transition: var(--circle-transition); pointer-events: none; }
+.ts-sm { position: relative; z-index: 2; display: block; width: var(--sun-moon-diameter); height: var(--sun-moon-diameter); margin: auto; border-radius: var(--container-radius); overflow: hidden; pointer-events: auto; background-color: var(--sun-bg);
+  box-shadow: 0.062em 0.062em 0.062em 0 rgb(254 255 239 / .61) inset, 0 -0.062em 0.062em 0 #a1872a inset; filter: drop-shadow(0.062em 0.125em 0.125em rgb(0 0 0 / .25)) drop-shadow(0 0.062em 0.125em rgb(0 0 0 / .25)); transition: var(--transition); }
+.ts-moon { position: relative; display: block; width: 100%; height: 100%; border-radius: inherit; transform: translateX(100%); background-color: var(--moon-bg); box-shadow: 0.062em 0.062em 0.062em 0 rgb(254 255 239 / .61) inset, 0 -0.062em 0.062em 0 #969696 inset; transition: var(--transition); }
+.ts-spot { position: absolute; top: 0.75em; left: 0.312em; width: 0.75em; height: 0.75em; border-radius: var(--container-radius); background-color: var(--spot-color); box-shadow: 0 0.0312em 0.062em rgb(0 0 0 / .25) inset; }
+.ts-spot:nth-of-type(2) { width: 0.375em; height: 0.375em; top: 0.937em; left: 1.375em; }
+.ts-spot:nth-last-of-type(3) { width: 0.25em; height: 0.25em; top: 0.312em; left: 0.812em; }
+.ts-clouds { position: absolute; bottom: -0.625em; left: 0.312em; width: 1.25em; height: 1.25em; border-radius: var(--container-radius); background-color: var(--clouds-color);
+  box-shadow: 0.937em 0.312em var(--clouds-color), -0.312em -0.312em var(--back-clouds-color), 1.437em 0.375em var(--clouds-color), 0.5em -0.125em var(--back-clouds-color), 2.187em 0 var(--clouds-color), 1.25em -0.062em var(--back-clouds-color), 2.937em 0.312em var(--clouds-color), 2em -0.312em var(--back-clouds-color), 3.625em -0.062em var(--clouds-color), 2.625em 0 var(--back-clouds-color), 4.5em -0.312em var(--clouds-color), 3.375em -0.437em var(--back-clouds-color), 4.625em -1.75em 0 0.437em var(--clouds-color), 4em -0.625em var(--back-clouds-color), 4.125em -2.125em 0 0.437em var(--back-clouds-color);
+  transition: 0.5s cubic-bezier(0, -0.02, 0.4, 1.25); }
+.ts-stars { position: absolute; top: -100%; left: 0.312em; width: 2.75em; height: auto; color: var(--stars-color); transition: var(--transition); }
+.ts-stars svg { display: block; width: 100%; height: auto; }
+.ts[data-state="dark"] .ts-c { background-color: var(--container-night-bg); }
+.ts[data-state="dark"] .ts-circle { left: calc(100% - var(--circle-container-offset) - var(--circle-container-diameter)); }
+.ts[data-state="dark"] .ts-circle:hover { left: calc(100% - var(--circle-container-offset) - var(--circle-container-diameter) - 0.187em); }
+.ts-circle:hover { left: calc(var(--circle-container-offset) + 0.187em); }
+.ts[data-state="dark"] .ts-moon { transform: translate(0); }
+.ts[data-state="dark"] .ts-clouds { bottom: -4.062em; }
+.ts[data-state="dark"] .ts-stars { top: 50%; transform: translateY(-50%); }
+.ts:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.ts.ts-still, .ts.ts-still * { transition: none !important; }
 @media (prefers-reduced-motion: reduce) { .et-btn, .et-btn > span { transition: none; } }
 
 /* 播放页顶栏：同一套 .app 变量，只占顶部 72px，抽屉仍覆盖全屏 */

@@ -32,7 +32,7 @@
 
 收藏夹的玻璃文件夹按 21st.dev「Glass Folder Cards」的公开源码移植（React → 原生 TS，含液态纹理生成算法、扇形展开、··· 菜单与入场组装），并接入 B 站收藏数据：后板是收藏夹封面，口袋里是最近收藏的 4 个视频。
 
-主题按钮按 21st.dev「Sun Moon Theme Toggle」的源码移植（Web Animations 弧线关键帧、中途再点倒放）。
+昼夜切换按用户提供的 Uiverse「theme-switch」移植（太阳滑入月亮、云沉星落），配色改为跟随站点调色板。
 
 顶栏快捷入口按 21st.dev「Expandable Tabs」的源码移植（framer-motion 弹簧展开 → 原生 CSS 过渡，点外部收起）。
 
