@@ -57,6 +57,11 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
 }
 .brand, .user, .tab, .ghost { white-space: nowrap; }
 .brand { flex: none; display: flex; align-items: baseline; gap: 10px; justify-self: start; }
+.brand { align-self: center; border-radius: 8px; }
+.brand .tv { display: block; width: 32px; height: 28px; color: #00aeec; transition: transform .3s var(--ease-spring); }
+.app[data-theme="dark"] .brand .tv { color: var(--ink); }
+.brand .tv svg { display: block; width: 100%; height: 100%; }
+.brand:hover .tv { transform: rotate(-6deg) scale(1.05); }
 .brand .mark { align-self: center; display: grid; place-items: center; width: 38px; height: 38px; border-radius: 11px; background: var(--ink); color: var(--canvas); transition: transform .3s var(--ease-spring); }
 .brand:hover .mark { transform: rotate(-6deg) scale(1.05); }
 .brand .mark svg { width: 20px; height: 20px; }
@@ -1284,6 +1289,8 @@ canvas.gf-sheet-art[data-ready] { opacity: 1; filter: none; }
 
 /* 开场动画：21st Glass Reveal，盖在首页最上层，结束后淡出 */
 .intro { position: fixed; inset: 0; z-index: 2147483600; cursor: pointer; }
+.intro-fly { position: fixed; z-index: 2147483601; pointer-events: none; transform-origin: 0 0; will-change: transform; }
+.intro-fly svg { display: block; width: 100%; height: 100%; }
 .intro canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
 
 /* ── v0.21 性能与过渡 ── */

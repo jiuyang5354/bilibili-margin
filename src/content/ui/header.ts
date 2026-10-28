@@ -4,6 +4,10 @@ import { createExpandableTabs, type TabItem, type TabSpec } from './expandable-t
 import { createUserMenu } from './user-menu';
 import { createSunMoon, type SunMoon } from './sun-moon';
 import { attachTooltips } from './tooltip';
+import { BILI_TIGHT } from './intro/intro';
+
+/** 顶栏左上角的小电视：开场动画结束时图标就飞落到这里 */
+function tv(): HTMLElement { const s = h('span', { class: 'tv', 'aria-hidden': 'true' }); s.innerHTML = BILI_TIGHT; return s; }
 
 export interface Header { el: HTMLElement; input: HTMLInputElement; sunMoon: SunMoon; /** 液态玻璃块：搜索框、快捷入口胶囊、选中滑块 */ glass: HTMLElement[]; thumb: HTMLElement }
 
@@ -42,7 +46,7 @@ export function createHeader(o: { tabs: TabItem[]; onTheme: () => void; onSearch
   const tabsNav = createExpandableTabs(o.tabs);
   const sunMoon = createSunMoon(o.onTheme);
   const el = h('header', { class: 'top' },
-    h('div', { class: 'brand', 'aria-hidden': 'true' }),
+    h('a', { class: 'brand', href: 'https://www.bilibili.com/', title: '首页', 'aria-label': '首页' }, tv()),
     search,
     h('div', { class: 'acts' }, tabsNav.el, sunMoon.el, upload, userSlot),
   );

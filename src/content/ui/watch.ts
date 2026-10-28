@@ -91,7 +91,6 @@ export class WatchSkin {
         'separator',
         { title: '收藏', icon: ICONS.fav, run: () => this.fav.open() },
         { title: '稍后', icon: ICONS.later, run: () => later.open() },
-        { title: '快捷命令', icon: ICONS.command, run: () => palette.open('') },
         { title: '设置', icon: ICONS.gear, run: () => this.panel.sheet.open() },
         { title: '原版', icon: ICONS.exit, run: () => { sessionStorage.setItem('margin:off', '1'); location.reload(); } },
       ],

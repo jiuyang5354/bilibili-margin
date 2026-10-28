@@ -111,7 +111,6 @@ export class MarginApp {
       { title: '收藏', icon: ICONS.fav, run: () => this.fav.open() },
       { title: '稍后', icon: ICONS.later, run: () => later.open() },
       { title: '足迹', icon: ICONS.heat, run: () => { this.app.scrollTo({ top: 0, behavior: 'smooth' }); this.foot.animate([{ boxShadow: '0 0 0 2px var(--accent)' }, { boxShadow: '0 0 0 0 transparent' }], { duration: 1200, easing: 'ease-out' }); } },
-      { title: '快捷命令', icon: ICONS.command, run: () => palette.open('') },
       { title: '设置', icon: ICONS.gear, run: () => this.panel.sheet.open() },
     ] });
     this.sunMoon = head.sunMoon;
