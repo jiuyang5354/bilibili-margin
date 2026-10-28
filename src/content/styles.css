@@ -747,7 +747,7 @@ canvas.gf-sheet-art[data-ready] { opacity: 1; filter: none; }
 }
 .top, .app:not([data-bg="off"]) .top, .app.wt .top {
   background: linear-gradient(color-mix(in srgb, var(--canvas) 70%, transparent), transparent);
-  backdrop-filter: none; border-bottom-color: transparent;
+  backdrop-filter: none; border-bottom: 0; background-repeat: no-repeat;
 }
 .et { position: relative; isolation: isolate; border-radius: 99em; padding: 5px 6px; gap: 6px; }
 .et-sep { background: color-mix(in srgb, var(--ink) 14%, transparent); }
