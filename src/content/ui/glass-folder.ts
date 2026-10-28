@@ -31,7 +31,7 @@ export interface GlassFolderApi { el: HTMLElement; setFiles(files: GFFile[]): vo
 const NS = 'http://www.w3.org/2000/svg';
 const W = 340;
 const H = 272;
-const HEADROOM = 54;
+const HEADROOM = 90; // 打开时 4 张视频叠起最高到 -90px，整张都留在卡片自己的区域里，不压到上一行
 const FRONT_TOP = 74;
 const FRONT_H = H - FRONT_TOP;
 const SHEET_W = 272;

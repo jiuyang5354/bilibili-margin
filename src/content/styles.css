@@ -272,7 +272,8 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
 }
 .app[data-theme="dark"] .gf-root { --gf-ink: #f5f5f7; --gf-ink-soft: rgba(245, 245, 247, .58); }
 .gf-root:hover, .gf-root:focus-within { --gf-hinge: .95; --gf-lift: -34px; --gf-spread: 8px; --gf-fan: 1.4deg; --gf-stack: 10px; }
-.gf-root[data-open] { --gf-hinge: .86; --gf-lift: -96px; --gf-spread: 20px; --gf-fan: 4.5deg; --gf-stack: 30px; }
+/* 扇形收窄：最外侧那张转完也不越过文件夹左右边，不压到旁边的卡 */
+.gf-root[data-open] { --gf-hinge: .86; --gf-lift: -96px; --gf-spread: 16px; --gf-fan: 3.2deg; --gf-stack: 30px; }
 
 .gf-stage {
   position: absolute;
@@ -350,7 +351,7 @@ canvas.gf-art[data-ready] { opacity: 1; filter: none; }
   z-index: 5;
   pointer-events: none;
   /* nothing hangs out of the bottom of the pocket, however tall the stack */
-  clip-path: polygon(-400px -400px, 740px -400px, 740px 106px, 340px 106px, 340px 262px, 0 262px, 0 74px, -400px 74px);
+  clip-path: polygon(-8px -100px, 348px -100px, 348px 106px, 340px 106px, 340px 262px, 0 262px, 0 74px, -8px 74px);
 }
 .gf-sheet-slot { display: contents; }
 .gf-sheet {
@@ -689,7 +690,7 @@ canvas.gf-sheet-art[data-ready] { opacity: 1; filter: none; }
 
 /* —— 映间适配 —— */
 .shelf .gf-root { scroll-snap-align: start; }
-.gf-sk { flex: none; width: 236px; height: 222px; margin-top: 36px; border-radius: 16px; background: var(--chip); animation: pulse 1.4s ease-in-out infinite; }
+.gf-sk { flex: none; width: 236px; height: 189px; margin-top: 62px; border-radius: 16px; background: var(--chip); animation: pulse 1.4s ease-in-out infinite; }
 .gf-title::before { content: ""; display: inline-block; width: 0; height: 7px; margin-right: 0; border-radius: 50%; background: var(--accent); vertical-align: middle; transition: width .3s var(--gf-ease), margin .3s var(--gf-ease); }
 .gf-root[data-current] .gf-title::before { width: 7px; margin-right: 8px; }
 .gf-sheet-name { font-family: var(--sans, inherit); }
