@@ -110,17 +110,17 @@ html.margin-watch .video-toolbar-left-main { gap: 10px; }
 html.margin-watch .toolbar-left-item-wrap { margin-right: 10px !important; }
 html.margin-watch .video-toolbar-left-item {
   height: 38px; padding: 0 16px !important; border-radius: 999px; background: var(--m-surface);
-  border: 1px solid var(--m-line); color: var(--m-muted) !important; width: auto !important;
-  transition: background .2s, color .2s, border-color .2s;
+  border: 0 !important; box-shadow: var(--ring), var(--sh-xs); color: var(--m-muted) !important; width: auto !important;
+  transition: background .2s, color .2s, box-shadow .25s, transform .25s;
 }
-html.margin-watch .video-toolbar-left-item:hover { color: var(--m-ink) !important; border-color: color-mix(in srgb, var(--m-ink) 18%, transparent); }
-html.margin-watch .video-toolbar-left-item.on { color: var(--m-accent) !important; border-color: color-mix(in srgb, var(--m-accent) 35%, transparent); background: color-mix(in srgb, var(--m-accent) 8%, var(--m-surface)); }
+html.margin-watch .video-toolbar-left-item:hover { color: var(--m-ink) !important; box-shadow: var(--ring), var(--sh-sm); transform: translateY(-1px); }
+html.margin-watch .video-toolbar-left-item.on { color: var(--m-accent) !important; box-shadow: 0 0 0 var(--hair) color-mix(in srgb, var(--m-accent) 40%, transparent), var(--sh-xs); background: color-mix(in srgb, var(--m-accent) 8%, var(--m-surface)); }
 html.margin-watch .video-toolbar-left-item .video-toolbar-item-text { font-family: var(--m-mono); font-size: 13px !important; }
 
 /* 简介 / 标签 / 评论：表面卡片 */
 html.margin-watch .video-desc-container,
 html.margin-watch #commentapp {
-  background: var(--m-surface); border: 1px solid var(--m-line); border-radius: var(--m-radius);
+  background: var(--m-surface); border: 0 !important; border-radius: var(--m-radius); box-shadow: var(--ring), var(--sh-sm);
 }
 html.margin-watch .video-desc-container { margin: 14px 0 0 !important; padding: 16px 20px !important; }
 html.margin-watch .basic-desc-info, html.margin-watch .desc-info-text { color: var(--text2) !important; line-height: 1.75 !important; font-size: 14px !important; }
@@ -211,7 +211,7 @@ html.margin-triple .mt-ring { position: absolute; inset: -1px; width: calc(100% 
 html.margin-triple .mt-ring rect { fill: none; stroke: var(--m-accent); stroke-width: 2; stroke-linecap: round; stroke-dasharray: 100; stroke-dashoffset: 100; filter: drop-shadow(0 0 4px color-mix(in srgb, var(--m-accent) 55%, transparent)); }
 html.margin-triple .video-toolbar-left-item.mt-charge { color: var(--m-accent) !important; }
 html.margin-triple .video-toolbar-left-item.mt-charge .video-toolbar-item-icon { transform: scale(1.06); }
-html.margin-triple .video-toolbar-left-item.mt-done { color: var(--m-accent) !important; border-color: var(--m-accent) !important; background: color-mix(in srgb, var(--m-accent) 10%, var(--m-surface)) !important; }
+html.margin-triple .video-toolbar-left-item.mt-done { color: var(--m-accent) !important; box-shadow: 0 0 0 1px var(--m-accent), var(--sh-xs) !important; background: color-mix(in srgb, var(--m-accent) 10%, var(--m-surface)) !important; }
 .mt-spark { position: fixed; z-index: 100000; width: 5px; height: 5px; margin: -2.5px 0 0 -2.5px; border-radius: 50%; pointer-events: none; background: var(--m-accent, #00aeec); box-shadow: 0 0 8px var(--m-accent, #00aeec); }
 .mt-spark.mt-line { width: 10px; height: 2px; margin: -1px 0 0 -5px; border-radius: 2px; }
 .mt-tag { position: fixed; z-index: 100000; pointer-events: none; display: flex; align-items: baseline; gap: 8px; padding: 6px 12px; border-radius: 999px; white-space: nowrap;

@@ -802,7 +802,7 @@ canvas.gf-sheet-art[data-ready] { opacity: 1; filter: none; }
 }
 .fm[data-open="false"] .fm-box:hover { transform: scale(1.05); }
 .fm[data-open="true"] .fm-box { width: 248px; border-radius: 30px; cursor: default; transition: width .8s var(--fm-ease), height .8s var(--fm-ease), border-radius .8s var(--fm-ease); }
-.fm-fill { position: absolute; inset: 0; border-radius: inherit; background: var(--surface); border: 1px solid var(--line); }
+.fm-fill { position: absolute; inset: 0; border-radius: inherit; background: var(--surface); border: var(--hair) solid var(--line); }
 .fm-ink { position: absolute; left: 50%; width: 200%; height: 200%; border-radius: 50%; background: var(--ink); transform: translateX(-50%); bottom: -200%; transition: bottom .8s var(--fm-ease); }
 .fm[data-open="true"] .fm-ink { bottom: -20%; transition-delay: .1s; }
 .fm-list { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; gap: 14px; padding-top: 28px; opacity: 0; pointer-events: none; }
