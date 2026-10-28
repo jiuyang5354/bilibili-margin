@@ -12,6 +12,7 @@ import { playIntro, shouldPlayIntro } from './intro/intro';
 import { createHeroSearch } from './hero-search';
 import { createFootprintCard } from './footprint';
 import { createWidgets } from './widgets';
+import { createWeather } from './weather';
 import type { SunMoon } from './sun-moon';
 import { attachPreview } from './preview';
 import { createSettingsPanel, type SettingsPanel } from './settings-panel';
@@ -151,7 +152,7 @@ export class MarginApp {
       h('main', { class: 'main' },
         heroS.scrim,
         hero,
-        h('div', { class: 'dash' }, this.foot, this.gallery.el),
+        h('div', { class: 'dash' }, this.foot, createWeather(), this.gallery.el),
         barMark,
         bar,
         this.grid, this.status, this.sentinel,
