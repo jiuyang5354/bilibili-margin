@@ -4,7 +4,7 @@ import { h, ICONS } from './dom';
 import { toast } from './controls';
 import { addWatchLater } from '../api/search';
 import { createFavorites } from './favorites';
-import { createHeader, type Header } from './header';
+import { createHeader, type Header, SITE_LINKS } from './header';
 import { attachPreview } from './preview';
 import { createSettingsPanel, type SettingsPanel } from './settings-panel';
 import type { Sheet } from './sheet';
@@ -86,9 +86,7 @@ export class WatchSkin {
       onTheme: () => this.toggleTheme(),
       onSearch: (q) => palette.open(q),
       tabs: [
-        { title: '动态', icon: ICONS.moments, href: 'https://t.bilibili.com/' },
-        { title: '消息', icon: ICONS.message, href: 'https://message.bilibili.com/' },
-        { title: '历史', icon: ICONS.history, href: 'https://www.bilibili.com/history' },
+        ...SITE_LINKS,
         'separator',
         { title: '收藏', icon: ICONS.fav, run: () => this.fav.open() },
         { title: '稍后', icon: ICONS.later, run: () => later.open() },

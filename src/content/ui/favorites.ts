@@ -1,6 +1,6 @@
-import { folderVideos, folders, type Folder } from '../api/fav';
+import { createFolder, deleteFolder, folderVideos, folders, type Folder } from '../api/fav';
 import { videoCard, skeleton } from './card';
-import { h } from './dom';
+import { h, icon, ICONS } from './dom';
 import { glassFolder, type GFFile } from './glass-folder';
 import type { ArtPreset } from './folder-art';
 import type { Video } from '../api/feed';
@@ -19,6 +19,7 @@ export function createFavorites(onRender: (grid: HTMLElement) => void): Sheet {
   let more = false;
   let busy = false;
   let gen = 0;
+  let folderList: Folder[] = [];
 
   const sheet = createSheet({ title: '收藏夹', eyebrow: 'FAVORITES', width: 820, onOpen: () => { if (!loaded) init(); } });
   sheet.body.classList.add('fav-body');
@@ -34,7 +35,8 @@ export function createFavorites(onRender: (grid: HTMLElement) => void): Sheet {
         shelf.replaceChildren(h('div', { class: 'empty' }, h('p', {}, '登录后才能看到你的收藏夹'), h('a', { class: 'user', href: 'https://passport.bilibili.com/login', target: '_blank', rel: 'noopener' }, '去登录')));
         return;
       }
-      shelf.replaceChildren(...list.map((f, i) => folderCard(f, i)));
+      folderList = list;
+      shelf.replaceChildren(...list.map((f, i) => folderCard(f, i)), newTile());
       if (list[0]) open(list[0]);
     } catch (e) {
       loaded = false;
@@ -63,6 +65,7 @@ export function createFavorites(onRender: (grid: HTMLElement) => void): Sheet {
       menu: [
         { label: '查看全部视频', onSelect: () => { open(f); crumb.scrollIntoView({ behavior: 'smooth', block: 'start' }); } },
         { label: '在 B 站打开', onSelect: () => window.open(`https://space.bilibili.com/${f.mid}/favlist?fid=${f.id}`, '_blank', 'noopener') },
+        ...(f.isDefault ? [] : [{ label: '删除收藏夹', danger: true, onSelect: () => remove(f) }]),
       ],
     });
     gf.el.dataset.id = String(f.id);
@@ -76,6 +79,65 @@ export function createFavorites(onRender: (grid: HTMLElement) => void): Sheet {
       gf.setFiles(files);
     }).catch(() => {});
     return gf.el;
+  }
+
+  /** 末尾的「新建收藏夹」卡：点开变成表单，标题 + 公开/私密 */
+  function newTile(): HTMLElement {
+    const tile = h('div', { class: 'fav-new' });
+    const idle = () => {
+      tile.removeAttribute('data-form');
+      tile.replaceChildren(h('button', { class: 'fav-new-btn', type: 'button', onclick: form }, h('span', { class: 'fav-new-plus' }, icon(ICONS.folder)), h('b', {}, '新建收藏夹'), h('small', {}, '最多 20 个字')));
+    };
+    const form = () => {
+      tile.setAttribute('data-form', '');
+      const input = h('input', { class: 'fav-new-input', type: 'text', maxlength: '20', placeholder: '收藏夹名称', 'aria-label': '收藏夹名称', autocomplete: 'off' }) as HTMLInputElement;
+      const priv = h('input', { type: 'checkbox' }) as HTMLInputElement;
+      const count = h('small', { class: 'fav-new-count' }, '0/20');
+      const err = h('p', { class: 'fav-new-err', role: 'alert' });
+      const submit = h('button', { class: 'fav-new-ok', type: 'submit', disabled: '' }, '创建') as HTMLButtonElement;
+      input.addEventListener('input', () => { const n = [...input.value].length; count.textContent = `${n}/20`; submit.disabled = !input.value.trim(); err.textContent = ''; });
+      input.addEventListener('keydown', (e) => { e.stopPropagation(); if (e.key === 'Escape') idle(); });
+      const el = h('form', { class: 'fav-new-form', onsubmit: async (e: Event) => {
+        e.preventDefault();
+        const title = input.value.trim();
+        if (!title) return;
+        if (folderList.some((f) => f.title === title)) { err.textContent = '已经有同名的收藏夹了'; return; }
+        submit.disabled = true; submit.textContent = '创建中…';
+        try {
+          const f = await createFolder(title, priv.checked);
+          folderList.push(f);
+          tile.before(folderCard(f, 0));
+          idle();
+          open(f);
+        } catch (x) {
+          err.textContent = `创建失败：${(x as Error).message}`;
+          submit.disabled = false; submit.textContent = '创建';
+        }
+      } },
+        h('div', { class: 'fav-new-head' }, h('b', {}, '新建收藏夹'), count),
+        input,
+        h('label', { class: 'fav-new-priv' }, priv, h('span', {}, '设为私密'), h('small', {}, '只有自己能看到')),
+        err,
+        h('div', { class: 'fav-new-acts' }, h('button', { class: 'fav-new-cancel', type: 'button', onclick: idle }, '取消'), submit));
+      tile.replaceChildren(el);
+      input.focus();
+    };
+    idle();
+    return tile;
+  }
+
+  async function remove(f: Folder) {
+    if (!confirm(`删除收藏夹「${f.title}」？\n里面的 ${f.count} 个收藏会一起删除，无法恢复。`)) return;
+    try {
+      await deleteFolder(f.id);
+    } catch (x) {
+      alert(`删除失败：${(x as Error).message}`);
+      return;
+    }
+    folderList = folderList.filter((x) => x.id !== f.id);
+    firstPage.delete(f.id);
+    shelf.querySelector<HTMLElement>(`.gf-root[data-id="${f.id}"]`)?.remove();
+    if (current?.id === f.id) { current = null; if (folderList[0]) open(folderList[0]); else { crumb.replaceChildren(); grid.replaceChildren(); status.replaceChildren(); } }
   }
 
   function open(f: Folder) {

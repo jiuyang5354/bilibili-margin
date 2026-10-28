@@ -6,6 +6,8 @@ export interface TabSpec {
   /** 有 href 时渲染为新标签页打开的链接 */
   href?: string;
   run?: () => void;
+  /** 用来挂未读角标 */
+  id?: string;
 }
 export type TabItem = TabSpec | 'separator';
 
@@ -14,6 +16,8 @@ export interface ExpandableTabs {
   thumb: HTMLElement;
   buttons: HTMLElement[];
   select(i: number | null): void;
+  /** 角标：0 隐藏；数字超过 99 显示 99+；dot=true 只显示小圆点 */
+  badge(id: string, n: number, dot?: boolean): void;
 }
 
 /**
@@ -27,6 +31,7 @@ export function createExpandableTabs(items: TabItem[], onChange?: (i: number | n
   const thumb = h('span', { class: 'et-thumb', 'aria-hidden': 'true' });
   el.append(thumb);
   const buttons: HTMLElement[] = [];
+  const byId = new Map<string, HTMLElement>();
   let selected: number | null = null;
   let pinned: number | null = null, hoverT = 0;
   let raf = 0, until = 0, x = 0, w = 0, shown = false;
@@ -84,6 +89,7 @@ export function createExpandableTabs(items: TabItem[], onChange?: (i: number | n
       clearTimeout(hoverT);
       hoverT = window.setTimeout(() => select(idx), selected === null ? 90 : 0);
     });
+    if (it.id) byId.set(it.id, b);
     buttons.push(b);
     el.append(b);
   }
@@ -93,5 +99,16 @@ export function createExpandableTabs(items: TabItem[], onChange?: (i: number | n
   // useOnClickOutside：shadow DOM 里要看 composedPath
   addEventListener('pointerdown', (e) => { if (selected !== null && !e.composedPath().includes(el)) { pinned = null; select(null); } }, true);
 
-  return { el, thumb, buttons, select };
+  const badge = (id: string, n: number, dot = false) => {
+    const b = byId.get(id);
+    if (!b) return;
+    let m = b.querySelector<HTMLElement>('.et-badge');
+    if (n <= 0) { m?.remove(); b.setAttribute('aria-label', b.querySelector('span')?.textContent ?? ''); return; }
+    if (!m) { m = h('i', { class: 'et-badge', 'aria-hidden': 'true' }); b.append(m); }
+    m.toggleAttribute('data-dot', dot);
+    m.textContent = dot ? '' : n > 99 ? '99+' : String(n);
+    b.setAttribute('aria-label', `${b.querySelector('span')?.textContent ?? ''}（${n > 99 ? '99+' : n} 条新）`);
+  };
+
+  return { el, thumb, buttons, select, badge };
 }

@@ -28,7 +28,7 @@
 
 交互参考了 21st.dev 上的 Sheet、Segmented Control、Chip Group、Minimal Slider、Glow Button、Glass Button、Toggle Switch、Command Search 等组件的形态，用原生 TypeScript / CSS 重新实现。
 
-阴影（Smooth Shadows 的分层合成与 0.5px 发丝环）和嵌套圆角规则（Perfect Corner Radius）也来自 movements.dev。足迹热力图的玻璃透镜算法移植自 movements.dev「Refractive Glass」（@movements/react-glass，MIT）。背景「流光」用 [vgpu](https://vgpu.sh)（vercel-labs，MIT）写 WebGPU 计算着色器：2.4 万颗粒子沿旋度噪声流场漂移，只在选中这款背景时才加载；浏览器不支持 WebGPU 时自动退回 WebGL 近似版。个人空间与消息中心的版式参考了 21st.dev 的 Editorial Image Hero、Editorial service list、Activity Timeline、Notification Panel、Conversation List。
+阴影（Smooth Shadows 的分层合成与 0.5px 发丝环）和嵌套圆角规则（Perfect Corner Radius）也来自 movements.dev。足迹热力图的玻璃透镜算法移植自 movements.dev「Refractive Glass」（@movements/react-glass，MIT）。背景「流光」用 [vgpu](https://vgpu.sh)（vercel-labs，MIT）写 WebGPU 计算着色器：2.4 万颗粒子沿旋度噪声流场漂移，只在选中这款背景时才加载；浏览器不支持 WebGPU 时自动退回 WebGL 近似版。头像卡片移植自 21st.dev「User Profile Dropdown Menu」（shadcnspace）。个人空间与消息中心的版式参考了 21st.dev 的 Editorial Image Hero、Editorial service list、Activity Timeline、Notification Panel、Conversation List。
 
 收藏夹的玻璃文件夹按 21st.dev「Glass Folder Cards」的公开源码移植（React → 原生 TS，含液态纹理生成算法、扇形展开、··· 菜单与入场组装），并接入 B 站收藏数据：后板是收藏夹封面，口袋里是最近收藏的 4 个视频。
 

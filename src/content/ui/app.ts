@@ -7,7 +7,7 @@ import { videoCard, skeleton } from './card';
 import { toast } from './controls';
 import { h, icon, ICONS } from './dom';
 import { createFavorites } from './favorites';
-import { createHeader } from './header';
+import { createHeader, SITE_LINKS } from './header';
 import { hotSearch, rememberSearch, searchUrl } from '../api/search';
 import { createFootprintCard } from './footprint';
 import type { SunMoon } from './sun-moon';
@@ -105,9 +105,7 @@ export class MarginApp {
     ]);
     const cm = createContextMenu();
     const head = createHeader({ onTheme: () => this.toggleTheme(), onSearch: (q) => palette.open(q), tabs: [
-      { title: '动态', icon: ICONS.moments, href: 'https://t.bilibili.com/' },
-      { title: '消息', icon: ICONS.message, href: 'https://message.bilibili.com/' },
-      { title: '历史', icon: ICONS.history, href: 'https://www.bilibili.com/history' },
+      ...SITE_LINKS,
       'separator',
       { title: '收藏', icon: ICONS.fav, run: () => this.fav.open() },
       { title: '稍后', icon: ICONS.later, run: () => later.open() },

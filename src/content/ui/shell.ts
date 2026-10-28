@@ -2,7 +2,7 @@ import type { Settings } from '../../shared/settings';
 import { saveSettings } from '../../shared/settings';
 import { BackgroundLayer } from '../bg/background';
 import { h, ICONS } from './dom';
-import { createHeader, type Header } from './header';
+import { createHeader, type Header, SITE_LINKS } from './header';
 import { createSettingsPanel, type SettingsPanel } from './settings-panel';
 import { attachGlass, filtersIn } from './liquid-glass';
 import { createLaterDrawer } from './drawer';
@@ -39,9 +39,7 @@ export class PageShell {
       onTheme: () => this.toggleTheme(),
       tabs: [
         { title: '首页', icon: ICONS.logo, href: 'https://www.bilibili.com/' },
-        { title: '动态', icon: ICONS.moments, href: 'https://t.bilibili.com/' },
-        { title: '消息', icon: ICONS.message, href: 'https://message.bilibili.com/' },
-        { title: '历史', icon: ICONS.history, href: 'https://www.bilibili.com/history' },
+        ...SITE_LINKS,
         'separator',
         { title: '收藏', icon: ICONS.fav, run: () => fav.open() },
         { title: '稍后', icon: ICONS.later, run: () => later.open() },
