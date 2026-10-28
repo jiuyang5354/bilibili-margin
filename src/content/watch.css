@@ -1,3 +1,19 @@
+html.margin-skin {
+  /* movements.dev「Smooth Shadows」：size+intensity 合成的 6 层软阴影 + 0.5px 发丝环；「Perfect Corner Radius」：内圆角 = 外圆角 − 间距 */
+  --shadow-rgb: 24 22 20; --hair: 1px; --ring: 0 0 0 var(--hair) rgb(0 0 0 / .06);
+  --sh-xs: 0 1px 1px rgb(var(--shadow-rgb) / 0.05), 0 2px 2px rgb(var(--shadow-rgb) / 0.04), 0 5px 3px rgb(var(--shadow-rgb) / 0.03), 0 8px 3px rgb(var(--shadow-rgb) / 0.01);
+  --sh-sm: 0 2px 4px rgb(var(--shadow-rgb) / 0.06), 0 7px 7px rgb(var(--shadow-rgb) / 0.05), 0 16px 9px rgb(var(--shadow-rgb) / 0.03), 0 29px 11px rgb(var(--shadow-rgb) / 0.01);
+  --sh-md: 0 4px 8px rgb(var(--shadow-rgb) / 0.08), 0 14px 14px rgb(var(--shadow-rgb) / 0.07), 0 32px 19px rgb(var(--shadow-rgb) / 0.04), 0 57px 22px rgb(var(--shadow-rgb) / 0.01);
+  --sh-lg: 0 7px 14px rgb(var(--shadow-rgb) / 0.12), 0 27px 25px rgb(var(--shadow-rgb) / 0.1), 0 60px 34px rgb(var(--shadow-rgb) / 0.06), 0 106px 41px rgb(var(--shadow-rgb) / 0.02);
+}
+html.margin-skin[data-margin-theme="dark"] {
+  --shadow-rgb: 0 0 0; --ring: 0 0 0 var(--hair) rgb(255 255 255 / .12);
+  --sh-xs: 0 1px 1px rgb(var(--shadow-rgb) / 0.13), 0 2px 2px rgb(var(--shadow-rgb) / 0.11), 0 5px 3px rgb(var(--shadow-rgb) / 0.07), 0 8px 3px rgb(var(--shadow-rgb) / 0.02);
+  --sh-sm: 0 2px 4px rgb(var(--shadow-rgb) / 0.15), 0 7px 7px rgb(var(--shadow-rgb) / 0.13), 0 16px 9px rgb(var(--shadow-rgb) / 0.08), 0 29px 11px rgb(var(--shadow-rgb) / 0.02);
+  --sh-md: 0 4px 8px rgb(var(--shadow-rgb) / 0.2), 0 14px 14px rgb(var(--shadow-rgb) / 0.18), 0 32px 19px rgb(var(--shadow-rgb) / 0.1), 0 57px 22px rgb(var(--shadow-rgb) / 0.03);
+  --sh-lg: 0 7px 14px rgb(var(--shadow-rgb) / 0.31), 0 27px 25px rgb(var(--shadow-rgb) / 0.27), 0 60px 34px rgb(var(--shadow-rgb) / 0.16), 0 106px 41px rgb(var(--shadow-rgb) / 0.05), 0 166px 45px rgb(var(--shadow-rgb) / 0.01);
+}
+@media (min-resolution: 2dppx) { html.margin-skin { --hair: .5px; } }
 /* 映间 MARGIN · 播放页外观（全局样式，只在 html.margin-skin 下生效）
    做法：改写 B 站自己的主题变量（--bg1 / --text1 …，能穿透评论区 Shadow DOM），
    再整理版式。不改原生播放器、弹幕、评论、账号操作的任何行为。 */
@@ -73,7 +89,7 @@ html.margin-watch #app.app-v1, html.margin-watch #app { background: transparent 
 html.margin-watch .bpx-player-container[data-screen="normal"],
 html.margin-watch .bpx-player-container[data-screen="wide"] {
   border-radius: var(--m-radius) !important; background: transparent !important;
-  box-shadow: 0 1px 0 var(--m-line), 0 24px 60px -28px rgb(0 0 0 / .45) !important;
+  box-shadow: var(--sh-md) !important;
 }
 /* 视频层是合成层，单靠父级 overflow:hidden + 圆角在 Chromium 里裁不干净，四角会漏出黑底；
    直接在视频区域上用 mask 裁圆角 */
@@ -199,7 +215,7 @@ html.margin-triple .video-toolbar-left-item.mt-done { color: var(--m-accent) !im
 .mt-spark { position: fixed; z-index: 100000; width: 5px; height: 5px; margin: -2.5px 0 0 -2.5px; border-radius: 50%; pointer-events: none; background: var(--m-accent, #00aeec); box-shadow: 0 0 8px var(--m-accent, #00aeec); }
 .mt-spark.mt-line { width: 10px; height: 2px; margin: -1px 0 0 -5px; border-radius: 2px; }
 .mt-tag { position: fixed; z-index: 100000; pointer-events: none; display: flex; align-items: baseline; gap: 8px; padding: 6px 12px; border-radius: 999px; white-space: nowrap;
-  background: var(--m-ink, #18191c); color: var(--m-canvas, #fff); box-shadow: 0 10px 30px -12px rgb(0 0 0 / .45); }
+  background: var(--m-ink, #18191c); color: var(--m-canvas, #fff); box-shadow: var(--sh-md); }
 .mt-tag b { font: 400 15px/1 var(--m-serif); letter-spacing: .08em; }
 .mt-tag span { font: 500 9.5px/1 var(--m-mono); letter-spacing: .2em; color: var(--m-accent, #00aeec); }
 @media (prefers-reduced-motion: reduce) { html.margin-triple .mt-ring rect { filter: none; } }
