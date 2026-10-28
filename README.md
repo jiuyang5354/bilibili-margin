@@ -50,6 +50,8 @@
 2. 打开 `chrome://extensions`（Edge 为 `edge://extensions`），开启「开发者模式」
 3. 点「加载已解压的扩展程序」，选择解压后的文件夹
 
+手动安装的版本不会自动更新，有新版本时扩展弹窗顶部会提示。Edge 加载项商店版本上架后会由浏览器自动更新。隐私政策见 [PRIVACY.md](PRIVACY.md)。
+
 ## 开发
 
 ```bash
