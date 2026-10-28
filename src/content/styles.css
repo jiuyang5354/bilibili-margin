@@ -742,7 +742,7 @@ canvas.gf-sheet-art[data-ready] { opacity: 1; filter: none; }
 .fp-foot { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-top: 12px; font-size: 11px; color: var(--muted); }
 .fp-legend { display: flex; align-items: center; gap: 4px; }
 .fp-legend .fp-cell { width: 11px; height: 11px; }
-.fp-tip { position: fixed; z-index: 99; pointer-events: none; padding: 8px 10px; border-radius: 8px; font-size: 12px; line-height: 1.5; white-space: nowrap; background: var(--ink); color: var(--canvas); box-shadow: var(--sh-md); transform: translate(-50%, calc(-100% - 10px)); }
+.fp-tip { position: absolute; z-index: 99; pointer-events: none; padding: 8px 10px; border-radius: 8px; font-size: 12px; line-height: 1.5; white-space: nowrap; background: var(--ink); color: var(--canvas); box-shadow: var(--sh-md); transform: translate(-50%, calc(-100% - 10px)); }
 .fp-tip[hidden] { display: none; }
 
 /* 21st「Glass Calendar」：年 / 月分段切换 + 月视图日期条 */

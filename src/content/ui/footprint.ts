@@ -132,6 +132,7 @@ export function createFootprintCard(): HTMLElement {
       tip,
     );
     const fit = () => {
+      tip.hidden = true;
       const w = (graph.parentElement as HTMLElement).clientWidth;
       const cs = Math.max(8, Math.min(18, Math.floor((w - 34) / weeks) - 3));
       graph.style.setProperty('--c', `${cs}px`);
@@ -145,12 +146,13 @@ export function createFootprintCard(): HTMLElement {
       const r = activity[c.dataset.k!], d = new Date(`${c.dataset.k}T00:00:00`), s = secondsOf(r), f = firstOf(r);
       tip.replaceChildren(h('b', {}, `${d.getMonth() + 1}月${d.getDate()}日 ${WEEK[d.getDay()]}`), h('br'),
         s || f ? `首次打开 ${f ?? '—'} · 时长 ${fmt(s)}` : h('small', {}, '没有打开 B 站'));
-      const b = c.getBoundingClientRect();
-      tip.style.left = `${b.left + b.width / 2}px`;
-      tip.style.top = `${b.top}px`;
+      const b = c.getBoundingClientRect(), card = el.getBoundingClientRect();
+      tip.style.left = `${b.left + b.width / 2 - card.left - el.clientLeft}px`;
+      tip.style.top = `${b.top - card.top - el.clientTop}px`;
       tip.hidden = false;
     };
     graph.onpointerleave = () => { tip.hidden = true; };
+    graph.onscroll = () => { tip.hidden = true; };
   }
   function monthView(data: Activity, today: Date): HTMLElement {
     const y = monthAt.getFullYear(), m = monthAt.getMonth();
