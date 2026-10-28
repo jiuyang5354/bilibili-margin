@@ -781,12 +781,13 @@ canvas.gf-sheet-art[data-ready] { opacity: 1; filter: none; }
 @media (max-width: 1100px) { .fp-card { grid-template-columns: 1fr; gap: 20px; } .fp-stats { grid-template-columns: repeat(4, auto); justify-content: start; gap: 12px 28px; } }
 .theme-fading, .theme-fading *:not(.ts, .ts *), .theme-fading *:not(.ts, .ts *)::before, .theme-fading *:not(.ts *)::after { transition-property: color, background-color, border-color, outline-color, text-decoration-color, fill, stroke !important; transition-duration: var(--fade) !important; transition-timing-function: cubic-bezier(.65, 0, .35, 1) !important; transition-delay: 0s !important; }
 /* 日月主题切换（21st Sun Moon Theme Toggle，原生移植） */
-/* 昼夜切换（v0.22，用户提供的 Uiverse theme-switch 原生移植；结构/比例/曲线照原代码，配色换成站点色调） */
+/* 昼夜切换（v0.22，用户提供的 Uiverse theme-switch 原生移植；结构/比例/曲线照原代码）
+ * v0.22.1 配色：白天 = 站点暖纸色轨道 + 白云，太阳用足迹选中同款 B站粉→橙渐变；夜晚 = 站点墨色轨道 + 冷白月亮 */
 .ts { --toggle-size: 16px; --container-width: 5.625em; --container-height: 2.5em; --container-radius: 6.25em;
-  --container-light-bg: color-mix(in oklab, var(--accent) 78%, #0b2238); --container-night-bg: color-mix(in oklab, var(--accent) 9%, #141416);
-  --circle-container-diameter: 3.375em; --sun-moon-diameter: 2.125em; --sun-bg: #f2c14e; --moon-bg: #d5d8de; --spot-color: #a3a9b6;
+  --container-light-bg: #d8d5ce; --container-night-bg: #161618;
+  --circle-container-diameter: 3.375em; --sun-moon-diameter: 2.125em; --sun-bg: linear-gradient(135deg, #fb7299, #ff9f5a); --sun-edge: #d9506f; --moon-bg: #ececee; --moon-edge: #a9aab0; --spot-color: #c4c5cb;
   --circle-container-offset: calc((var(--circle-container-diameter) - var(--container-height)) / 2 * -1);
-  --stars-color: #fff; --clouds-color: #fbfbfa; --back-clouds-color: color-mix(in oklab, var(--accent) 32%, #fff);
+  --stars-color: #f5f4f1; --clouds-color: #ffffff; --back-clouds-color: #ebe9e4;
   --ts-rim: rgb(255 255 255 / .94);
   --transition: .5s cubic-bezier(0, -0.02, 0.4, 1.25); --circle-transition: .3s cubic-bezier(0, -0.02, 0.35, 1.17);
   flex: none; display: block; padding: 0; border: 0; background: none; border-radius: var(--container-radius); cursor: pointer; font-size: var(--toggle-size); }
@@ -797,9 +798,9 @@ canvas.gf-sheet-art[data-ready] { opacity: 1; filter: none; }
 .ts-c::before { content: ""; position: absolute; z-index: 1; inset: 0; border-radius: var(--container-radius); box-shadow: 0 0.05em 0.187em rgb(0 0 0 / .25) inset, 0 0.05em 0.187em rgb(0 0 0 / .25) inset; }
 .ts-circle { position: absolute; display: flex; width: var(--circle-container-diameter); height: var(--circle-container-diameter); left: var(--circle-container-offset); top: var(--circle-container-offset); border-radius: var(--container-radius); background-color: rgb(255 255 255 / .1);
   box-shadow: inset 0 0 0 3.375em rgb(255 255 255 / .1), inset 0 0 0 3.375em rgb(255 255 255 / .1), 0 0 0 0.625em rgb(255 255 255 / .1), 0 0 0 1.25em rgb(255 255 255 / .1); transition: var(--circle-transition); pointer-events: none; }
-.ts-sm { position: relative; z-index: 2; display: block; width: var(--sun-moon-diameter); height: var(--sun-moon-diameter); margin: auto; border-radius: var(--container-radius); overflow: hidden; pointer-events: auto; background-color: var(--sun-bg);
-  box-shadow: 0.062em 0.062em 0.062em 0 rgb(254 255 239 / .61) inset, 0 -0.062em 0.062em 0 #a1872a inset; filter: drop-shadow(0.062em 0.125em 0.125em rgb(0 0 0 / .25)) drop-shadow(0 0.062em 0.125em rgb(0 0 0 / .25)); transition: var(--transition); }
-.ts-moon { position: relative; display: block; width: 100%; height: 100%; border-radius: inherit; transform: translateX(100%); background-color: var(--moon-bg); box-shadow: 0.062em 0.062em 0.062em 0 rgb(254 255 239 / .61) inset, 0 -0.062em 0.062em 0 #969696 inset; transition: var(--transition); }
+.ts-sm { position: relative; z-index: 2; display: block; width: var(--sun-moon-diameter); height: var(--sun-moon-diameter); margin: auto; border-radius: var(--container-radius); overflow: hidden; pointer-events: auto; background: var(--sun-bg);
+  box-shadow: 0.062em 0.062em 0.062em 0 rgb(254 255 239 / .61) inset, 0 -0.062em 0.062em 0 var(--sun-edge) inset; filter: drop-shadow(0.062em 0.125em 0.125em rgb(0 0 0 / .25)) drop-shadow(0 0.062em 0.125em rgb(0 0 0 / .25)); transition: var(--transition); }
+.ts-moon { position: relative; display: block; width: 100%; height: 100%; border-radius: inherit; transform: translateX(100%); background-color: var(--moon-bg); box-shadow: 0.062em 0.062em 0.062em 0 rgb(254 255 239 / .61) inset, 0 -0.062em 0.062em 0 var(--moon-edge) inset; transition: var(--transition); }
 .ts-spot { position: absolute; top: 0.75em; left: 0.312em; width: 0.75em; height: 0.75em; border-radius: var(--container-radius); background-color: var(--spot-color); box-shadow: 0 0.0312em 0.062em rgb(0 0 0 / .25) inset; }
 .ts-spot:nth-of-type(2) { width: 0.375em; height: 0.375em; top: 0.937em; left: 1.375em; }
 .ts-spot:nth-last-of-type(3) { width: 0.25em; height: 0.25em; top: 0.312em; left: 0.812em; }
