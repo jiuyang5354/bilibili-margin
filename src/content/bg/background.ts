@@ -1,6 +1,7 @@
 import type { Background, Palette, ShaderId } from '../../shared/settings';
 import { BG_IMAGE_KEY } from '../../shared/settings';
-import { SHADER_IDS } from './shaders';
+import { PALETTES, SHADER_IDS } from './shaders';
+import type { FluxField } from './flux';
 import { setupQuad, ShaderProgram } from './program';
 import { h } from '../ui/dom';
 import { GlassLens } from './lens';
@@ -119,6 +120,7 @@ export class BackgroundLayer {
     }
     if (id === this.current && this.prog) return;
     if (this.prog) this.gl.deleteProgram(this.prog.prog);
+    if (this.flux && id !== 'flux') { this.flux.dispose(); this.flux = null; this.gl.deleteTexture(this.fluxTex); this.fluxTex = null; }
     this.prog = new ShaderProgram(this.gl, id);
     this.prog.bind();
     this.current = id;
@@ -151,16 +153,66 @@ export class BackgroundLayer {
     // 有玻璃时由 GL 自己合成强度和遮罩（canvas 满不透明），没有时走原来的 CSS opacity + scrim
     this.el.toggleAttribute('data-composite', !!rect);
     const k = this.kNow(now);
-    if (!rect) { this.texKey = ''; this.prog.bind(); this.prog.draw(w, hh, t, k); return; }
+    if (!rect) { this.texKey = ''; this.shade(w, hh, t, k); return; }
     this.lens ??= new GlassLens(gl);
     const key = `${this.current}|${w}x${hh}|${k}`;
     if (!moveOnly || this.texKey !== key) {
-      this.lens.target(w, hh);
-      this.prog.bind();
-      this.prog.draw(w, hh, t, k);
+      this.shade(w, hh, t, k, () => this.lens!.target(w, hh));
       this.texKey = key;
     }
     this.lens.present(w, hh, rect, k, this.cfg.intensity);
+  }
+
+  /** 画一帧着色器。流光款先让 WebGPU 推进一帧，再把结果上传成纹理交给 GL 程序 */
+  private shade(w: number, hh: number, t: number, k: number, bindTarget?: () => void): void {
+    const prog = this.prog!;
+    if (this.current === 'flux') this.stepFlux(w, hh, t, k);
+    bindTarget?.();
+    prog.bind();
+    prog.draw(w, hh, t, k);
+  }
+
+  private flux: FluxField | null = null;
+  private fluxLoading = false;
+  private fluxFailed = false;
+  private fluxTex: WebGLTexture | null = null;
+  private stepFlux(w: number, hh: number, t: number, k: number): void {
+    const gl = this.gl!, prog = this.prog!;
+    if (!this.flux) {
+      if (this.soft || this.fluxLoading || this.fluxFailed || !('gpu' in navigator)) return;
+      this.fluxLoading = true;
+      // 单独打包的 flux.js，只在选中流光时才下载/解析
+      import(/* @vite-ignore */ chrome.runtime.getURL('flux.js'))
+        .then(async (mod: { FluxField: new () => FluxField }) => {
+          const f = new mod.FluxField();
+          const ok = await f.start();
+          if (!ok) this.fluxFailed = true;  // 这台机器没有 WebGPU：本页不再重试，一直用 WebGL 版
+          if (!ok || this.current !== 'flux') { f.dispose(); return; }
+          this.flux = f;
+          this.draw(performance.now());
+        })
+        .catch((e) => { this.fluxFailed = true; console.info('[MARGIN] 流光加载失败，使用 WebGL 版', e); })
+        .finally(() => { this.fluxLoading = false; });
+      return;
+    }
+    const L = PALETTES.light.flux!, D = PALETTES.dark.flux!;
+    const m = (a: readonly number[], b: readonly number[]) => a.map((v, i) => v + (b[i] - v) * k) as unknown as [number, number, number];
+    const ok = this.flux.render(w, hh, t, { bg: m(L.bg, D.bg), c1: m(L.c[0], D.c[0]), c2: m(L.c[1], D.c[1]), c3: m(L.c[2], D.c[2]) }, k);
+    if (!ok) { prog.tex = null; if (!this.flux.ready) { this.flux.dispose(); this.flux = null; this.fluxFailed = true; } return; }
+    if (!this.fluxTex) {
+      this.fluxTex = gl.createTexture();
+      gl.bindTexture(gl.TEXTURE_2D, this.fluxTex);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    }
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, this.fluxTex);
+    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, this.flux.canvas);
+    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
+    prog.tex = this.fluxTex;
   }
 
   /** 透镜元素在画布上的矩形（画布像素，y 向上）；不可见时返回 null */

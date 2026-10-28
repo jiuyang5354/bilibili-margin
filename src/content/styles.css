@@ -199,6 +199,8 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
 .sw-aurora { background: radial-gradient(120% 80% at 30% 100%, #1fd1a5, transparent 60%), radial-gradient(90% 70% at 80% 90%, #b44cff, transparent 60%), linear-gradient(#0d0e12, #2b6cff); }
 .sw-silk { background: repeating-linear-gradient(115deg, #2a2440 0 14px, #8fb6d9 22px, #123a52 34px); filter: blur(2px); }
 .sw-mesh { background: radial-gradient(at 20% 25%, #173b6b, transparent 55%), radial-gradient(at 80% 30%, #5b2a6e, transparent 55%), radial-gradient(at 55% 90%, #0e5a5a, transparent 60%), #101015; }
+.sw-flux { background: radial-gradient(1px 1px at 20% 30%, #5ff0d0, transparent), repeating-linear-gradient(160deg, #0c0d11 0 6px, #3d7bff 7px, #0c0d11 9px, #a35cff 12px, #0c0d11 14px); }
+.app[data-theme="light"] .sw-flux { background: repeating-linear-gradient(160deg, #f4f3ef 0 6px, #7d9ff5 7px, #f4f3ef 9px, #e59bc4 12px, #f4f3ef 14px); }
 .sw-ice { background: radial-gradient(60% 60% at 70% 35%, #6f9cf2, transparent 70%), radial-gradient(40% 40% at 25% 80%, #c3d6fb, transparent 70%), linear-gradient(135deg, transparent 45%, rgb(255 255 255 / .5) 50%, transparent 55%), #1a1d26; }
 .app[data-theme="light"] .sw-ice { background: radial-gradient(60% 60% at 70% 35%, #6f9cf2, transparent 70%), radial-gradient(40% 40% at 25% 80%, #c3d6fb, transparent 70%), linear-gradient(135deg, transparent 45%, rgb(255 255 255 / .8) 50%, transparent 55%), #f5f4f1; }
 .sw-grain { background: radial-gradient(at 70% 80%, #c06a3c, transparent 55%), linear-gradient(160deg, #3a1f2b, #1c3350); }
