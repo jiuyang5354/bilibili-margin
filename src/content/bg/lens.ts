@@ -1,26 +1,24 @@
 /**
- * 液态玻璃透镜：把背景着色器先画进一张纹理，再整屏回画，并在指定圆角矩形里做
- * 「边缘折射 + 内部模糊 + 顶光高光 + 乳白/墨色染色」。
- * 思路来自 bubbbly「GitHub Glass Card」（Shadertoy 式超椭圆透镜），这里改写成圆角矩形 SDF，
- * 宽卡片的圆角不会被拉伸；纯原生 WebGL1，和背景共用同一个上下文与三角形。
+ * 折射玻璃透镜 —— 算法直接取自 movements.dev「Refractive Glass」（@movements/react-glass，MIT，@n___vc）：
+ * 圆角矩形 SDF 的外法线 × 边缘轮廓（smootherstep 再 ^1.6，向中心衰减，rim 决定伸进去多深），
+ * 按 feDisplacementMap 的方式位移取样，R/G/B 分别用 bend+aber / bend / bend-aber 产生色差，
+ * 再 blur + saturate(1.4) + 白色 tint，顶部叠一层 screen 光泽。原版是 backdrop-filter:url(#svg)，
+ * 这里背景本来就是我们自己的 WebGL，所以把同一套数学搬进片元着色器，边框/投影仍由 CSS box-shadow 负责。
  */
 const VERT = 'attribute vec2 p;void main(){gl_Position=vec4(p,0.,1.);}';
 const FRAG = `precision highp float;
 uniform sampler2D u_tex;
 uniform vec2 u_res;
-uniform vec4 u_rect;   // x, y (左下角), w, h —— 画布像素，y 向上
+uniform vec4 u_rect;    // x, y (左下角), w, h —— 画布像素，y 向上
 uniform float u_rad;
-uniform vec3 u_tint;
-uniform float u_milk;  // 底色 alpha（clear 款很低）
-uniform float u_rim;   // 高光强度
-uniform float u_bezel; // 弧边宽度（像素，恒定，不随卡片尺寸缩放）
-uniform float u_px;    // 1 个 CSS 像素 = 多少画布像素
-uniform vec3 u_canvas; // 页面底色
-uniform float u_o;     // 背景强度（原来是 CSS opacity）
-uniform float u_lift;  // 亮度提升（暗色抬一点，亮色不抬，否则发白）
+uniform float u_span;   // rim 伸进去的距离（画布像素）
+uniform vec3 u_bend;    // R/G/B 位移量（画布像素）
+uniform float u_blur;   // 模糊半径（画布像素）
+uniform float u_tint;   // 白色 tint alpha
+uniform float u_sheen;  // 顶部光泽强度
+uniform vec3 u_canvas;  // 页面底色
+uniform float u_o;      // 背景强度
 
-// 用户实际看到的背景 = 着色器按强度叠在页面底色上，再盖一层自上而下的底色渐隐（原 .bg-scrim）。
-// 这一步挪进 GL 里做，玻璃才能以满强度画在最上层，不被 opacity 和遮罩冲淡。
 vec3 seen(vec2 px) {
   vec3 c = mix(u_canvas, texture2D(u_tex, px / u_res).rgb, u_o);
   float t = 1.0 - px.y / u_res.y;
@@ -30,73 +28,47 @@ vec3 seen(vec2 px) {
 
 float sdRound(vec2 p, vec2 b, float r) { vec2 q = abs(p) - b + r; return length(max(q, 0.0)) + min(max(q.x, q.y), 0.0) - r; }
 
-// 凸 squircle 弧边 f(x) = (1-(1-x)^4)^(1/4) 的斜率
-float slope(float x) { float u = 1.0 - x; return u * u * u * pow(max(1.0 - u * u * u * u, 1e-4), -0.75); }
-
-// 竖直视线穿过弧边：Snell 折射 + 厚度 → 背景平面上的横向位移（单位：弧边宽度），乘菲涅尔透射率
-float shift(float x, float n) {
-  float ts = atan(slope(x));
-  float tr = asin(sin(ts) / n);
-  float t = 0.12 + (1.0 - pow(1.0 - x, 4.0)) ;          // 底座 + 弧面高度（f^4 足够近似）
-  float c = cos(ts);
-  float R = 0.04 + 0.96 * pow(1.0 - c, 5.0);           // Schlick
-  return t * tan(ts - tr) * (1.0 - R);
-}
-
-vec3 grade(vec3 c) {                                    // clear 款：saturate 1.8 / brightness 1.06 / contrast 1.04
-  float l = dot(c, vec3(0.2126, 0.7152, 0.0722));
-  c = mix(vec3(l), c, 1.8);
-  c = (c - 0.5) * 1.04 + 0.5;
-  return c * u_lift;
+// 和 feDisplacementMap 一样：先在位移后的位置取样，再做模糊（3×3 高斯近似 blur(px)）
+vec3 tap(vec2 at) {
+  vec3 acc = vec3(0.0);
+  for (float i = -1.0; i <= 1.0; i++) {
+    for (float j = -1.0; j <= 1.0; j++) {
+      float w = (2.0 - abs(i)) * (2.0 - abs(j));
+      acc += seen(at + vec2(i, j) * u_blur) * w;
+    }
+  }
+  return acc / 16.0;
 }
 
 void main() {
   vec2 fc = gl_FragCoord.xy;
-  vec2 uv = fc / u_res;
   vec3 bg = seen(fc);
   vec2 hb = u_rect.zw * 0.5;
-  vec2 c = u_rect.xy + hb;
-  vec2 p = fc - c;
+  vec2 p = fc - (u_rect.xy + hb);
   float sd = sdRound(p, hb, u_rad);
   float inside = clamp(0.5 - sd, 0.0, 1.0);
   if (inside <= 0.0) { gl_FragColor = vec4(bg, 1.0); return; }
 
   vec2 e = vec2(1.0, 0.0);
-  vec2 n = normalize(vec2(sdRound(p + e.xy, hb, u_rad) - sdRound(p - e.xy, hb, u_rad),
-                          sdRound(p + e.yx, hb, u_rad) - sdRound(p - e.yx, hb, u_rad)) + 1e-5);
-  float x = clamp(-sd / u_bezel, 0.004, 1.0);          // 0 = 外沿，1 = 进入平坦区
-  // 中心完全不位移（透明）；位移只在弧边，峰值贴着外沿，指向圆心（凸透镜放大）
-  float k = x < 1.0 ? u_bezel : 0.0;
-  float dR = shift(x, 1.5143), dG = shift(x, 1.5168), dB = shift(x, 1.5224);
-  float disp = 6.0;                                     // 色散夸张系数（≈ 2px 色边）
-  vec2 inward = -n * k * 1.6;                          // UI 尺度上把折射放大一点，平滑背景下才看得出弧边
-  vec3 col;
-  vec2 blur = vec2(u_px * 1.0);                // clear 款只有 ~2px 的轻模糊
-  vec3 acc = vec3(0.0);
-  for (float i = -1.0; i <= 1.0; i++) {
-    for (float j = -1.0; j <= 1.0; j++) {
-      vec2 o = vec2(i, j) * blur;
-      acc.r += seen(fc + inward * dG * (1.0 - (1.0 - 0.99516) * disp) + o).r;
-      acc.g += seen(fc + inward * dG + o).g;
-      acc.b += seen(fc + inward * dG * (1.0 + (1.01084 - 1.0) * disp) + o).b;
-    }
-  }
-  col = grade(acc / 9.0);
-  col = mix(col, u_tint, u_milk);                       // 中性底色（亮色白 / 暗色近黑）
+  vec2 n = vec2(sdRound(p + e.xy, hb, u_rad) - sdRound(p - e.xy, hb, u_rad),
+                sdRound(p + e.yx, hb, u_rad) - sdRound(p - e.yx, hb, u_rad));
+  n /= max(length(n), 1e-5);
+  float l = 1.0 - min(-sd / max(u_span, 1.0), 1.0);
+  l = l * l * l * (l * (l * 6.0 - 15.0) + 10.0);
+  vec2 d = n * pow(l, 1.6) * (127.0 / 255.0);   // 位移贴图 (C - 0.5)
 
-  // 高光：实测 Control Center —— 上下沿亮细线、左右沿暗细线；外加菲涅尔内侧羽化
-  float core = smoothstep(max(1.6 * u_px, 1.3), 0.0, -sd);
-  float vert = smoothstep(0.45, 0.85, abs(n.y));
-  float flank = smoothstep(0.55, 0.92, abs(n.x));
-  float topBias = n.y > 0.0 ? 1.0 : 0.8;
-  col += core * vert * 0.6 * topBias * u_rim;
-  col -= core * flank * 0.1 * u_rim;
-  col += core * 0.12 * u_rim;                           // 一圈极细的整体亮边，保证在纯色背景上也读得出轮廓
-  float cosT = cos(atan(slope(x)));
-  float fres = (0.04 + 0.96 * pow(1.0 - cosT, 5.0)) * step(x, 0.999);
-  col += fres * (n.y > 0.0 ? 0.18 : 0.25) * 0.6 * u_rim;
-  gl_FragColor = vec4(mix(bg, clamp(col, 0.0, 1.0), inside), 1.0);
+  vec3 col = vec3(tap(fc + d * u_bend.r).r, tap(fc + d * u_bend.g).g, tap(fc + d * u_bend.b).b);
+  float lum = dot(col, vec3(0.2126, 0.7152, 0.0722));
+  col = clamp(mix(vec3(lum), col, 1.4), 0.0, 1.0);          // saturate(1.4)
+  col = mix(col, vec3(1.0), u_tint);                         // rgb(255 255 255 / tint)
+  float ty = (u_rect.y + u_rect.w - fc.y) / u_rect.w;        // 0 = 顶边
+  float sh = 0.55 * clamp(1.0 - ty / 0.38, 0.0, 1.0) * u_sheen;
+  col = mix(col, 1.0 - (1.0 - col) * (1.0 - sh), 0.8);       // SHEEN, mix-blend-mode: screen, opacity .8
+  gl_FragColor = vec4(mix(bg, col, inside), 1.0);
 }`;
+
+/** movements.dev Glass 的参数（CSS 像素）；默认值即官网默认 */
+export const LENS = { rim: 18, bend: 60, blur: 2, aberration: 12, tint: 0.1 };
 
 export class GlassLens {
   private prog: WebGLProgram;
@@ -112,7 +84,7 @@ export class GlassLens {
     gl.attachShader(this.prog, sh(gl.VERTEX_SHADER, VERT));
     gl.attachShader(this.prog, sh(gl.FRAGMENT_SHADER, FRAG));
     gl.linkProgram(this.prog);
-    for (const n of ['u_tex', 'u_res', 'u_rect', 'u_rad', 'u_tint', 'u_milk', 'u_rim', 'u_bezel', 'u_px', 'u_canvas', 'u_o', 'u_lift']) this.loc[n] = gl.getUniformLocation(this.prog, n);
+    for (const n of ['u_tex', 'u_res', 'u_rect', 'u_rad', 'u_span', 'u_bend', 'u_blur', 'u_tint', 'u_sheen', 'u_canvas', 'u_o']) this.loc[n] = gl.getUniformLocation(this.prog, n);
     this.tex = gl.createTexture()!;
     gl.bindTexture(gl.TEXTURE_2D, this.tex);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
@@ -152,14 +124,13 @@ export class GlassLens {
     gl.uniform4f(L.u_rect, r.x, r.y, r.w, r.h);
     gl.uniform1f(L.u_rad, Math.min(r.r, r.h / 2, r.w / 2));
     const k = typeof theme === 'number' ? theme : theme === 'dark' ? 1 : 0;
-    const m = (l: number, d: number) => l + (d - l) * k;
     const dark = k >= 0.5;
-    gl.uniform3fv(L.u_tint, [m(1, 0.11), m(1, 0.11), m(1, 0.125)]);
-    gl.uniform1f(L.u_milk, m(0.05, 0.2));
-    gl.uniform1f(L.u_lift, m(0.99, 1.06));
-    gl.uniform1f(L.u_rim, m(1.0, 0.85));
-    gl.uniform1f(L.u_bezel, Math.min(30 * r.px, r.h * 0.3));
-    gl.uniform1f(L.u_px, r.px);
+    const rimT = (Math.min(70, Math.max(6, LENS.rim)) - 6) / 64;
+    gl.uniform1f(L.u_span, Math.min(r.w, r.h) / 2 * (0.16 + 0.84 * rimT));
+    gl.uniform3fv(L.u_bend, [(LENS.bend + LENS.aberration) * r.px, LENS.bend * r.px, (LENS.bend - LENS.aberration) * r.px]);
+    gl.uniform1f(L.u_blur, LENS.blur * r.px);
+    gl.uniform1f(L.u_tint, LENS.tint * (1 - 0.64 * k));         // 暗色 tint × 0.36
+    gl.uniform1f(L.u_sheen, 1 - 0.55 * k);
     gl.uniform3fv(L.u_canvas, dark ? [0x11 / 255, 0x11 / 255, 0x12 / 255] : [0xf5 / 255, 0xf4 / 255, 0xf1 / 255]);
     gl.uniform1f(L.u_o, o);
     gl.drawArrays(gl.TRIANGLES, 0, 3);
