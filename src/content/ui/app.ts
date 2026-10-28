@@ -168,7 +168,13 @@ export class MarginApp {
     );
     this.root.append(this.app);
     if (shouldPlayIntro(this.settings.intro)) playIntro(this.app, this.resolvedTheme());
-    this.app.addEventListener('scroll', () => this.bg.redraw(), { passive: true });
+    let scrollT = 0;
+    this.app.addEventListener('scroll', () => {
+      this.bg.redraw();
+      if (!scrollT) this.app.classList.add('scrolling');
+      clearTimeout(scrollT);
+      scrollT = window.setTimeout(() => { scrollT = 0; this.app.classList.remove('scrolling'); }, 160);
+    }, { passive: true });
     const lg = filtersIn(this.root);
     head.glass.forEach((g) => attachGlass(g, lg));
     attachGlass(head.thumb, lg, { blur: 2, strength: 0.4 });
