@@ -28,6 +28,7 @@ export function createExpandableTabs(items: TabItem[], onChange?: (i: number | n
   el.append(thumb);
   const buttons: HTMLElement[] = [];
   let selected: number | null = null;
+  let pinned: number | null = null, hoverT = 0;
   let raf = 0, until = 0, x = 0, w = 0, shown = false;
   const reduce = matchMedia('(prefers-reduced-motion: reduce)');
 
@@ -74,15 +75,23 @@ export function createExpandableTabs(items: TabItem[], onChange?: (i: number | n
     const idx = buttons.length;
     const label = h('span', {}, it.title);
     const b = it.href
-      ? h('a', { class: 'act et-btn', href: it.href, target: '_blank', rel: 'noopener', title: it.title, 'aria-label': it.title }, icon(it.icon), label)
-      : h('button', { class: 'act et-btn', type: 'button', title: it.title, 'aria-label': it.title }, icon(it.icon), label);
-    b.addEventListener('click', () => { select(idx); it.run?.(); });
+      ? h('a', { class: 'act et-btn', href: it.href, target: '_blank', rel: 'noopener', 'aria-label': it.title }, icon(it.icon), label)
+      : h('button', { class: 'act et-btn', type: 'button', 'aria-label': it.title }, icon(it.icon), label);
+    b.addEventListener('click', () => { clearTimeout(hoverT); pinned = idx; select(idx); it.run?.(); });
+    // 悬停即展开文字（不执行动作），离开后回到点选的那一项
+    b.addEventListener('pointerenter', (e) => {
+      if ((e as PointerEvent).pointerType === 'touch') return;
+      clearTimeout(hoverT);
+      hoverT = window.setTimeout(() => select(idx), selected === null ? 90 : 0);
+    });
     buttons.push(b);
     el.append(b);
   }
 
+  el.addEventListener('pointerleave', () => { clearTimeout(hoverT); hoverT = window.setTimeout(() => select(pinned), 120); });
+
   // useOnClickOutside：shadow DOM 里要看 composedPath
-  addEventListener('pointerdown', (e) => { if (selected !== null && !e.composedPath().includes(el)) select(null); }, true);
+  addEventListener('pointerdown', (e) => { if (selected !== null && !e.composedPath().includes(el)) { pinned = null; select(null); } }, true);
 
   return { el, thumb, buttons, select };
 }
