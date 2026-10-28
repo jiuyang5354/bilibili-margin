@@ -1315,62 +1315,41 @@ canvas.gf-sheet-art[data-ready] { opacity: 1; filter: none; }
 @media (max-width: 900px) { .app.home { --g: 18px; --cols: 3; } }
 .app.home .grid { grid-template-columns: repeat(var(--cols), minmax(0, 1fr)); gap: 28px 16px; }
 
-/* 足迹卡片保持原尺寸（按热力图内容定宽），右侧放小组件；放不下时小组件换到下一行 */
+/* 足迹卡片保持原尺寸（1216px，热力图格子不变），右侧放 21st Elastic Gallery；放不下时画廊换到下一行 */
 .dash { display: grid; grid-template-columns: 1216px minmax(0, 1fr); gap: 16px; margin-top: 24px; align-items: stretch; }
 .dash > .fp-card { margin-top: 0; min-width: 0; }
-.widgets { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; min-width: 0; contain: size; }
-.wg-play .wg-art { aspect-ratio: auto; }
+.eg { display: flex; gap: 8px; min-width: 0; contain: size; }
 @media (max-width: 1859px) {
   .dash { grid-template-columns: minmax(0, 1fr); }
-  .dash > .fp-card { width: auto; }
-  .widgets { grid-template-rows: 132px; contain: none; }
-  .wg-play { grid-template-columns: 200px minmax(0, 1fr); grid-template-rows: auto 1fr; column-gap: 16px; }
-  .wg-play .wg-art { grid-row: 1 / 3; grid-column: 1; aspect-ratio: auto; height: 100%; }
-  .wg-play .wg-head { grid-column: 2; align-self: start; }
-  .wg-play .wg-title2 { display: -webkit-box; grid-column: 2; }
-  .wg-play .wg-shade .wg-title { display: none; }
+  .eg { contain: none; height: 240px; gap: 12px; }
 }
-.wg-title2 { display: none; margin: 0; font-size: 16px; font-weight: 500; line-height: 1.6; color: var(--ink); -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; align-self: center; }
-.wg-title2:hover { color: var(--accent); }
-.wg { position: relative; min-width: 0; border-radius: 24px; padding: 16px; display: grid; gap: 12px;
-  background: rgb(255 255 255 / .38); border: 1px solid rgb(255 255 255 / .55); backdrop-filter: blur(24px) saturate(1.4); box-shadow: 0 25px 50px -12px rgb(0 0 0 / .18); }
-.app[data-theme="dark"] .wg { background: rgb(0 0 0 / .2); border-color: rgb(255 255 255 / .1); box-shadow: 0 25px 50px -12px rgb(0 0 0 / .25); }
-.app.scrolling .wg { backdrop-filter: none; }
-.wg-sk { border-radius: 12px; background: var(--chip); animation: pulse 1.6s ease-in-out infinite; min-height: 120px; }
-.wg-empty { margin: auto; font-size: 13px; color: var(--muted); }
-/* 21st Music Player Card：头像行 → 封面（底部渐变里放标题 / 时间 / 进度条）→ 居中播放键 */
-.wg-play { grid-template-rows: auto 1fr; }
-.wg-head { display: flex; align-items: center; gap: 10px; min-width: 0; }
-.wg-face { flex: none; width: 32px; height: 32px; border-radius: 50%; object-fit: cover; background: var(--chip); display: grid; place-items: center; font-size: 13px; color: var(--muted); }
-.wg-who { min-width: 0; flex: 1; display: grid; gap: 2px; }
-.wg-who b { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.wg-who small { font-size: 11px; color: var(--muted); }
-.wg-kicker { font: 500 10px/1 var(--mono); letter-spacing: .16em; color: var(--accent); }
-.wg-art { position: relative; display: block; min-height: 0; border-radius: 12px; overflow: hidden; background: var(--chip); aspect-ratio: 16 / 10; }
-.wg-art img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transition: transform .4s var(--ease-out); }
-.wg-art:hover img { transform: scale(1.04); }
-.wg-shade { position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: flex-end; gap: 8px; padding: 12px; background: linear-gradient(to top, rgb(0 0 0 / .8), rgb(0 0 0 / .1) 70%, transparent); color: #fff; }
-.wg-title { margin: 0; font-size: 13px; font-weight: 500; line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-.wg-time { display: flex; justify-content: space-between; font: 11px/1 var(--mono); font-variant-numeric: tabular-nums; color: rgb(255 255 255 / .9); }
-.wg-prog { display: grid; gap: 6px; }
-.wg-bar { position: relative; height: 4px; border-radius: 999px; background: rgb(255 255 255 / .2); }
-.wg-bar i { position: absolute; inset: 0 auto 0 0; border-radius: inherit; background: #fff; transition: width .2s linear; }
-.wg-playbtn { position: absolute; top: 50%; left: 50%; width: 44px; height: 44px; margin: -30px 0 0 -22px; display: grid; place-items: center; border-radius: 50%; color: #fff; background: rgb(255 255 255 / .16); backdrop-filter: blur(8px); opacity: 0; transform: scale(.9); transition: opacity .2s var(--ease-out), transform .2s var(--ease-out); }
-.wg-playbtn svg { width: 20px; height: 20px; margin-left: 2px; }
-.wg-art:hover .wg-playbtn { opacity: 1; transform: none; }
-/* 21st News Card：小标题 → 圆角面板里轮播 → 胶囊分页点 */
-.wg-news { grid-template-rows: auto 1fr auto; }
-.wg-label { display: flex; align-items: baseline; gap: 10px; font-size: 11px; color: var(--muted); }
-.wg-label .caps { font: 500 10px/1 var(--mono); letter-spacing: .16em; color: var(--faint); }
-.wg-panel { position: relative; display: block; min-height: 0; padding: 16px 18px; border-radius: 12px; background: color-mix(in srgb, var(--surface) 55%, transparent); box-shadow: inset 0 1px 0 0 color-mix(in srgb, var(--ink) 4%, transparent), var(--ring); overflow: hidden; transition: background .2s var(--ease-out); }
-.app[data-theme="dark"] .wg-panel { background: rgb(255 255 255 / .04); }
-.wg-panel:hover { background: color-mix(in srgb, var(--surface) 80%, transparent); }
-.wg-story { display: grid; gap: 8px; }
-.wg-rank { font: 400 16px/1 "Margin Pixel", var(--mono); color: var(--accent); }
-.wg-head-line { margin: 0; font-size: 16px; font-weight: 600; line-height: 1.5; color: var(--ink); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-.wg-src { font-size: 11px; color: var(--faint); }
-.wg-dots { display: flex; justify-content: center; gap: 6px; }
-.wg-dots button { width: 6px; height: 6px; border-radius: 999px; background: color-mix(in srgb, var(--ink) 25%, transparent); transition: width .3s var(--ease-out), background .3s var(--ease-out); }
-.wg-dots button:hover { background: color-mix(in srgb, var(--ink) 45%, transparent); }
-.wg-dots button[aria-current="true"] { width: 20px; background: var(--ink); }
-@media (max-width: 1859px) { .wg-news { grid-template-rows: auto 1fr; grid-template-columns: minmax(0, 1fr) auto; } .wg-news .wg-panel { grid-column: 1 / -1; padding: 10px 14px; } .wg-news .wg-dots { grid-row: 1; grid-column: 2; } .wg-story { gap: 4px; } .wg-head-line { -webkit-line-clamp: 1; } .wg-src { display: none; } }
+.eg-item { position: relative; flex: 1 1 0; min-width: 0; overflow: hidden; border-radius: 16px; cursor: pointer; color: #fff;
+  border: 1px solid rgb(255 255 255 / .55); background: var(--chip);
+  transition: flex .7s cubic-bezier(.25, 1, .5, 1); }
+.app[data-theme="dark"] .eg-item { border-color: rgb(255 255 255 / .1); }
+.eg-item.on { flex-grow: 4; }
+.eg-item.sk { animation: pulse 1.6s ease-in-out infinite; }
+.eg-bg { position: absolute; inset: 0; filter: brightness(.5); transition: filter .7s cubic-bezier(.25, 1, .5, 1); }
+.eg-item:hover .eg-bg { filter: brightness(.75); }
+.eg-item.on .eg-bg { filter: none; }
+.eg-bg::after { content: ''; position: absolute; inset: 0; background: linear-gradient(to top, rgb(0 0 0 / .55), rgb(0 0 0 / .15)); transition: opacity .5s var(--ease-out); }
+.eg-item.on .eg-bg::after { opacity: 0; }
+.eg-bg img { width: 100%; height: 100%; object-fit: cover; transform: scale(1.1); transition: transform 1s var(--ease-out); }
+.eg-item.on .eg-bg img { transform: none; }
+.eg-shade { position: absolute; inset: 0; background: linear-gradient(to top, rgb(0 0 0 / .8), rgb(0 0 0 / .2) 55%, transparent); opacity: 0; transition: opacity .5s var(--ease-out); }
+.eg-item.on .eg-shade { opacity: 1; }
+.eg-body { position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: flex-end; padding: 20px; }
+.eg-on { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; min-width: 0; width: 100%; opacity: 0; transform: translateY(48px); transition: opacity .5s var(--ease-out), transform .5s var(--ease-out); }
+.eg-item.on .eg-on { opacity: 1; transform: none; transition-delay: .2s; }
+.eg-tag { padding: 4px 10px; border-radius: 999px; border: 1px solid rgb(255 255 255 / .3); background: rgb(255 255 255 / .1); backdrop-filter: blur(12px); font: 500 11px/1.2 var(--sans); letter-spacing: .04em; white-space: nowrap; }
+.eg-title { margin: 0; max-width: 100%; font: 600 18px/1.4 var(--sans); letter-spacing: .02em; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; text-wrap: balance; }
+.eg-cta { display: inline-flex; align-items: center; gap: 6px; margin-top: 4px; font: 500 12px/1 var(--sans); letter-spacing: .08em; color: rgb(255 255 255 / .8); }
+.eg-cta svg { width: 14px; height: 14px; transition: transform .2s var(--ease-out); }
+.eg-item:hover .eg-cta svg { transform: translate(2px, -2px); }
+.eg-off { position: absolute; left: 50%; bottom: 20px; top: 20px; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 10px; transform: translateX(-50%); transition: opacity .5s var(--ease-out), transform .5s var(--ease-out); transition-delay: .5s; }
+.eg-item.on .eg-off { opacity: 0; transform: translateX(-50%) scale(.5); transition-delay: 0s; }
+.eg-v { writing-mode: vertical-rl; font: 600 14px/1 var(--sans); letter-spacing: .08em; text-shadow: 0 1px 6px rgb(0 0 0 / .5); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-height: 100%; min-height: 0; }
+.eg-no { font: 500 11px/1 var(--mono); letter-spacing: .08em; color: rgb(255 255 255 / .7); }
+.eg-pct { position: absolute; left: 0; bottom: 0; height: 3px; background: var(--accent); }
+.eg-empty { margin: auto; font-size: 13px; color: var(--muted); }
+@media (prefers-reduced-motion: reduce) { .eg-item, .eg-bg img, .eg-on, .eg-off { transition: none; } }
