@@ -2,7 +2,7 @@
 // 找到关键组件后往它们的 shadowRoot 里追加一张样式表，变量从 html 继承（--m-*）。
 const SKINS: Record<string, string> = {
   'bili-comments-header-renderer': `
-    #navbar { align-items: center !important; margin-bottom: 20px !important; }
+    #navbar { align-items: center !important; margin: 0 0 20px !important; padding-top: 0 !important; }
     #title { display: flex !important; align-items: baseline !important; gap: 8px !important; }
     #title h2 { margin: 0 !important; font: 400 24px/1.2 var(--m-serif, serif) !important; letter-spacing: .04em !important; color: var(--m-ink) !important; }
     #count { font: 400 13px/1 var(--m-mono, monospace) !important; color: var(--m-faint) !important; margin: 0 !important; }

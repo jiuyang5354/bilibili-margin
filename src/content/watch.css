@@ -125,7 +125,7 @@ html.margin-watch .tag-link {
   border-radius: 999px !important; background: var(--m-chip) !important; color: var(--m-muted) !important; height: 30px !important; line-height: 30px !important; padding: 0 16px !important;
 }
 html.margin-watch .tag-link:hover { color: var(--m-accent) !important; }
-html.margin-watch #commentapp { margin-top: 20px; padding: 8px 24px 24px; }
+html.margin-watch #commentapp { margin-top: 20px; padding: 24px 24px 24px; }
 
 /* 右栏：UP 主卡片、弹幕列表、推荐列表 */
 html.margin-watch .up-panel-container {

@@ -31,7 +31,7 @@ v0.22.7 修复收藏夹展开动画失效，减少悬停定位和昼夜切换开
 ## 设计参考
 
 - 首页搜索栏（v0.23.0）：21st Placeholders And Vanish Input / Morphing Search / Expandable Search Bar；X 上 @MSchwaibold、@vponamariov 的搜索交互；热榜序号像素字体 Pirkkala（Otto Ojala，dafont，Public domain/OFL）
-- 播放页悬浮菜单英文副标字体（v0.23.1）：Grand Atlas（dafont，100% Free）
+- 播放页悬浮菜单字体（v0.23.2）：中文改无衬线 Margin Sans SC（思源黑体子集），英文副标 Alte Haas Grotesk（Yann Le Coroller，dafont，freeware，许可见 public/fonts/licenses/）
 
 交互参考了 21st.dev 上的 Sheet、Segmented Control、Chip Group、Minimal Slider、Glow Button、Glass Button、Toggle Switch、Command Search 等组件的形态，用原生 TypeScript / CSS 重新实现。
 
