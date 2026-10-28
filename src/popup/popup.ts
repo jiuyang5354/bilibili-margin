@@ -21,3 +21,33 @@ function paint(s: Settings): void {
     paint(s);
   });
 })();
+
+// 手动安装（zip 解压）不会自动更新：没有 update_url 时，向 GitHub Releases 查询最新版本并提示。
+// 从 Edge 加载项商店安装的版本带 update_url，由浏览器自动更新，不显示提示。
+void (async () => {
+  const mf = chrome.runtime.getManifest() as chrome.runtime.Manifest & { update_url?: string };
+  if (mf.update_url) return;
+  const KEY = 'margin:update-check';
+  const cmp = (a: string, b: string) => {
+    const x = a.split('.').map(Number), y = b.split('.').map(Number);
+    for (let i = 0; i < 3; i++) if ((x[i] || 0) !== (y[i] || 0)) return (x[i] || 0) - (y[i] || 0);
+    return 0;
+  };
+  let info = (await chrome.storage.local.get(KEY))[KEY] as { at: number; tag: string; url: string } | undefined;
+  if (!info || Date.now() - info.at > 6 * 3600e3) {
+    try {
+      const r = await fetch('https://api.github.com/repos/jiuyang5354/bilibili-margin/releases/latest', { headers: { Accept: 'application/vnd.github+json' } });
+      if (r.ok) {
+        const j = await r.json();
+        info = { at: Date.now(), tag: String(j.tag_name || '').replace(/^v/, ''), url: j.html_url };
+        await chrome.storage.local.set({ [KEY]: info });
+      }
+    } catch { /* 离线时静默 */ }
+  }
+  if (info?.tag && cmp(info.tag, mf.version) > 0) {
+    const a = document.getElementById('upd') as HTMLAnchorElement;
+    a.href = info.url;
+    document.getElementById('updv')!.textContent = 'v' + info.tag;
+    a.classList.add('on');
+  }
+})();
