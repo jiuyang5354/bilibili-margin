@@ -114,18 +114,25 @@ export function startTriple(): void {
   const release = () => {
     if (!holding) return;
     holding = false;
-    if (p >= 1) armedUntil = performance.now() + 5000;
+    if (p >= 1) { armedUntil = performance.now() + 5000; watchOn(); }
     if (!raf) raf = requestAnimationFrame(tick);
   };
   addEventListener('pointerup', release, true);
   addEventListener('pointercancel', release, true);
 
-  // B 站三连成功后投币、收藏都会变成 .on；在长按完成后的几秒内看到就放庆祝动画
-  new MutationObserver(() => {
-    if (performance.now() > armedUntil) return;
+  // B 站三连成功后投币、收藏都会变成 .on；只在长按完成后的 5 秒内、只监听这三个按钮，避免整页 class 变动带来的开销
+  let mo: MutationObserver | null = null;
+  const watchOn = () => {
     const e = items();
-    if (e && e[1].classList.contains('on') && e[2].classList.contains('on')) { armedUntil = 0; p = 0; paint(); burst(e); }
-  }).observe(document.documentElement, { subtree: true, attributes: true, attributeFilter: ['class'] });
+    if (!e) return;
+    mo?.disconnect();
+    mo = new MutationObserver(() => {
+      if (performance.now() > armedUntil) { mo?.disconnect(); mo = null; return; }
+      if (e[1].classList.contains('on') && e[2].classList.contains('on')) { mo?.disconnect(); mo = null; armedUntil = 0; p = 0; paint(); burst(e); }
+    });
+    e.forEach((el) => mo!.observe(el, { attributes: true, attributeFilter: ['class'], subtree: true }));
+    setTimeout(() => { mo?.disconnect(); mo = null; }, 5200);
+  };
 
   // 测试/演示钩子
   document.addEventListener('margin-triple-demo', () => { const e = items(); if (e) { e.forEach(ring); burst(e); } });
