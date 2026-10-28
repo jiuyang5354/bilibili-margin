@@ -30,7 +30,15 @@ export class BackgroundLayer {
     this.el.append(this.canvas, this.img, h('div', { class: 'bg-scrim' }));
     document.addEventListener('visibilitychange', () => (document.hidden ? this.stop() : this.loop()));
     new ResizeObserver(() => this.resize()).observe(this.el);
+    // 省电/防卡：滚动时、页面上有视频在播放时，背景暂停在当前帧（每帧重绘会让上层所有毛玻璃一起重新合成）
+    const busy = () => { this.quietUntil = performance.now() + 220; };
+    addEventListener('scroll', busy, { capture: true, passive: true });
+    addEventListener('wheel', busy, { capture: true, passive: true });
+    const vid = () => { this.videoPlaying = [...document.querySelectorAll('video')].some((v) => !v.paused && !v.ended && v.readyState > 2 && v.getBoundingClientRect().width > 320); };
+    for (const ev of ['play', 'playing', 'pause', 'ended', 'emptied']) document.addEventListener(ev, vid, true);
   }
+  private quietUntil = 0;
+  private videoPlaying = false;
 
   async apply(cfg: Background, theme: 'light' | 'dark', palette: Palette = 'classic'): Promise<void> {
     this.palette = palette;
@@ -101,7 +109,8 @@ export class BackgroundLayer {
 
   private resize(): void {
     const r = this.el.getBoundingClientRect();
-    const scale = 0.5;
+    // 背景本身很柔和：缓冲区最宽 640px，再由 CSS 放大，肉眼看不出差别，GPU 负担小很多
+    const scale = Math.min(0.5, 640 / Math.max(1, r.width));
     this.canvas.width = Math.max(1, Math.round(r.width * scale));
     this.canvas.height = Math.max(1, Math.round(r.height * scale));
     this.gl?.viewport(0, 0, this.canvas.width, this.canvas.height);
@@ -138,7 +147,8 @@ export class BackgroundLayer {
     if (this.raf || !this.cfg || (this.cfg.mode !== 'random' && this.cfg.mode !== 'fixed') || document.hidden) return;
     const tick = (now: number) => {
       this.raf = requestAnimationFrame(tick);
-      if (now - this.last < 33) return;
+      if (now - this.last < 42) return;
+      if (this.videoPlaying || now < this.quietUntil) return;
       this.last = now;
       this.draw(now);
       if (this.reduced.matches) this.stop();
