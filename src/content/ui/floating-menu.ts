@@ -3,9 +3,9 @@ import { h } from './dom';
 /**
  * 漂浮快捷菜单：21st「Floating Menu」的原生移植（framer-motion → CSS 过渡）。
  * 小胶囊点开后变形成面板，墨色圆从底部漫上来，菜单项错峰浮现；悬停时逐字向上翻滚。
- * 配色换成经典墨色 / 暖白，菜单字体换成衬线。
+ * 配色换成经典墨色 / 暖白；中文霞鹜文楷，英文副标 Instrument Serif 斜体。
  */
-export interface MenuItem { label: string; run: () => void }
+export interface MenuItem { label: string; en?: string; run: () => void }
 export interface FloatingMenu { el: HTMLElement; close: () => void }
 
 function rollButton(item: MenuItem, index: number, done: () => void): HTMLElement {
@@ -16,6 +16,8 @@ function rollButton(item: MenuItem, index: number, done: () => void): HTMLElemen
     row.append(h('span', { class: 'fm-ch' }, h('span', { class: 'fm-col', style: `--d:${30 * i}ms` }, h('span', {}, c), h('span', {}, c))));
   });
   btn.append(row);
+  // 中文用霞鹜文楷，下方一行 Instrument Serif 斜体英文作点缀（同全站英文眉标）
+  if (item.en) btn.append(h('span', { class: 'fm-en', 'aria-hidden': 'true' }, item.en));
   // 原版的“动画锁”：翻滚进行中移出，等翻完再复位，避免抖动
   const lock = 30 * chars.length + 300;
   let hovered = false, busy = false, pendingLeave = false;
