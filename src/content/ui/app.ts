@@ -11,6 +11,7 @@ import { createHeader, SITE_LINKS } from './header';
 import { playIntro, shouldPlayIntro } from './intro/intro';
 import { createHeroSearch } from './hero-search';
 import { createFootprintCard } from './footprint';
+import { createWidgets } from './widgets';
 import type { SunMoon } from './sun-moon';
 import { attachPreview } from './preview';
 import { createSettingsPanel, type SettingsPanel } from './settings-panel';
@@ -142,13 +143,13 @@ export class MarginApp {
       class: 'ghost small', type: 'button', onclick: () => { sessionStorage.setItem('margin:off', '1'); location.reload(); },
     }, icon(ICONS.exit), h('span', {}, '本次回到 B 站原版首页'));
 
-    this.app = h('div', { class: 'app' },
+    this.app = h('div', { class: 'app home' },
       this.bg.el,
       header,
       h('main', { class: 'main' },
         heroS.scrim,
         hero,
-        this.foot,
+        h('div', { class: 'dash' }, this.foot, createWidgets()),
         barMark,
         bar,
         this.grid, this.status, this.sentinel,

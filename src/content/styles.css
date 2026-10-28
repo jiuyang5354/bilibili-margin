@@ -1305,3 +1305,72 @@ canvas.gf-sheet-art[data-ready] { opacity: 1; filter: none; }
 .app[data-theme="dark"].scrolling .fp-card { background: rgb(18 18 20 / .5); }
 /* 视口外的卡片跳过布局和绘制（无限加载后几百张卡也不拖慢滚动） */
 .grid > .card:not(.sk) { content-visibility: auto; contain-intrinsic-size: auto 300px; }
+
+/* v0.25.0 首页：内容宽度和列数对齐 B 站搜索页（<1700 两侧 56px · 6 列；1700+ 两侧 88px · 7 列；2200+ 8 列；内容最宽 2024px） */
+.app.home { --g: max(56px, calc((100vw - 2024px) / 2)); --cols: 6; }
+@media (min-width: 1700px) { .app.home { --g: max(88px, calc((100vw - 2024px) / 2)); --cols: 7; } }
+@media (min-width: 2200px) { .app.home { --cols: 8; } }
+@media (max-width: 1279px) { .app.home { --g: 40px; --cols: 5; } }
+@media (max-width: 1099px) { .app.home { --cols: 4; } }
+@media (max-width: 900px) { .app.home { --g: 18px; --cols: 3; } }
+.app.home .grid { grid-template-columns: repeat(var(--cols), minmax(0, 1fr)); gap: 28px 16px; }
+
+/* 足迹卡片保持原尺寸（按热力图内容定宽），右侧放小组件；放不下时小组件换到下一行 */
+.dash { display: grid; grid-template-columns: 1216px minmax(0, 1fr); gap: 16px; margin-top: 24px; align-items: stretch; }
+.dash > .fp-card { margin-top: 0; min-width: 0; }
+.widgets { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; min-width: 0; contain: size; }
+.wg-play .wg-art { aspect-ratio: auto; }
+@media (max-width: 1859px) {
+  .dash { grid-template-columns: minmax(0, 1fr); }
+  .dash > .fp-card { width: auto; }
+  .widgets { grid-template-rows: 132px; contain: none; }
+  .wg-play { grid-template-columns: 200px minmax(0, 1fr); grid-template-rows: auto 1fr; column-gap: 16px; }
+  .wg-play .wg-art { grid-row: 1 / 3; grid-column: 1; aspect-ratio: auto; height: 100%; }
+  .wg-play .wg-head { grid-column: 2; align-self: start; }
+  .wg-play .wg-title2 { display: -webkit-box; grid-column: 2; }
+  .wg-play .wg-shade .wg-title { display: none; }
+}
+.wg-title2 { display: none; margin: 0; font-size: 16px; font-weight: 500; line-height: 1.6; color: var(--ink); -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; align-self: center; }
+.wg-title2:hover { color: var(--accent); }
+.wg { position: relative; min-width: 0; border-radius: 24px; padding: 16px; display: grid; gap: 12px;
+  background: rgb(255 255 255 / .38); border: 1px solid rgb(255 255 255 / .55); backdrop-filter: blur(24px) saturate(1.4); box-shadow: 0 25px 50px -12px rgb(0 0 0 / .18); }
+.app[data-theme="dark"] .wg { background: rgb(0 0 0 / .2); border-color: rgb(255 255 255 / .1); box-shadow: 0 25px 50px -12px rgb(0 0 0 / .25); }
+.app.scrolling .wg { backdrop-filter: none; }
+.wg-sk { border-radius: 12px; background: var(--chip); animation: pulse 1.6s ease-in-out infinite; min-height: 120px; }
+.wg-empty { margin: auto; font-size: 13px; color: var(--muted); }
+/* 21st Music Player Card：头像行 → 封面（底部渐变里放标题 / 时间 / 进度条）→ 居中播放键 */
+.wg-play { grid-template-rows: auto 1fr; }
+.wg-head { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.wg-face { flex: none; width: 32px; height: 32px; border-radius: 50%; object-fit: cover; background: var(--chip); display: grid; place-items: center; font-size: 13px; color: var(--muted); }
+.wg-who { min-width: 0; flex: 1; display: grid; gap: 2px; }
+.wg-who b { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.wg-who small { font-size: 11px; color: var(--muted); }
+.wg-kicker { font: 500 10px/1 var(--mono); letter-spacing: .16em; color: var(--accent); }
+.wg-art { position: relative; display: block; min-height: 0; border-radius: 12px; overflow: hidden; background: var(--chip); aspect-ratio: 16 / 10; }
+.wg-art img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transition: transform .4s var(--ease-out); }
+.wg-art:hover img { transform: scale(1.04); }
+.wg-shade { position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: flex-end; gap: 8px; padding: 12px; background: linear-gradient(to top, rgb(0 0 0 / .8), rgb(0 0 0 / .1) 70%, transparent); color: #fff; }
+.wg-title { margin: 0; font-size: 13px; font-weight: 500; line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.wg-time { display: flex; justify-content: space-between; font: 11px/1 var(--mono); font-variant-numeric: tabular-nums; color: rgb(255 255 255 / .9); }
+.wg-prog { display: grid; gap: 6px; }
+.wg-bar { position: relative; height: 4px; border-radius: 999px; background: rgb(255 255 255 / .2); }
+.wg-bar i { position: absolute; inset: 0 auto 0 0; border-radius: inherit; background: #fff; transition: width .2s linear; }
+.wg-playbtn { position: absolute; top: 50%; left: 50%; width: 44px; height: 44px; margin: -30px 0 0 -22px; display: grid; place-items: center; border-radius: 50%; color: #fff; background: rgb(255 255 255 / .16); backdrop-filter: blur(8px); opacity: 0; transform: scale(.9); transition: opacity .2s var(--ease-out), transform .2s var(--ease-out); }
+.wg-playbtn svg { width: 20px; height: 20px; margin-left: 2px; }
+.wg-art:hover .wg-playbtn { opacity: 1; transform: none; }
+/* 21st News Card：小标题 → 圆角面板里轮播 → 胶囊分页点 */
+.wg-news { grid-template-rows: auto 1fr auto; }
+.wg-label { display: flex; align-items: baseline; gap: 10px; font-size: 11px; color: var(--muted); }
+.wg-label .caps { font: 500 10px/1 var(--mono); letter-spacing: .16em; color: var(--faint); }
+.wg-panel { position: relative; display: block; min-height: 0; padding: 16px 18px; border-radius: 12px; background: color-mix(in srgb, var(--surface) 55%, transparent); box-shadow: inset 0 1px 0 0 color-mix(in srgb, var(--ink) 4%, transparent), var(--ring); overflow: hidden; transition: background .2s var(--ease-out); }
+.app[data-theme="dark"] .wg-panel { background: rgb(255 255 255 / .04); }
+.wg-panel:hover { background: color-mix(in srgb, var(--surface) 80%, transparent); }
+.wg-story { display: grid; gap: 8px; }
+.wg-rank { font: 400 16px/1 "Margin Pixel", var(--mono); color: var(--accent); }
+.wg-head-line { margin: 0; font-size: 16px; font-weight: 600; line-height: 1.5; color: var(--ink); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.wg-src { font-size: 11px; color: var(--faint); }
+.wg-dots { display: flex; justify-content: center; gap: 6px; }
+.wg-dots button { width: 6px; height: 6px; border-radius: 999px; background: color-mix(in srgb, var(--ink) 25%, transparent); transition: width .3s var(--ease-out), background .3s var(--ease-out); }
+.wg-dots button:hover { background: color-mix(in srgb, var(--ink) 45%, transparent); }
+.wg-dots button[aria-current="true"] { width: 20px; background: var(--ink); }
+@media (max-width: 1859px) { .wg-news { grid-template-rows: auto 1fr; grid-template-columns: minmax(0, 1fr) auto; } .wg-news .wg-panel { grid-column: 1 / -1; padding: 10px 14px; } .wg-news .wg-dots { grid-row: 1; grid-column: 2; } .wg-story { gap: 4px; } .wg-head-line { -webkit-line-clamp: 1; } .wg-src { display: none; } }
