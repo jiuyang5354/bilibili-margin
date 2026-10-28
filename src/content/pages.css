@@ -48,6 +48,16 @@ html.margin-search .search-input-el { flex: 1 !important; padding: 0 !important;
 html.margin-search .search-input-el::placeholder { color: var(--m-faint) !important; }
 html.margin-search .search-input-wrap svg, html.margin-search .search-input-wrap .search-input-icon { color: var(--m-faint) !important; width: 18px; height: 18px; }
 html.margin-search .search-button { display: none !important; }
+/* v0.23.0 清空按钮：B 站把它绝对定位在「搜索」按钮左边，按钮隐藏后就悬在中间——放回最右，做成小圆钮 */
+html.margin-search .search-input-wrap .search-icon { order: 1; flex: none; }
+html.margin-search .search-input-wrap .search-input-el { order: 2; }
+html.margin-search .search-input-wrap .clear-icon { order: 3; position: static !important; inset: auto !important; transform: none !important; flex: none; width: 28px !important; height: 28px !important; padding: 6px; margin: 0 !important; border-radius: 999px; box-sizing: border-box; background: var(--m-chip); fill: var(--m-muted) !important; color: var(--m-muted) !important; cursor: pointer; transition: background-color .15s, fill .15s; }
+html.margin-search .search-input-wrap .clear-icon path { fill: currentColor !important; }
+html.margin-search .search-input-wrap .clear-icon:hover { color: var(--m-ink) !important; background: color-mix(in srgb, var(--m-ink) 12%, transparent); }
+/* 聚焦压暗：输入时结果区暗下去，只留搜索框和联想 */
+html.margin-search body::after { content: ""; position: fixed; inset: 0; z-index: 39; pointer-events: none; opacity: 0; background: rgb(20 20 22 / .28); transition: opacity .3s cubic-bezier(.23, 1, .32, 1); }
+html.margin-search[data-margin-theme="dark"] body::after { background: rgb(0 0 0 / .5); }
+html.margin-search:has(.search-input-wrap:focus-within) body::after { opacity: 1; }
 
 /* 分类标签：衬线 + 底部细线指示 */
 html.margin-search .search-tabs { border-bottom: 1px solid var(--m-line); }
@@ -116,7 +126,11 @@ html.margin-search .search-panel, html.margin-search .search-panel-popover {
   z-index: 1003 !important; margin-top: 8px; padding: 6px !important;
   background: var(--m-surface) !important; border: 1px solid var(--m-line) !important; border-radius: 16px !important;
   box-shadow: var(--ring), var(--sh-md) !important;
+  transform-origin: top center; animation: m-panel-in .3s cubic-bezier(.23, 1, .32, 1) both;
 }
+@keyframes m-panel-in { from { opacity: 0; transform: translateY(-6px) scale(.98); clip-path: inset(0 0 70% 0 round 16px); } to { clip-path: inset(0 0 0 0 round 16px); } }
+html.margin-search .search-panel .suggest-item, html.margin-search .search-panel .history-item, html.margin-search .search-panel .trending-item { animation: m-opt-in .3s cubic-bezier(.23, 1, .32, 1) both; animation-delay: 60ms; }
+@keyframes m-opt-in { from { opacity: 0; transform: translateY(4px); } }
 html.margin-search .search-panel .suggestions, html.margin-search .search-panel .suggest-item { background: transparent !important; }
 html.margin-search .search-panel .suggest-item { border-radius: 10px; padding: 0 12px !important; color: var(--m-ink) !important; }
 html.margin-search .search-panel .suggest-item:hover, html.margin-search .search-panel .suggest-item.is-focus { background: var(--m-chip) !important; }

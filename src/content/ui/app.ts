@@ -9,7 +9,7 @@ import { h, icon, ICONS } from './dom';
 import { createFavorites } from './favorites';
 import { createHeader, SITE_LINKS } from './header';
 import { playIntro, shouldPlayIntro } from './intro/intro';
-import { hotSearch, rememberSearch, searchUrl } from '../api/search';
+import { createHeroSearch } from './hero-search';
 import { createFootprintCard } from './footprint';
 import type { SunMoon } from './sun-moon';
 import { attachPreview } from './preview';
@@ -129,15 +129,8 @@ export class MarginApp {
     head.el.classList.add('no-search');
     const barMark = h('div', { class: 'bar-mark', 'aria-hidden': 'true' });
     // 首页主搜索：居中大胶囊（和搜索页同款），顶栏的小搜索框在首页隐藏，避免两个入口
-    const heroInput = h('input', { class: 'hs-input', type: 'search', placeholder: '搜索视频、UP 主', autocomplete: 'off', spellcheck: 'false' }) as HTMLInputElement;
-    const goSearch = () => { const q = heroInput.value.trim() || heroInput.dataset.hot || ''; if (!q) { heroInput.focus(); return; } rememberSearch(q); window.open(searchUrl(q), '_blank', 'noopener'); };
-    heroInput.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.isComposing) { e.preventDefault(); goSearch(); } e.stopPropagation(); });
-    const hero = h('form', { class: 'hero-search', role: 'search', onsubmit: (e: Event) => { e.preventDefault(); goSearch(); } },
-      icon(ICONS.search), heroInput,
-      h('kbd', { class: 'hs-kbd', title: '命令面板' }, 'Ctrl K'),
-      h('button', { class: 'hs-btn', type: 'submit' }, '搜索'));
-    hero.querySelector('.hs-kbd')!.addEventListener('click', () => palette.open(''));
-    hotSearch().then((hot) => { const k = hot[0]?.keyword; if (k) { heroInput.dataset.hot = k; heroInput.placeholder = `大家都在搜：${k}`; } }).catch(() => {});
+    const heroS = createHeroSearch(() => this.app, () => palette.open(''));
+    const hero = heroS.el;
     const bar = h('div', { class: 'bar' }, h('div', { class: 'eyebrow' }, h('span', {}, todayLabel()), h('span', { class: 'en' }, 'For You'), h('span', { class: 'no' }, issueNo())), h('div', { class: 'bar-row' }, tabs, refresh));
 
     this.grid = h('section', { class: 'grid', 'aria-live': 'polite' });
@@ -153,6 +146,7 @@ export class MarginApp {
       this.bg.el,
       header,
       h('main', { class: 'main' },
+        heroS.scrim,
         hero,
         this.foot,
         barMark,

@@ -28,6 +28,8 @@ v0.22.7 修复收藏夹展开动画失效，减少悬停定位和昼夜切换开
 
 ## 设计参考
 
+- 首页搜索栏（v0.23.0）：21st Placeholders And Vanish Input / Morphing Search / Expandable Search Bar；X 上 @MSchwaibold、@vponamariov 的搜索交互；热榜序号像素字体 Pirkkala（Otto Ojala，dafont，Public domain/OFL）
+
 交互参考了 21st.dev 上的 Sheet、Segmented Control、Chip Group、Minimal Slider、Glow Button、Glass Button、Toggle Switch、Command Search 等组件的形态，用原生 TypeScript / CSS 重新实现。
 
 阴影（Smooth Shadows 的分层合成与 0.5px 发丝环）和嵌套圆角规则（Perfect Corner Radius）也来自 movements.dev。足迹热力图的玻璃透镜算法移植自 movements.dev「Refractive Glass」（@movements/react-glass，MIT）。背景「流光」用 [vgpu](https://vgpu.sh)（vercel-labs，MIT）写 WebGPU 计算着色器：2.4 万颗粒子沿旋度噪声流场漂移，只在选中这款背景时才加载；浏览器不支持 WebGPU 时自动退回 WebGL 近似版。首页开场动画移植自 21st.dev「Glass Reveal」（引擎源自 zanwei/glass-icon-reveal，MIT），图标为 Simple Icons 的 B 站小电视。头像卡片移植自 21st.dev「User Profile Dropdown Menu」（shadcnspace）。个人空间与消息中心的版式参考了 21st.dev 的 Editorial Image Hero、Editorial service list、Activity Timeline、Notification Panel、Conversation List；历史记录页参考 Activity Timeline（olewandowski1），动态首页的作者行参考 SocialPostCard（ruixen.ui），足迹卡片的月视图参考 Glass Calendar。标题里的西文与英文眉标用 Instrument Serif（OFL）。
