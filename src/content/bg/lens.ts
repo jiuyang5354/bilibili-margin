@@ -137,7 +137,7 @@ export class GlassLens {
   }
 
   /** 纹理整屏回画到画布，矩形内做玻璃 */
-  present(w: number, h: number, r: { x: number; y: number; w: number; h: number; r: number; px: number }, theme: 'light' | 'dark', o = 0.6): void {
+  present(w: number, h: number, r: { x: number; y: number; w: number; h: number; r: number; px: number }, theme: 'light' | 'dark' | number, o = 0.6): void {
     const gl = this.gl, L = this.loc;
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     gl.viewport(0, 0, w, h);
@@ -151,11 +151,13 @@ export class GlassLens {
     gl.uniform2f(L.u_res, w, h);
     gl.uniform4f(L.u_rect, r.x, r.y, r.w, r.h);
     gl.uniform1f(L.u_rad, Math.min(r.r, r.h / 2, r.w / 2));
-    const dark = theme === 'dark';
-    gl.uniform3fv(L.u_tint, dark ? [0.11, 0.11, 0.125] : [1, 1, 1]);
-    gl.uniform1f(L.u_milk, dark ? 0.2 : 0.05);
-    gl.uniform1f(L.u_lift, dark ? 1.06 : 0.99);
-    gl.uniform1f(L.u_rim, dark ? 0.85 : 1.0);
+    const k = typeof theme === 'number' ? theme : theme === 'dark' ? 1 : 0;
+    const m = (l: number, d: number) => l + (d - l) * k;
+    const dark = k >= 0.5;
+    gl.uniform3fv(L.u_tint, [m(1, 0.11), m(1, 0.11), m(1, 0.125)]);
+    gl.uniform1f(L.u_milk, m(0.05, 0.2));
+    gl.uniform1f(L.u_lift, m(0.99, 1.06));
+    gl.uniform1f(L.u_rim, m(1.0, 0.85));
     gl.uniform1f(L.u_bezel, Math.min(30 * r.px, r.h * 0.3));
     gl.uniform1f(L.u_px, r.px);
     gl.uniform3fv(L.u_canvas, dark ? [0x11 / 255, 0x11 / 255, 0x12 / 255] : [0xf5 / 255, 0xf4 / 255, 0xf1 / 255]);
