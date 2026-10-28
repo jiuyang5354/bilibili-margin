@@ -68,3 +68,14 @@ export function fmtAgo(ts: number): string {
   const t = new Date(ts * 1000);
   return `${t.getFullYear() === new Date().getFullYear() ? '' : `${t.getFullYear()}-`}${t.getMonth() + 1}-${t.getDate()}`;
 }
+
+/** 按自然日分组的标签：今天 / 昨天 / 本周/ 更早（或具体日期） */
+export function dayBucket(ts: number, exact = false): string {
+  if (!ts) return '更早';
+  const day = (t: number) => { const d = new Date(t); d.setHours(0, 0, 0, 0); return d.getTime(); };
+  const diff = Math.round((day(Date.now()) - day(ts * 1000)) / 86400000);
+  if (diff <= 0) return '今天';
+  if (diff === 1) return '昨天';
+  if (exact) { const t = new Date(ts * 1000); return `${t.getMonth() + 1} 月 ${t.getDate()} 日`; }
+  return diff < 7 ? '本周' : '更早';
+}

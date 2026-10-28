@@ -1,7 +1,7 @@
 import type { Settings } from '../../shared/settings';
 import { nav } from '../api/http';
 import { ats, likes, messages, replies, sendText, sessions, system, unread, type Notice, type Page, type Session } from '../api/msg';
-import { fmtAgo, h } from './dom';
+import { dayBucket, fmtAgo, h, icon, ICONS, svg } from './dom';
 import { toast } from './controls';
 import { csrf, PageShell } from './shell';
 
@@ -85,6 +85,7 @@ export class MessageApp {
     const more = h('button', { class: 'ghost small ms-more', type: 'button' }, '加载更多');
     this.pane.append(list, more);
     let cursor: Page['cursor'] = null;
+    let bucket = '';
     const fetcher = (c: Page['cursor']) => this.view === 'reply' ? replies(c) : this.view === 'at' ? ats(c) : this.view === 'like' ? likes(c) : system(csrf(), c);
     const load = async () => {
       more.disabled = true;
@@ -93,7 +94,11 @@ export class MessageApp {
         const p = await fetcher(cursor);
         if (gen !== this.gen) return;
         list.querySelectorAll('.sk').forEach((n) => n.remove());
-        p.list.forEach((n) => list.append(this.row(n)));
+        p.list.forEach((n) => {
+          const b = dayBucket(n.time, true);
+          if (b !== bucket) { bucket = b; list.append(h('div', { class: 'ms-day' }, h('span', {}, b))); }
+          list.append(this.row(n));
+        });
         cursor = p.cursor;
         more.hidden = !cursor;
         if (!list.children.length) list.append(this.empty('这里还空着'));
@@ -121,13 +126,21 @@ export class MessageApp {
     const who: Node[] = [];
     names.forEach((a, i) => { if (i) who.push(document.createTextNode('、')); who.push(a); });
     if (n.more > 0) who.push(h('span', { class: 'ms-more-n' }, ` 等 ${n.more + names.length} 人`));
+    const badge = n.kind === 'like' ? svg('<svg viewBox="0 0 24 24" width="11" height="11" fill="currentColor" aria-hidden="true"><path d="M12 20.5s-7.5-4.6-7.5-10.1A4.3 4.3 0 0 1 12 7.6a4.3 4.3 0 0 1 7.5 2.8c0 5.5-7.5 10.1-7.5 10.1Z"/></svg>')
+      : n.kind === 'at' ? document.createTextNode('@') : icon(ICONS.message);
+    const showQuote = n.quote && n.quote !== n.title;
     return h('article', { class: `ms-row ${n.kind}` },
       h('a', { class: 'ms-faces', href: u ? `https://space.bilibili.com/${u.mid}` : '#', ...ext },
-        ...n.users.slice(0, n.kind === 'like' ? 3 : 1).map((x) => h('img', { class: 'ms-face', src: x.face ? `${x.face}@80w_80h_1c.webp` : '', alt: '', referrerpolicy: 'no-referrer', loading: 'lazy' }))),
+        ...n.users.slice(0, n.kind === 'like' ? 3 : 1).map((x) => h('img', { class: 'ms-face', src: x.face ? `${x.face}@80w_80h_1c.webp` : '', alt: '', referrerpolicy: 'no-referrer', loading: 'lazy' })),
+        h('i', { class: 'ms-badge' }, badge)),
       h('div', { class: 'ms-main' },
-        h('div', { class: 'ms-line' }, h('span', { class: 'ms-who' }, ...who), h('span', { class: 'ms-verb' }, n.verb), h('time', {}, fmtAgo(n.time))),
+        h('div', { class: 'ms-line' },
+          h('p', { class: 'ms-sent' }, h('span', { class: 'ms-who' }, ...who), ' ', h('span', { class: 'ms-verb' }, n.verb),
+            n.title ? h('a', { class: 'ms-obj', href: n.url || '#', ...ext }, n.title) : null),
+          h('time', {}, fmtAgo(n.time))),
         n.content ? h('p', { class: 'ms-text' }, n.content) : null,
-        n.quote ? h('a', { class: 'ms-quote', href: n.url || '#', ...ext }, n.quote) : null),
+        showQuote ? h('a', { class: 'ms-quote', href: n.url || '#', ...ext }, h('span', { class: 'ms-q-k' }, '原文'), n.quote) : null,
+        n.kind === 'reply' && n.url ? h('div', { class: 'ms-acts' }, h('a', { class: 'ms-act ghost', href: n.url, ...ext }, icon(ICONS.message), '去回复')) : null),
       n.image ? h('a', { class: 'ms-thumb', href: n.url || '#', ...ext }, h('img', { src: `${n.image}@240w_150h_1c.webp`, alt: '', referrerpolicy: 'no-referrer', loading: 'lazy' })) : null);
   }
 
@@ -143,7 +156,12 @@ export class MessageApp {
       if (!ss.length) { list.append(this.empty('还没有私信')); return; }
       let target = ss.find((s) => s.talker === want);
       if (want && !target) { target = { talker: want, unread: 0, last: '', ts: 0 }; ss.unshift(target); }
-      ss.forEach((s) => list.append(this.sessionRow(s, chat, list)));
+      let bucket = '';
+      ss.forEach((s) => {
+        const b = s.ts ? dayBucket(s.ts) : '';
+        if (b && b !== bucket) { bucket = b; list.append(h('div', { class: 'wh-day' }, b)); }
+        list.append(this.sessionRow(s, chat, list));
+      });
       if (target) (list.querySelector(`[data-talker="${target.talker}"]`) as HTMLElement)?.click();
     }).catch((e) => { if (gen === this.gen) list.append(this.empty(`加载失败：${(e as Error).message}`)); });
   }

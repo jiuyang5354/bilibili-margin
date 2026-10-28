@@ -4,11 +4,15 @@ import { spaceDynamics } from '../api/dyn';
 import { videoCard, skeleton } from './card';
 import { dynCard } from './dyn';
 import { segmented, toast } from './controls';
-import { fmtCount, h, icon, ICONS } from './dom';
+import { fmtAgo, fmtCount, fmtDuration, h, icon, ICONS } from './dom';
+import type { Video } from '../api/feed';
+import { cardData } from './card';
 import { attachPreview } from './preview';
 import { csrf, PageShell } from './shell';
 
 type Tab = 'video' | 'dynamic';
+type Layout = 'grid' | 'list';
+const LAYOUT_KEY = 'margin:space-layout';
 
 /** 个人空间：封面 + 编辑部式身份栏 + 视频 / 动态 两栏切换 */
 export class SpaceApp {
@@ -24,6 +28,8 @@ export class SpaceApp {
   private status!: HTMLElement;
   private sentinel!: HTMLElement;
   private sort!: HTMLElement;
+  private layoutSeg!: HTMLElement;
+  private layout: Layout = (localStorage.getItem(LAYOUT_KEY) as Layout) === 'list' ? 'list' : 'grid';
   private info: SpaceInfo | null = null;
 
   constructor(settings: Settings, private mid: number, initial: Tab) {
@@ -37,7 +43,7 @@ export class SpaceApp {
   private render(): void {
     const s = this.shell;
     const hero = h('section', { class: 'sp-hero' }, h('div', { class: 'sp-banner' }), h('div', { class: 'sp-id sk-id' },
-      h('div', { class: 'sp-face' }), h('div', { class: 'sp-who' }, h('div', { class: 'line' }), h('div', { class: 'line short' }))));
+      h('div', { class: 'sp-who' }, h('div', { class: 'line eb' }), h('div', { class: 'line' }), h('div', { class: 'line short' }))));
     const tabs = h('div', { class: 'tabs', role: 'tablist' });
     const mk = (id: Tab, label: string) => {
       const b = h('button', { class: 'tab', role: 'tab', type: 'button', 'aria-selected': String(id === this.tab), onclick: () => this.switchTab(id) }, label);
@@ -47,7 +53,9 @@ export class SpaceApp {
     tabs.append(mk('video', '视频'), mk('dynamic', '动态'));
     this.sort = segmented<VideoOrder>([['pubdate', '最新发布'], ['click', '最多播放']], this.order, (v) => { this.order = v; this.reload(); });
     this.sort.classList.add('sp-sort');
-    const bar = h('div', { class: 'bar sp-bar' }, h('div', { class: 'bar-row' }, tabs, this.sort));
+    this.layoutSeg = segmented<Layout>([['grid', '网格'], ['list', '列表']], this.layout, (v) => { this.layout = v; localStorage.setItem(LAYOUT_KEY, v); this.reload(); });
+    this.layoutSeg.classList.add('sp-sort', 'sp-layout');
+    const bar = h('div', { class: 'bar sp-bar' }, h('div', { class: 'bar-row' }, tabs, h('div', { class: 'sp-tools' }, this.sort, this.layoutSeg)));
     this.list = h('section', { class: 'grid' });
     this.status = h('div', { class: 'status' });
     this.sentinel = h('div', { class: 'sentinel' });
@@ -84,12 +92,13 @@ export class SpaceApp {
       return href ? h('a', { class: 'sp-stat', href, target: '_blank', rel: 'noopener' }, ...inner) : h('div', { class: 'sp-stat' }, ...inner);
     };
     return h('section', { class: 'sp-hero' },
-      h('div', { class: 'sp-banner', style: i.banner ? `--img:url("${i.banner}@1600w.webp")` : '' }),
+      h('div', { class: `sp-banner${i.banner ? ' has' : ''}`, style: i.banner ? `--img:url("${i.banner}@1600w.webp")` : '' }),
       h('div', { class: 'sp-id' },
-        h('img', { class: 'sp-face', src: `${i.face}@160w_160h_1c.webp`, alt: '', referrerpolicy: 'no-referrer' }),
         h('div', { class: 'sp-who' },
-          h('div', { class: 'eyebrow' }, h('span', {}, 'SPACE'), h('span', {}, `UID ${i.mid}`), h('span', { class: 'no' }, `LV${i.level}`)),
-          h('h1', {}, i.name, i.vip ? h('span', { class: 'sp-vip' }, i.vip) : null),
+          h('div', { class: 'sp-kicker' },
+            h('img', { class: 'sp-face', src: `${i.face}@120w_120h_1c.webp`, alt: '', referrerpolicy: 'no-referrer' }),
+            h('div', { class: 'eyebrow' }, h('span', {}, 'SPACE'), h('span', {}, `UID ${i.mid}`), h('span', { class: 'no' }, `LV${i.level}`), i.vip ? h('span', { class: 'sp-vip' }, i.vip) : null)),
+          h('h1', {}, i.name),
           i.official ? h('p', { class: 'sp-official' }, i.official) : null,
           i.sign ? h('p', { class: 'sp-sign' }, i.sign) : null),
         h('div', { class: 'sp-side' },
@@ -104,6 +113,22 @@ export class SpaceApp {
     );
   }
 
+  /** 列表视图的一行：编号 + 小封面 + 衬线标题 + 右侧小注（21st Editorial service list 的版式） */
+  private row(v: Video, n: number): HTMLElement {
+    const href = `https://www.bilibili.com/video/${v.bvid}`;
+    const ext = { target: '_blank', rel: 'noopener' };
+    const el = h('article', { class: 'card vrow' },
+      h('span', { class: 'vr-no' }, String(n).padStart(2, '0')),
+      h('a', { class: 'cover', href, ...ext, title: v.title },
+        h('img', { src: v.cover ? `${v.cover}@320w_180h_1c.webp` : '', alt: '', loading: 'lazy', referrerpolicy: 'no-referrer' }),
+        v.duration ? h('span', { class: 'dur' }, fmtDuration(v.duration)) : null),
+      h('a', { class: 'vr-title', href, ...ext }, v.title),
+      h('span', { class: 'vr-note' }, h('span', {}, `${fmtCount(v.views)} 播放`), h('span', {}, fmtAgo(v.pubdate))),
+      h('a', { class: 'vr-go', href, ...ext, 'aria-label': '打开' }, icon(ICONS.arrow)));
+    cardData.set(el, v);
+    return el;
+  }
+
   private switchTab(t: Tab): void {
     if (t === this.tab) return;
     this.tab = t;
@@ -115,7 +140,8 @@ export class SpaceApp {
   private applyTabUi(): void {
     this.shell.main.querySelectorAll<HTMLElement>('.sp-bar .tab').forEach((b) => b.setAttribute('aria-selected', String(b.dataset.tab === this.tab)));
     this.sort.hidden = this.tab !== 'video';
-    this.list.className = this.tab === 'video' ? 'grid' : 'dy-list';
+    this.layoutSeg.hidden = this.tab !== 'video';
+    this.list.className = this.tab === 'video' ? (this.layout === 'list' ? 'vlist' : 'grid') : 'dy-list';
   }
 
   private reload(): void {
@@ -123,6 +149,7 @@ export class SpaceApp {
     this.page = 1; this.offset = ''; this.done = false; this.loading = false;
     this.list.replaceChildren();
     this.status.replaceChildren();
+    this.applyTabUi();
     this.load();
   }
 
@@ -130,7 +157,8 @@ export class SpaceApp {
     if (this.loading || this.done) return;
     this.loading = true;
     const gen = this.gen;
-    const sk = this.tab === 'video' ? skeleton(this.list.children.length ? 5 : 15) : h('div', { class: 'dy sk' }, h('div', { class: 'line' }), h('div', { class: 'line' }), h('div', { class: 'line short' }));
+    const listMode = this.tab === 'video' && this.layout === 'list';
+    const sk = listMode ? h('div', { class: 'vrow sk' }, h('div', { class: 'line' })) : this.tab === 'video' ? skeleton(this.list.children.length ? 5 : 15) : h('div', { class: 'dy sk' }, h('div', { class: 'line' }), h('div', { class: 'line' }), h('div', { class: 'line short' }));
     const skNodes = sk instanceof DocumentFragment ? [...sk.childNodes] : [sk];
     this.list.append(sk);
     try {
@@ -139,7 +167,7 @@ export class SpaceApp {
         if (gen !== this.gen) return;
         skNodes.forEach((n) => (n as Element).remove());
         const start = this.list.children.length;
-        r.list.forEach((v, i) => this.list.append(videoCard(v, start + i, { compact: false })));
+        r.list.forEach((v, i) => this.list.append(listMode ? this.row(v, start + i + 1) : videoCard(v, start + i, { compact: false })));
         this.done = r.list.length === 0 || this.list.children.length >= r.total;
         if (!this.list.children.length) this.status.replaceChildren(h('span', {}, '还没有投稿'));
       } else {
