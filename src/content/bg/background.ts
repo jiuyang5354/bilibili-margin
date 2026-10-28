@@ -239,8 +239,7 @@ export class BackgroundLayer {
     if (this.reduced.matches && !this.kT0) return;
     const tick = (now: number) => {
       this.raf = 0;
-      const fading = !!this.kT0;
-      if (fading || now + 0.1 >= this.nextFrame) {
+      if (now + 0.1 >= this.nextFrame) {
         const gap = now - this.last;
         this.last = now;
         const t0 = performance.now();
@@ -252,7 +251,7 @@ export class BackgroundLayer {
         else this.fastRun = 0;
         // Advance the deadline instead of restarting the interval on each drawn frame.
         // Restarting rounds 60fps down to 48fps on 144Hz displays.
-        if (fading || !this.nextFrame || now - this.nextFrame > this.frameMs * 2) this.nextFrame = now;
+        if (!this.nextFrame || now - this.nextFrame > this.frameMs * 2) this.nextFrame = now;
         this.nextFrame += this.frameMs;
       }
       if (this.reduced.matches && !this.kT0) return;

@@ -376,7 +376,7 @@ canvas.gf-art[data-ready] { opacity: 1; filter: none; }
     translate(calc(var(--gf-jx) + var(--gf-slot) * var(--gf-spread)), calc(var(--gf-lift) + var(--gf-depth) * var(--gf-stack) * -1))
     rotate(calc(var(--gf-jr) + var(--gf-slot) * var(--gf-fan)));
   transition:
-    transform .75s var(--ease-out) var(--gf-spring) calc(var(--gf-depth) * 40ms),
+    transform .75s var(--gf-spring) calc(var(--gf-depth) * 40ms),
     box-shadow .4s var(--gf-ease),
     translate .9s var(--gf-ease),
     opacity .9s var(--gf-ease);
@@ -480,7 +480,7 @@ canvas.gf-sheet-art[data-ready] { opacity: 1; filter: none; }
   overflow: hidden;
   transform-origin: 50% 100%;
   transform: scaleY(var(--gf-hinge));
-  transition: transform .8s var(--ease-out) var(--gf-spring), translate 1s var(--gf-ease), opacity 1s var(--gf-ease);
+  transition: transform .8s var(--gf-spring), translate 1s var(--gf-ease), opacity 1s var(--gf-ease);
 }
 .gf-front--bump { animation: gf-bump .7s var(--gf-ease) .38s both; }
 @keyframes gf-bump {
@@ -505,7 +505,7 @@ canvas.gf-sheet-art[data-ready] { opacity: 1; filter: none; }
 /* 副本模糊到边缘会变透明，垫一层底色，免得真实的视频从玻璃底部透出来 */
 .gf-front { background: linear-gradient(180deg, #e9e9ec, #dcdce0); }
 .app[data-theme="dark"] .gf-root .gf-front { background: linear-gradient(180deg, #232327, #121214); }
-.gf-frost .gf-sheet { transition: transform .75s var(--ease-out) var(--gf-spring) calc(var(--gf-depth) * 40ms); }
+.gf-frost .gf-sheet { transition: transform .75s var(--gf-spring) calc(var(--gf-depth) * 40ms); }
 .gf-tint {
   position: absolute;
   inset: 0;
@@ -780,7 +780,8 @@ canvas.gf-sheet-art[data-ready] { opacity: 1; filter: none; }
 .fp-card[data-view="month"] .fp-foot { padding-top: 16px; margin-top: 16px; border-top: 1px solid color-mix(in srgb, var(--ink) 12%, transparent); }
 .fp-tip small { opacity: .7; }
 @media (max-width: 1100px) { .fp-card { grid-template-columns: 1fr; gap: 20px; } .fp-stats { grid-template-columns: repeat(4, auto); justify-content: start; gap: 12px 28px; } }
-.theme-fading, .theme-fading *:not(.ts, .ts *), .theme-fading *:not(.ts, .ts *)::before, .theme-fading *:not(.ts *)::after { transition-property: color, background-color, border-color, outline-color, text-decoration-color, fill, stroke !important; transition-duration: var(--fade) !important; transition-timing-function: cubic-bezier(.65, 0, .35, 1) !important; transition-delay: 0s !important; }
+.theme-fading { transition: background-color var(--fade) cubic-bezier(.65, 0, .35, 1) !important; }
+.theme-fading :is(.top, .bar, .hero-search, .fp-card, .sheet, .sheet-head, .search, .tabs, .tab, .act, .card, .meta, .eyebrow, .status) { transition-property: color, background-color, border-color, outline-color, text-decoration-color, fill, stroke !important; transition-duration: var(--fade) !important; transition-timing-function: cubic-bezier(.65, 0, .35, 1) !important; transition-delay: 0s !important; }
 /* 日月主题切换（21st Sun Moon Theme Toggle，原生移植） */
 /* 昼夜切换（v0.22，用户提供的 Uiverse theme-switch 原生移植；结构/比例/曲线照原代码）
  * v0.22.1 配色：白天 = 站点暖纸色轨道 + 白云，太阳用足迹选中同款 B站粉→橙渐变；夜晚 = 站点墨色轨道 + 冷白月亮 */
@@ -795,31 +796,31 @@ canvas.gf-sheet-art[data-ready] { opacity: 1; filter: none; }
 .app[data-theme="dark"] .ts { --ts-rim: rgb(255 255 255 / .1); }
 .ts, .ts *, .ts *::before, .ts *::after { box-sizing: border-box; margin: 0; padding: 0; font-size: var(--toggle-size); }
 .ts > .ts-c { display: block; position: relative; width: var(--container-width); height: var(--container-height); border-radius: var(--container-radius); overflow: hidden; background-color: var(--container-light-bg);
-  box-shadow: 0 -0.062em 0.062em rgb(0 0 0 / .25), 0 0.062em 0.125em var(--ts-rim); transition: var(--transition); }
+  box-shadow: 0 -0.062em 0.062em rgb(0 0 0 / .25), 0 0.062em 0.125em var(--ts-rim); transition: background-color var(--transition), box-shadow var(--transition); }
 .ts-c::before { content: ""; position: absolute; z-index: 1; inset: 0; border-radius: var(--container-radius); box-shadow: 0 0.05em 0.187em rgb(0 0 0 / .25) inset, 0 0.05em 0.187em rgb(0 0 0 / .25) inset; }
 .ts-circle { position: absolute; display: flex; width: var(--circle-container-diameter); height: var(--circle-container-diameter); left: var(--circle-container-offset); top: var(--circle-container-offset); border-radius: var(--container-radius); background-color: rgb(255 255 255 / .1);
-  box-shadow: inset 0 0 0 3.375em rgb(255 255 255 / .1), inset 0 0 0 3.375em rgb(255 255 255 / .1), 0 0 0 0.625em rgb(255 255 255 / .1), 0 0 0 1.25em rgb(255 255 255 / .1); transition: var(--circle-transition); pointer-events: none; }
+  box-shadow: inset 0 0 0 3.375em rgb(255 255 255 / .1), inset 0 0 0 3.375em rgb(255 255 255 / .1), 0 0 0 0.625em rgb(255 255 255 / .1), 0 0 0 1.25em rgb(255 255 255 / .1); transform: translateX(0); transition: transform var(--circle-transition); pointer-events: none; }
 .ts-sm { position: relative; z-index: 2; display: block; width: var(--sun-moon-diameter); height: var(--sun-moon-diameter); margin: auto; border-radius: var(--container-radius); overflow: hidden; pointer-events: auto; background: var(--sun-bg);
-  box-shadow: 0.062em 0.062em 0.062em 0 rgb(254 255 239 / .61) inset, 0 -0.062em 0.062em 0 var(--sun-edge) inset; filter: drop-shadow(0.062em 0.125em 0.125em rgb(0 0 0 / .25)) drop-shadow(0 0.062em 0.125em rgb(0 0 0 / .25)); transition: var(--transition); }
-.ts-moon { position: relative; display: block; width: 100%; height: 100%; border-radius: inherit; transform: translateX(100%); background-color: var(--moon-bg); box-shadow: 0.062em 0.062em 0.062em 0 rgb(254 255 239 / .61) inset, 0 -0.062em 0.062em 0 var(--moon-edge) inset; transition: var(--transition); }
+  box-shadow: 0.062em 0.062em 0.062em 0 rgb(254 255 239 / .61) inset, 0 -0.062em 0.062em 0 var(--sun-edge) inset; filter: drop-shadow(0.062em 0.125em 0.125em rgb(0 0 0 / .25)) drop-shadow(0 0.062em 0.125em rgb(0 0 0 / .25)); transition: transform var(--transition); }
+.ts-moon { position: relative; display: block; width: 100%; height: 100%; border-radius: inherit; transform: translateX(100%); background-color: var(--moon-bg); box-shadow: 0.062em 0.062em 0.062em 0 rgb(254 255 239 / .61) inset, 0 -0.062em 0.062em 0 var(--moon-edge) inset; transition: transform var(--transition); }
 .ts-spot { position: absolute; top: 0.75em; left: 0.312em; width: 0.75em; height: 0.75em; border-radius: var(--container-radius); background-color: var(--spot-color); box-shadow: 0 0.0312em 0.062em rgb(0 0 0 / .25) inset; }
 .ts-spot:nth-of-type(2) { width: 0.375em; height: 0.375em; top: 0.937em; left: 1.375em; }
 .ts-spot:nth-last-of-type(3) { width: 0.25em; height: 0.25em; top: 0.312em; left: 0.812em; }
 .ts-clouds { position: absolute; bottom: -0.625em; left: 0.312em; width: 1.25em; height: 1.25em; border-radius: var(--container-radius); background-color: var(--clouds-color);
   box-shadow: 0.937em 0.312em var(--clouds-color), -0.312em -0.312em var(--back-clouds-color), 1.437em 0.375em var(--clouds-color), 0.5em -0.125em var(--back-clouds-color), 2.187em 0 var(--clouds-color), 1.25em -0.062em var(--back-clouds-color), 2.937em 0.312em var(--clouds-color), 2em -0.312em var(--back-clouds-color), 3.625em -0.062em var(--clouds-color), 2.625em 0 var(--back-clouds-color), 4.5em -0.312em var(--clouds-color), 3.375em -0.437em var(--back-clouds-color), 4.625em -1.75em 0 0.437em var(--clouds-color), 4em -0.625em var(--back-clouds-color), 4.125em -2.125em 0 0.437em var(--back-clouds-color);
-  transition: 0.5s cubic-bezier(0, -0.02, 0.4, 1.25); }
-.ts-stars { position: absolute; top: -100%; left: 0.312em; width: 2.75em; height: auto; color: var(--stars-color); transition: var(--transition); }
+  transform: translateY(0); transition: transform var(--transition); }
+.ts-stars { position: absolute; top: -100%; left: 0.312em; width: 2.75em; height: auto; color: var(--stars-color); transform: translateY(0); transition: transform var(--transition); }
 .ts-stars svg { display: block; width: 100%; height: auto; }
 .ts[data-state="dark"] .ts-c { background-color: var(--container-night-bg); }
-.ts[data-state="dark"] .ts-circle { left: calc(100% - var(--circle-container-offset) - var(--circle-container-diameter)); }
-.ts[data-state="dark"] .ts-circle:hover { left: calc(100% - var(--circle-container-offset) - var(--circle-container-diameter) - 0.187em); }
-.ts-circle:hover { left: calc(var(--circle-container-offset) + 0.187em); }
+.ts[data-state="dark"] .ts-circle { transform: translateX(calc(var(--container-width) - var(--circle-container-diameter) - 2 * var(--circle-container-offset))); }
+.ts[data-state="dark"] .ts-circle:hover { transform: translateX(calc(var(--container-width) - var(--circle-container-diameter) - 2 * var(--circle-container-offset) - 0.187em)); }
+.ts-circle:hover { transform: translateX(0.187em); }
 .ts[data-state="dark"] .ts-moon { transform: translate(0); }
-.ts[data-state="dark"] .ts-clouds { bottom: -4.062em; }
-.ts[data-state="dark"] .ts-stars { top: 50%; transform: translateY(-50%); }
+.ts[data-state="dark"] .ts-clouds { transform: translateY(3.437em); }
+.ts[data-state="dark"] .ts-stars { transform: translateY(calc(var(--container-height) * 1.5 - 50%)); }
 .ts:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 .ts.ts-still, .ts.ts-still * { transition: none !important; }
-@media (prefers-reduced-motion: reduce) { .et-btn, .et-btn > span { transition: none; } }
+@media (prefers-reduced-motion: reduce) { .et-btn, .et-btn > span, .ts, .ts * { transition: none !important; } }
 
 /* 播放页顶栏：同一套 .app 变量，只占顶部 72px，抽屉仍覆盖全屏 */
 .app.wt { position: fixed; inset: 0 0 auto 0; height: 72px; overflow: visible; background: transparent; scrollbar-gutter: auto; }

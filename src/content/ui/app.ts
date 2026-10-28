@@ -200,8 +200,9 @@ export class MarginApp {
       clearTimeout(this.fadeTimer);
       this.fadeTimer = window.setTimeout(() => this.app.classList.remove('theme-fading'), this.sunMoon.duration + 100);
     }
-    this.settings = await saveSettings({ theme: next });
+    this.settings = { ...this.settings, theme: next };
     this.applyTheme();
+    await saveSettings({ theme: next });
   }
 
   private switchTab(id: Tab, tabs: HTMLElement): void {

@@ -22,6 +22,8 @@ This is an unofficial project with no affiliation to Bilibili. Data is requested
 - Video context menus provide open-in-new-tab, watch later, copy link/BV ID, uploader space, and uploader blocking. Shift + right-click retains the browser menu.
 - A watch-later drawer shows viewing progress and allows removal. The watch page includes a floating quick menu and a scroll-position ruler.
 
+v0.22.7 restores folder-opening transitions and reduces pointer/theme-switch work; see [changes and validation scope](docs/interaction-performance-v0.22.7.md).
+
 ## Design references
 
 Interactions were independently implemented in native TypeScript and CSS after studying 21st.dev components including Sheet, Segmented Control, Chip Group, Minimal Slider, buttons, toggles, and Command Search.

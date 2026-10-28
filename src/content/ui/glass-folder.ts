@@ -217,15 +217,22 @@ export function glassFolder(o: GFOptions): GlassFolderApi {
   let raf = 0;
   let px = 0;
   let py = 0;
-  const write = () => { raf = 0; root.style.setProperty('--gf-px', px.toFixed(3)); root.style.setProperty('--gf-py', py.toFixed(3)); };
+  let pointerX = 0, pointerY = 0, tracking = false;
+  const write = () => {
+    raf = 0;
+    if (tracking) {
+      const r = root.getBoundingClientRect();
+      px = ((pointerX - r.left) / r.width) * 2 - 1;
+      py = ((pointerY - r.top) / r.height) * 2 - 1;
+    } else px = py = 0;
+    root.style.setProperty('--gf-px', px.toFixed(3)); root.style.setProperty('--gf-py', py.toFixed(3));
+  };
   root.addEventListener('pointermove', (e) => {
     if (e.pointerType === 'touch') return;
-    const r = root.getBoundingClientRect();
-    px = ((e.clientX - r.left) / r.width) * 2 - 1;
-    py = ((e.clientY - r.top) / r.height) * 2 - 1;
+    pointerX = e.clientX; pointerY = e.clientY; tracking = true;
     if (!raf) raf = requestAnimationFrame(write);
   });
-  root.addEventListener('pointerleave', () => { px = 0; py = 0; if (!raf) raf = requestAnimationFrame(write); });
+  root.addEventListener('pointerleave', () => { tracking = false; if (!raf) raf = requestAnimationFrame(write); });
 
   hit.addEventListener('click', () => { setMenu(false); setOpen(!open); });
   key.addEventListener('click', () => setMenu(!menuOpen));

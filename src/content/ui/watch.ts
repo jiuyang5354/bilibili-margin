@@ -144,20 +144,9 @@ export class WatchSkin {
 
   private async toggleTheme(): Promise<void> {
     const next = this.resolved() === 'dark' ? 'light' : 'dark';
-    const de = document.documentElement;
-    const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
-    const ms = this.head.sunMoon.duration;
-    this.settings = await saveSettings({ theme: next });
-    // B 站页面元素成千上万、评论区还在各自的 Shadow DOM 里，逐元素 transition 会各走各的、
-    // 卡出半亮半暗。改用 View Transition 整页（含顶栏）一次交叉淡化；新画面是实时的，日月动画照常跑。
-    const vt = (document as Document & { startViewTransition?: (cb: () => void) => { finished: Promise<void>; skipTransition: () => void } }).startViewTransition;
-    if (reduce || !vt) { this.applyTheme(true); return; }
-    de.style.setProperty('--m-vt', `${ms}ms`); // 与日月按钮同一时长、同一缓动
-    de.classList.add('margin-vt');
-    const t = vt.call(document, () => this.applyTheme(true));
-    // 保险：页面卡顿时最多多等 0.8s，过时直接跳到终态，不让整页停在快照上
-    const guard = window.setTimeout(() => t.skipTransition(), ms + 800);
-    t.finished.finally(() => { clearTimeout(guard); de.classList.remove('margin-vt'); });
+    this.settings = { ...this.settings, theme: next };
+    this.applyTheme(true);
+    await saveSettings({ theme: next });
   }
 
   /** 网页全屏 / 全屏时收起顶栏，不挡播放器 */

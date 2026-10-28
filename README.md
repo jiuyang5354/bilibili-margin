@@ -24,6 +24,8 @@
 - 亮色 / 暗色 / 跟随系统主题，切换带过渡；设置面板与扩展弹窗即时同步
 - 页脚可「本次回到 B 站原版首页」，弹窗可整体关闭
 
+v0.22.7 修复收藏夹展开动画失效，减少悬停定位和昼夜切换开销；[修复说明与实测范围](docs/interaction-performance-v0.22.7.md)。
+
 ## 设计参考
 
 交互参考了 21st.dev 上的 Sheet、Segmented Control、Chip Group、Minimal Slider、Glow Button、Glass Button、Toggle Switch、Command Search 等组件的形态，用原生 TypeScript / CSS 重新实现。
