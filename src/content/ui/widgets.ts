@@ -1,46 +1,33 @@
 import { h } from './dom';
-import { historyList } from '../api/history';
-import { popular } from '../api/feed';
+import type { Video } from '../api/feed';
 
 /**
  * 首页足迹卡片右侧的「弹性画廊」：移植用户贴来的 21st Elastic Gallery。
  * 五条封面横向排开，悬停 / 点击的一条 flex 4、其余 flex 1（700ms cubic-bezier(.25,1,.5,1)），
  * 非激活条压暗 brightness .5、封面放大 1.1，标题竖排；激活条底部渐变 + 标签 + 标题 + 箭头入口。
- * 登录后放最近看过的 5 个视频（带进度、点开从上次位置继续），未登录放热门前 5。
+ * 内容取自首页推荐流：每次加载 / 换一批时，推荐里的前 5 个放进画廊（不再在下面网格里重复）。
  */
 
 interface Item { title: string; cover: string; tag: string; url: string; pct: number; cta: string }
 
 const ARROW = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7h10v10"/><path d="M7 17 17 7"/></svg>';
 
-async function resume(): Promise<Item[]> {
-  try {
-    const { list } = await historyList('archive', null);
-    return list.filter((x) => x.cover).slice(0, 5).map((it) => {
-      const done = it.progress < 0 || (it.duration > 0 && it.progress >= it.duration - 5);
-      const p = done ? 0 : it.progress;
-      const url = p > 0 ? `${it.url}${it.url.includes('?') ? '&' : '?'}t=${p}` : it.url;
-      const pct = done ? 100 : it.duration ? Math.round((p / it.duration) * 100) : 0;
-      return { title: it.title, cover: it.cover, tag: done ? '已看完' : `继续观看 ${pct}%`, url, pct, cta: done ? '再看一遍' : '接着看' };
-    });
-  } catch { return []; }
-}
+const fmtViews = (n: number) => (n >= 1e8 ? `${(n / 1e8).toFixed(1)}亿` : n >= 1e4 ? `${(n / 1e4).toFixed(1)}万` : String(n));
 
-async function hot(): Promise<Item[]> {
-  try {
-    const { list } = await popular(1);
-    return list.slice(0, 5).map((v) => ({ title: v.title, cover: v.cover, tag: v.author ? `热门 · ${v.author}` : '热门', url: `https://www.bilibili.com/video/${v.bvid}`, pct: 0, cta: '去看看' }));
-  } catch { return []; }
-}
+export interface Gallery { el: HTMLElement; show(list: Video[]): void; filled(): boolean }
 
-export function createWidgets(): HTMLElement {
-  const root = h('section', { class: 'eg', 'aria-label': '继续观看' });
+export function createWidgets(): Gallery {
+  const root = h('section', { class: 'eg', 'aria-label': '为你推荐' });
   for (let k = 0; k < 5; k++) root.append(h('div', { class: 'eg-item sk' }));
-  (async () => {
-    let items = await resume();
-    if (items.length < 3) items = await hot();
+  let has = false;
+  const show = (list: Video[]) => {
+    const items: Item[] = list.slice(0, 5).map((v) => ({
+      title: v.title, cover: v.cover, url: `https://www.bilibili.com/video/${v.bvid}`, pct: 0, cta: '去看看',
+      tag: v.reason || `${v.author} · ${fmtViews(v.views)} 播放`,
+    }));
+    if (!items.length) return;
+    has = true;
     root.textContent = '';
-    if (!items.length) { root.append(h('p', { class: 'eg-empty' }, '暂时没有可以展示的视频')); return; }
     const els: HTMLElement[] = [];
     const activate = (n: number) => els.forEach((e, k) => e.classList.toggle('on', k === n));
     items.forEach((it, n) => {
@@ -56,7 +43,6 @@ export function createWidgets(): HTMLElement {
             h('h3', { class: 'eg-title' }, it.title),
             cta),
           h('div', { class: 'eg-off' }, h('span', { class: 'eg-v' }, it.title), h('span', { class: 'eg-no' }, String(n + 1).padStart(2, '0')))),
-        it.pct > 0 && it.pct < 100 ? h('i', { class: 'eg-pct', style: `width:${it.pct}%` }) : '',
       );
       // 悬停切换；第一次点击（触屏）只激活不跳转
       el.addEventListener('mouseenter', () => activate(n));
@@ -64,7 +50,8 @@ export function createWidgets(): HTMLElement {
       els.push(el);
       root.append(el);
     });
-    activate(Math.min(items.length - 1, 0));
-  })();
-  return root;
+    activate(0);
+    root.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 300, easing: 'ease-out' });
+  };
+  return { el: root, show, filled: () => has };
 }

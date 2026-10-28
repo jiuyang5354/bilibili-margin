@@ -45,6 +45,8 @@ export class MarginApp {
   private done = false;
   private items: Video[] = [];
   private seen = new Set<string>();
+  private gallery = createWidgets();
+  private needPicks = true;
   private keep: Predicate;
   private gen = 0;
   private media = matchMedia('(prefers-color-scheme: dark)');
@@ -149,7 +151,7 @@ export class MarginApp {
       h('main', { class: 'main' },
         heroS.scrim,
         hero,
-        h('div', { class: 'dash' }, this.foot, createWidgets()),
+        h('div', { class: 'dash' }, this.foot, this.gallery.el),
         barMark,
         bar,
         this.grid, this.status, this.sentinel,
@@ -216,6 +218,7 @@ export class MarginApp {
     this.loading = false;
     this.page = 1;
     this.round++;
+    if (this.tab === 'rcmd') this.needPicks = true;
     this.app.scrollTo({ top: 0 });
     this.load();
   }
@@ -255,7 +258,13 @@ export class MarginApp {
         const batches = await Promise.all([recommended(this.round), recommended(this.round + 1)]);
         this.round += 2;
         list = batches.flat();
+        // 推荐流的前 5 个放进足迹旁的画廊，网格里不再重复
+        if (this.needPicks) {
+          const picks = list.filter((v) => !this.seen.has(v.bvid) && this.keep(v)).slice(0, 5);
+          if (picks.length && gen === this.gen) { picks.forEach((v) => this.seen.add(v.bvid)); this.gallery.show(picks); this.needPicks = false; }
+        }
       } else {
+        if (!this.gallery.filled()) recommended(this.round + 50).then((l) => { if (!this.gallery.filled()) this.gallery.show(l.filter(this.keep)); }).catch(() => {});
         const r = await popular(this.page++);
         list = r.list;
         this.done = r.done;
