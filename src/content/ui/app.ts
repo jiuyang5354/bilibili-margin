@@ -87,7 +87,7 @@ export class MarginApp {
     this.panel = createSettingsPanel(() => this.settings, () => this.bg.shader);
     this.fav = createFavorites((g) => attachPreview(g, () => this.settings.hoverPreview));
     this.foot = createFootprintCard();
-    this.bg.setLens(this.foot);
+    // v0.20：足迹卡片改用 21st Glass Calendar 的 CSS 玻璃，不再走 GL 折射透镜
     const later = createLaterDrawer(() => this.app);
     const palette = createCommandPalette([
       { id: 'refresh', title: '换一批推荐', cat: '操作', icon: ICONS.refresh, keys: ['刷新', 'refresh'], run: () => this.reload() },
@@ -169,7 +169,6 @@ export class MarginApp {
     this.root.append(this.app);
     if (shouldPlayIntro(this.settings.intro)) playIntro(this.app, this.resolvedTheme());
     this.app.addEventListener('scroll', () => this.bg.redraw(), { passive: true });
-    new ResizeObserver(() => this.bg.redraw()).observe(this.foot);
     const lg = filtersIn(this.root);
     head.glass.forEach((g) => attachGlass(g, lg));
     attachGlass(head.thumb, lg, { blur: 2, strength: 0.4 });

@@ -703,12 +703,20 @@ canvas.gf-sheet-art[data-ready] { opacity: 1; filter: none; }
 @media (prefers-reduced-motion: reduce) { .sheet, .seg-thumb, .switch::after { transition: none; } .card, .card.sk .cover, .card.sk .line { animation: none; } .cover img { transition: none; } }
 
 /* B 站足迹热力图（首页卡片） */
-.fp-card { position: relative; display: grid; grid-template-columns: 240px minmax(0, 1fr); gap: 36px; align-items: center; margin-top: 24px; padding: 24px 28px 20px; border-radius: 18px; background: var(--surface); border: 0; }
+.fp-card { position: relative; display: grid; grid-template-columns: 240px minmax(0, 1fr); gap: 36px; align-items: center; margin-top: 24px; padding: 24px 28px 20px; border-radius: 24px;
+  /* 21st「Glass Calendar」：bg-black/20 + backdrop-blur-xl + border-white/10 + rounded-3xl + shadow-2xl */
+  background: rgb(255 255 255 / .38); border: 1px solid rgb(255 255 255 / .55);
+  backdrop-filter: blur(24px) saturate(1.4); box-shadow: 0 25px 50px -12px rgb(0 0 0 / .18); }
+.app[data-theme="dark"] .fp-card { background: rgb(0 0 0 / .2); border-color: rgb(255 255 255 / .1); color: #fff; box-shadow: 0 25px 50px -12px rgb(0 0 0 / .25); }
+.app[data-theme="dark"] .fp-card .fp-stat small, .app[data-theme="dark"] .fp-card .fp-foot, .app[data-theme="dark"] .fp-card .fp-months, .app[data-theme="dark"] .fp-card .fp-mname small, .app[data-theme="dark"] .fp-card .fp-mnav button { color: rgb(255 255 255 / .7); }
+.app[data-theme="dark"] .fp-card .fp-days, .app[data-theme="dark"] .fp-card .fp-day > span { color: rgb(255 255 255 / .5); }
+.app[data-theme="dark"] .fp-card .fp-seg { background: rgb(0 0 0 / .2); }
+.app[data-theme="dark"] .fp-card .fp-seg-b { color: rgb(255 255 255 / .6); }
+.app[data-theme="dark"] .fp-card .fp-day-b:hover:not(:disabled) { background: rgb(255 255 255 / .2); }
+.app[data-theme="dark"] .fp-card[data-view="month"] .fp-foot { border-top-color: rgb(255 255 255 / .2); }
 .fp-card .eyebrow { margin-bottom: 10px; }
 /* 液态玻璃：底色交给背景着色器的透镜画（bg/lens.ts），这里只留投影 */
-.fp-card[data-lens] { background: transparent; box-shadow: inset 0 0 0 1px rgb(255 255 255 / .3), inset 0 1px 0 0 rgb(255 255 255 / .45), 0 24px 50px -28px rgb(0 0 0 / .18); }
-.app[data-theme="dark"] .fp-card[data-lens] { box-shadow: inset 0 0 0 1px rgb(255 255 255 / .08), inset 0 1px 0 0 rgb(255 255 255 / .16), 0 24px 50px -28px rgb(0 0 0 / .45); }
-.fp-head { margin: 0; font: 400 24px/1.3 var(--serif); letter-spacing: .01em; }
+.app[data-theme="dark"] .fp-head { margin: 0; font: 400 24px/1.3 var(--serif); letter-spacing: .01em; }
 .fp-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 16px 20px; margin-top: 16px; }
 .fp-stat b { display: block; font-family: var(--sans); font-size: 20px; font-weight: 500; letter-spacing: -.01em; font-variant-numeric: tabular-nums; line-height: 1.25; white-space: nowrap; }
 .fp-stat small { font-size: 11px; color: var(--muted); white-space: nowrap; }
@@ -735,11 +743,11 @@ canvas.gf-sheet-art[data-ready] { opacity: 1; filter: none; }
 /* 21st「Glass Calendar」：年 / 月分段切换 + 月视图日期条 */
 .fp-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 10px; }
 .fp-card .fp-top .eyebrow { margin-bottom: 0; }
-.fp-seg { display: inline-flex; padding: 2px; gap: 2px; border-radius: 10px; background: color-mix(in srgb, var(--ink) 7%, transparent); }
-.fp-seg-b { height: 24px; padding: 0 12px; border-radius: 8px; font: 600 12px/1 var(--sans); color: var(--muted); transition: color .2s, background-color .2s; }
+.fp-seg { display: inline-flex; padding: 4px; gap: 4px; border-radius: 8px; background: color-mix(in srgb, var(--ink) 7%, transparent); }
+.fp-seg-b { height: 24px; padding: 0 16px; border-radius: 6px; font: 600 12px/1 var(--sans); color: var(--muted); transition: color .2s, background-color .2s; }
 .fp-seg-b:hover { color: var(--ink); }
 .fp-seg-b[aria-pressed="true"] { background: var(--surface); color: var(--ink); box-shadow: var(--ring), var(--sh-xs); }
-.app[data-theme="dark"] .fp-seg-b[aria-pressed="true"] { background: #fff; color: #111; }
+.app[data-theme="dark"] .fp-seg-b[aria-pressed="true"] { background: #fff; color: #000; font-weight: 700; box-shadow: 0 4px 6px -1px rgb(0 0 0 / .1), 0 2px 4px -2px rgb(0 0 0 / .1); }
 .fp-month { min-width: 0; }
 .fp-mhead { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; margin-bottom: 16px; }
 .fp-mname { display: flex; align-items: baseline; gap: 12px; margin: 0; }
