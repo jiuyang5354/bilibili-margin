@@ -21,7 +21,7 @@ export function createFavorites(onRender: (grid: HTMLElement) => void): Sheet {
   let gen = 0;
   let folderList: Folder[] = [];
 
-  const sheet = createSheet({ title: '收藏夹', eyebrow: 'FAVORITES', width: 820, onOpen: () => { if (!loaded) init(); } });
+  const sheet = createSheet({ title: '收藏夹', eyebrow: 'Favorites', width: 820, onOpen: () => { if (!loaded) init(); } });
   sheet.body.classList.add('fav-body');
   sheet.body.append(shelf, crumb, grid, status, sentinel);
   onRender(grid);

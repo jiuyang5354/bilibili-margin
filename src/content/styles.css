@@ -10,8 +10,9 @@
   --canvas: #f5f4f1; --surface: #ffffff; --ink: #17181a; --muted: #6f7177; --faint: #a3a5aa;
   --g: max(32px, calc((100vw - 1440px) / 2));
   --line: rgb(23 24 26 / .09); --chip: rgb(23 24 26 / .05); --accent: #00aeec;
-  --serif: "Margin Serif SC", "Noto Serif SC", "Source Han Serif SC", "Songti SC", serif;
+  --serif: "Instrument Serif", "Margin Serif SC", "Noto Serif SC", "Source Han Serif SC", "Songti SC", serif;
   --sans: "Geist", "Margin Sans SC", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+  --display: "Instrument Serif", "Margin Serif SC", Georgia, serif;
   --mono: "Geist Mono", "Margin Sans SC", ui-monospace, SFMono-Regular, Menlo, monospace;
   position: fixed; inset: 0; z-index: 2147483000; overflow-y: auto; overflow-x: hidden;
   background: var(--canvas); color: var(--ink); font: 14px/1.5 var(--sans);
@@ -78,7 +79,9 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
 .app:not([data-bg="off"]) .bar { background: transparent; }
 .app:not([data-bg="off"]) .top { border-bottom-color: transparent; }
 .app:not([data-bg="off"]) .top { background: color-mix(in srgb, var(--canvas) 55%, transparent); }
-.eyebrow { display: flex; gap: 18px; font: 500 10.5px/1 var(--mono); letter-spacing: .18em; text-transform: uppercase; color: var(--faint); margin-bottom: 14px; }
+.eyebrow { display: flex; align-items: baseline; gap: 18px; font: 500 10.5px/1 var(--mono); letter-spacing: .18em; text-transform: uppercase; color: var(--faint); margin-bottom: 14px; }
+/* 装饰性英文眉标：Instrument Serif 斜体，和等宽小注一大一小 */
+.eyebrow .en { font: italic 400 17px/1 var(--display); letter-spacing: .01em; text-transform: none; color: var(--accent); }
 .bar-row { display: flex; align-items: center; justify-content: space-between; }
 .tabs { display: flex; gap: 28px; }
 .tab { position: relative; font: 500 24px/1.2 var(--serif); color: var(--faint); padding-bottom: 8px; transition: color .2s; }

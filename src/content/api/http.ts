@@ -55,3 +55,13 @@ export async function getWbi<T>(path: string, params: Record<string, string | nu
   if (body.code !== 0) throw new Error(body.message || `code ${body.code}`);
   return body.data;
 }
+
+const csrfToken = () => document.cookie.match(/(?:^|;\s*)bili_jct=([^;]+)/)?.[1] ?? '';
+/** 带 bili_jct CSRF 的表单 POST */
+export async function postForm<T>(path: string, form: Record<string, string | number>): Promise<T> {
+  const body = new URLSearchParams(Object.entries({ ...form, csrf: csrfToken() }).map(([k, v]) => [k, String(v)]));
+  const r = await fetch(`${API}${path}`, { method: 'POST', credentials: 'include', body });
+  const j = await r.json();
+  if (j.code !== 0) throw new Error(j.message || `code ${j.code}`);
+  return j.data as T;
+}

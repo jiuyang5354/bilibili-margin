@@ -6,6 +6,8 @@ import { injectFonts } from './fonts';
 import { hideOriginal } from './ui/shell';
 import { SpaceApp } from './ui/space';
 import { MessageApp } from './ui/message';
+import { HistoryApp } from './ui/history';
+import { FeedApp } from './ui/feedpage';
 
 const isHome = () => location.hostname === 'www.bilibili.com' && /^\/(?:[a-z]{2}(?:-[A-Za-z]{2,4})?\/?)?(?:index\.html)?$/.test(location.pathname);
 
@@ -17,6 +19,8 @@ const isPage = () => /^(www|space|t)\.bilibili\.com$/.test(location.hostname) &&
 const LOC = '(?:[a-z]{2}(?:-[A-Za-z]{2,4})?/)?';
 const spaceMatch = () => location.hostname === 'space.bilibili.com' ? location.pathname.match(new RegExp(`^/${LOC}(\\d+)(?:/(video|upload/video|dynamic|upload))?/?$`)) : null;
 const isMessage = () => location.hostname === 'message.bilibili.com' && window.top === window;
+const isHistory = () => location.hostname === 'www.bilibili.com' && /^\/(?:account\/)?history\/?$/.test(location.pathname) && window.top === window;
+const isFeed = () => location.hostname === 't.bilibili.com' && /^\/?$/.test(location.pathname) && window.top === window;
 const offByUrl = () => new URLSearchParams(location.search).get('margin') === 'off';
 
 async function startWatch(kind: SkinKind = 'watch'): Promise<void> {
@@ -38,6 +42,8 @@ async function start(): Promise<void> {
   const sm = spaceMatch();
   if (sm) return takeover((st) => new SpaceApp(st, Number(sm[1]), sm[2] === 'dynamic' ? 'dynamic' : 'video'));
   if (isMessage()) return takeover((st) => new MessageApp(st));
+  if (isHistory()) return takeover((st) => new HistoryApp(st));
+  if (isFeed()) return takeover((st) => new FeedApp(st));
   if (isSearch()) return startWatch('search');
   if (!isHome() && isPage()) return startWatch('page');
   if (!isHome() || sessionStorage.getItem('margin:off') || offByUrl()) {

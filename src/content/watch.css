@@ -21,7 +21,7 @@ html.margin-skin[data-margin-theme="dark"] {
 html.margin-skin {
   --m-canvas: #f5f4f1; --m-surface: #ffffff; --m-ink: #17181a; --m-muted: #6f7177; --m-faint: #a3a5aa;
   --m-line: rgb(23 24 26 / .09); --m-chip: rgb(23 24 26 / .05); --m-accent: #00aeec;
-  --m-serif: "Margin Serif SC", "Noto Serif SC", "Source Han Serif SC", "Songti SC", serif;
+  --m-serif: "Instrument Serif", "Margin Serif SC", "Noto Serif SC", "Source Han Serif SC", "Songti SC", serif;
   --m-mono: "Geist Mono", "Margin Sans SC", ui-monospace, SFMono-Regular, Menlo, monospace;
   --m-radius: 16px;
 
@@ -154,6 +154,10 @@ html.margin-watch #danmukuBox .bui-collapse-header {
 }
 html.margin-watch #danmukuBox .bui-collapse-body { border: 0 !important; border-top: 1px solid var(--m-line) !important; background: transparent !important; }
 html.margin-watch #danmukuBox { margin-bottom: 14px !important; }
+/* 卡片外面那几层 B 站容器自带直角底色，收起时左侧露出直角：全部透明并跟随圆角 */
+html.margin-watch #danmukuBox, html.margin-watch #danmukuBox :has(.bui-collapse-wrap) {
+  background: transparent !important; border-radius: var(--m-radius) !important; box-shadow: none !important;
+}
 
 html.margin-watch .video-pod, html.margin-watch .base-video-sections-v1, html.margin-watch .multi-page-v1 {
   background: var(--m-surface) !important; border: 1px solid var(--m-line) !important; border-radius: var(--m-radius) !important;

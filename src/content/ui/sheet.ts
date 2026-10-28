@@ -13,7 +13,7 @@ export function createSheet(opts: { title: string; eyebrow: string; width?: numb
   const body = h('div', { class: 'sheet-body' });
   const closeBtn = h('button', { class: 'sheet-x', title: '关闭', 'aria-label': '关闭' }, icon(ICONS.close));
   const panel = h('aside', { class: 'sheet', role: 'dialog', 'aria-modal': 'true', 'aria-label': opts.title, tabindex: -1, style: `--w:${opts.width ?? 420}px` },
-    h('header', { class: 'sheet-head' }, h('div', {}, h('div', { class: 'eyebrow' }, opts.eyebrow), h('h2', {}, opts.title)), closeBtn),
+    h('header', { class: 'sheet-head' }, h('div', {}, h('div', { class: 'eyebrow' }, h('span', { class: 'en' }, opts.eyebrow)), h('h2', {}, opts.title)), closeBtn),
     body,
   );
   const scrim = h('div', { class: 'scrim' });

@@ -138,7 +138,7 @@ export class MarginApp {
       h('button', { class: 'hs-btn', type: 'submit' }, '搜索'));
     hero.querySelector('.hs-kbd')!.addEventListener('click', () => palette.open(''));
     hotSearch().then((hot) => { const k = hot[0]?.keyword; if (k) { heroInput.dataset.hot = k; heroInput.placeholder = `大家都在搜：${k}`; } }).catch(() => {});
-    const bar = h('div', { class: 'bar' }, h('div', { class: 'eyebrow' }, h('span', {}, todayLabel()), h('span', {}, 'FOR YOU'), h('span', { class: 'no' }, issueNo())), h('div', { class: 'bar-row' }, tabs, refresh));
+    const bar = h('div', { class: 'bar' }, h('div', { class: 'eyebrow' }, h('span', {}, todayLabel()), h('span', { class: 'en' }, 'For You'), h('span', { class: 'no' }, issueNo())), h('div', { class: 'bar-row' }, tabs, refresh));
 
     this.grid = h('section', { class: 'grid', 'aria-live': 'polite' });
     this.status = h('div', { class: 'status' });

@@ -5,7 +5,7 @@ const img = (src: string, w: number, hgt?: number) => h('img', { src: src ? `${s
 const ext = { target: '_blank', rel: 'noopener' };
 
 /** 动态卡：杂志式单栏。日期眉标 + 正文 + 媒体（视频横卡 / 图片网格 / 专栏）+ 等宽统计 */
-export function dynCard(d: Dyn, nested = false): HTMLElement {
+export function dynCard(d: Dyn, nested = false, withAuthor = false): HTMLElement {
   const media: (Node | null)[] = [];
   if (d.video) {
     media.push(h('a', { class: 'dy-video', href: `https://www.bilibili.com/video/${d.video.bvid}`, ...ext },
@@ -32,8 +32,16 @@ export function dynCard(d: Dyn, nested = false): HTMLElement {
     d.text ? h('p', { class: 'dy-text' }, d.text) : null,
     ...media);
   if (nested) return h('div', { class: 'dy nested' }, body);
-  return h('article', { class: 'dy' },
-    h('div', { class: 'dy-eyebrow' },
+  const open = () => h('a', { class: 'dy-open', href: d.url, ...ext, title: '查看详情' }, icon(ICONS.arrow));
+  // 动态首页：21st SocialPostCard 的作者行（头像 · 名字 · 时间/类型），空间页作者固定所以只留眉标
+  const by = withAuthor ? h('div', { class: 'dy-by' },
+    h('a', { class: 'dy-by-face', href: `https://space.bilibili.com/${d.mid}`, ...ext }, h('img', { src: d.face ? `${d.face}@80w_80h_1c.webp` : '', alt: '', loading: 'lazy', referrerpolicy: 'no-referrer' })),
+    h('div', { class: 'dy-by-b' },
+      h('a', { class: 'dy-by-name', href: `https://space.bilibili.com/${d.mid}`, ...ext }, d.author),
+      h('div', { class: 'dy-eyebrow' }, h('span', {}, d.ts ? fmtAgo(d.ts) : d.time), h('span', { class: 'dy-kind' }, kindLabel(d)))),
+    open()) : null;
+  return h('article', { class: withAuthor ? 'dy with-by' : 'dy' },
+    by ?? h('div', { class: 'dy-eyebrow' },
       h('span', {}, d.ts ? fmtAgo(d.ts) : d.time),
       h('span', { class: 'dy-kind' }, kindLabel(d)),
       h('a', { class: 'dy-open', href: d.url, ...ext, title: '查看详情' }, icon(ICONS.arrow))),

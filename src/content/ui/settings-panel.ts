@@ -10,7 +10,7 @@ import { createSheet, type Sheet } from './sheet';
 export interface SettingsPanel { sheet: Sheet; sync(s: Settings): void }
 
 export function createSettingsPanel(get: () => Settings, currentShader: () => ShaderId | null): SettingsPanel {
-  const sheet = createSheet({ title: '设置', eyebrow: 'PREFERENCES', width: 420 });
+  const sheet = createSheet({ title: '设置', eyebrow: 'Preferences', width: 420 });
   const save = (patch: Partial<Settings>) => saveSettings(patch);
   const s0 = get();
 

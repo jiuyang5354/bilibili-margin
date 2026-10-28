@@ -46,3 +46,22 @@ export async function spaceDynamics(mid: number, offset: string): Promise<{ list
   const d = await getJSON<any>('/x/polymer/web-dynamic/v1/feed/space', { host_mid: mid, offset, timezone_offset: -480, features: 'itemOpusStyle' });
   return { list: (d.items ?? []).map(toDyn).filter(Boolean) as Dyn[], offset: d.offset ?? '', more: !!d.has_more };
 }
+
+export type FeedType = 'all' | 'video' | 'pgc' | 'article';
+/** 关注动态流；hostMid 只看某个 UP */
+export async function followFeed(type: FeedType, offset: string, hostMid = 0): Promise<{ list: Dyn[]; offset: string; more: boolean; baseline: string }> {
+  const p: Record<string, string | number> = { type, offset, timezone_offset: -480, features: 'itemOpusStyle' };
+  if (hostMid) p.host_mid = hostMid;
+  const d = await getJSON<any>('/x/polymer/web-dynamic/v1/feed/all', p);
+  return { list: (d.items ?? []).map(toDyn).filter(Boolean) as Dyn[], offset: d.offset ?? '', more: !!d.has_more, baseline: d.update_baseline ?? '' };
+}
+
+export interface Up { mid: number; name: string; face: string; fresh: boolean }
+export interface LiveUp { mid: number; name: string; face: string; title: string; url: string }
+/** 顶部「最常访问」头像条 + 正在直播 */
+export async function portal(): Promise<{ ups: Up[]; live: LiveUp[]; liveCount: number }> {
+  const d = await getJSON<any>('/x/polymer/web-dynamic/v1/portal');
+  const ups = (d.up_list?.items ?? []).map((u: any) => ({ mid: u.mid, name: u.uname, face: https(u.face), fresh: !!u.has_update }));
+  const live = (d.live_users?.items ?? []).map((u: any) => ({ mid: u.mid, name: u.uname, face: https(u.face), title: u.title ?? '', url: https(u.jump_url || `https://live.bilibili.com/${u.room_id}`) }));
+  return { ups, live, liveCount: d.live_users?.count ?? live.length };
+}

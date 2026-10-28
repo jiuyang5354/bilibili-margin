@@ -7,7 +7,7 @@ import { csrf, PageShell } from './shell';
 
 type View = 'whisper' | 'reply' | 'at' | 'like' | 'system';
 const VIEWS: [View, string, string][] = [
-  ['whisper', '我的消息', 'CHAT'], ['reply', '回复我的', 'REPLY'], ['at', '@ 我的', 'MENTION'], ['like', '收到的赞', 'LIKE'], ['system', '系统通知', 'SYSTEM'],
+  ['whisper', '我的消息', 'Chat'], ['reply', '回复我的', 'Reply'], ['at', '@ 我的', 'Mention'], ['like', '收到的赞', 'Like'], ['system', '系统通知', 'System'],
 ];
 /** B 站原版的 hash 路由 → 我们的视图 */
 const HASH: Record<string, View> = { whisper: 'whisper', reply: 'reply', at: 'at', love: 'like', system: 'system' };
@@ -33,7 +33,7 @@ export class MessageApp {
 
   private render(): void {
     this.nav = h('nav', { class: 'ms-nav' },
-      h('div', { class: 'eyebrow' }, h('span', {}, 'INBOX')),
+      h('div', { class: 'eyebrow' }, h('span', { class: 'en' }, 'Inbox')),
       h('h1', { class: 'ms-h1' }, '消息'),
       ...VIEWS.map(([id, label]) => {
         const b = h('button', { class: 'ms-item', type: 'button', onclick: () => this.go(id) }, h('span', {}, label), h('b', { class: 'ms-n' }));
@@ -69,7 +69,7 @@ export class MessageApp {
     this.gen++;
     this.nav.querySelectorAll<HTMLElement>('.ms-item').forEach((b) => b.toggleAttribute('data-selected', b.dataset.view === this.view));
     const [, label, eb] = VIEWS.find((x) => x[0] === this.view)!;
-    this.pane.replaceChildren(h('header', { class: 'ms-head' }, h('div', { class: 'eyebrow' }, h('span', {}, eb)), h('h2', {}, label)));
+    this.pane.replaceChildren(h('header', { class: 'ms-head' }, h('div', { class: 'eyebrow' }, h('span', { class: 'en' }, eb)), h('h2', {}, label)));
     if (this.view === 'whisper') this.whisper();
     else this.feed();
   }

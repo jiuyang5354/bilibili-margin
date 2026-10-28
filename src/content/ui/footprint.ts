@@ -68,7 +68,7 @@ export function createFootprintCard(): HTMLElement {
     );
     el.replaceChildren(
       h('div', { class: 'fp-side' },
-        h('div', { class: 'eyebrow' }, h('span', {}, 'FOOTPRINT'), h('span', {}, '近一年')),
+        h('div', { class: 'eyebrow' }, h('span', { class: 'en' }, 'Footprint'), h('span', {}, '近一年')),
         h('h3', { class: 'fp-head' }, `${active} 天打开过 B 站`),
         h('div', { class: 'fp-stats' },
         stat(firstOf(t) ?? '—', '今日首次打开'),
