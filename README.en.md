@@ -4,6 +4,8 @@
 
 A Bilibili interface extension written from scratch for Chrome and Edge, using Manifest V3. It provides quiet typography, a clean video feed, redesigned pages, and liquid glass controls.
 
+[Changelog](CHANGELOG.en.md) · [Download latest](https://github.com/jiuyang5354/bilibili-margin/releases/latest)
+
 This is an unofficial project with no affiliation to Bilibili. Data is requested directly using your current Bilibili session, without a third-party relay server.
 
 ## Features

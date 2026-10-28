@@ -4,6 +4,8 @@
 
 一个从零编写的 B 站首页浏览器扩展（Chrome / Edge，Manifest V3）。安静的排版、干净的推荐流。
 
+[更新日志](CHANGELOG.md) · [下载最新版](https://github.com/jiuyang5354/bilibili-margin/releases/latest)
+
 > 非 B 站官方项目，与哔哩哔哩无关联。所有数据直接来自你当前登录的 B 站账号，不经过任何第三方服务器。
 
 ## 功能（v0.5）
