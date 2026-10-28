@@ -18,21 +18,20 @@ html.margin-skin .bili-footer, html.margin-skin #biliMainFooter { background: tr
 
 /* ── 搜索页：编辑式排版，和首页同一套语言 ── */
 html.margin-search .search-header { padding-top: 0; margin-top: 4px; margin-bottom: 14px; }
+/* 搜索框与映间顶栏的搜索同一种样子：44px 玻璃胶囊、细描边、内高光、无黑色按钮（回车搜索） */
 html.margin-search .search-input-wrap {
-  height: 56px !important; width: 680px !important; max-width: calc(100vw - 96px); padding: 0 6px 0 22px !important;
+  height: 44px !important; width: 640px !important; max-width: calc(100vw - 96px); padding: 0 8px 0 16px !important; gap: 10px;
   border-radius: 999px !important; border: 1px solid var(--m-line) !important;
-  background: color-mix(in srgb, var(--m-surface) 82%, transparent) !important; backdrop-filter: blur(18px) saturate(1.4);
-  box-shadow: 0 1px 2px rgb(0 0 0 / .04), 0 12px 32px -18px rgb(0 0 0 / .25); transition: box-shadow .2s, border-color .2s;
+  background: color-mix(in srgb, var(--m-surface) 72%, transparent) !important; backdrop-filter: blur(16px) saturate(1.6);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / .55), 0 1px 2px rgb(0 0 0 / .04), 0 10px 28px -18px rgb(0 0 0 / .28) !important;
+  transition: background-color .2s, border-color .2s;
 }
-html.margin-search .search-input-wrap:focus-within { border-color: color-mix(in srgb, var(--m-ink) 24%, transparent) !important; box-shadow: 0 0 0 4px color-mix(in srgb, var(--m-ink) 6%, transparent), 0 12px 32px -18px rgb(0 0 0 / .3); }
-html.margin-search .search-input-el { font: 500 17px/1 var(--m-serif) !important; color: var(--m-ink) !important; letter-spacing: .02em; }
-html.margin-search .search-input-wrap svg, html.margin-search .search-input-wrap .search-input-icon { color: var(--m-faint) !important; }
-html.margin-search .search-button {
-  height: 44px !important; min-width: 92px !important; border-radius: 999px !important; border: 0 !important;
-  background: var(--m-ink) !important; color: var(--m-canvas) !important; font-weight: 600 !important; letter-spacing: .1em;
-}
-html.margin-search .search-button:hover { opacity: .88; }
-html.margin-search .search-button svg { display: none; }
+html.margin-search[data-margin-theme="dark"] .search-input-wrap { box-shadow: inset 0 1px 0 rgb(255 255 255 / .08), 0 10px 28px -18px rgb(0 0 0 / .6) !important; }
+html.margin-search .search-input-wrap:focus-within { background: var(--m-surface) !important; border-color: color-mix(in srgb, var(--m-ink) 18%, transparent) !important; }
+html.margin-search .search-input-el { flex: 1 !important; padding: 0 !important; margin: 0 !important; text-align: left !important; font: 400 14px/1 "Geist", "Margin Sans SC", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif !important; color: var(--m-ink) !important; letter-spacing: 0; }
+html.margin-search .search-input-el::placeholder { color: var(--m-faint) !important; }
+html.margin-search .search-input-wrap svg, html.margin-search .search-input-wrap .search-input-icon { color: var(--m-faint) !important; width: 18px; height: 18px; }
+html.margin-search .search-button { display: none !important; }
 
 /* 分类标签：衬线 + 底部细线指示 */
 html.margin-search .search-tabs { border-bottom: 1px solid var(--m-line); }
@@ -94,3 +93,17 @@ html.margin-page .tab-bar .tab-item, html.margin-page .tab-bar .tab-item span, h
 html.margin-page .popular-top-tips, html.margin-page .weekly-header, html.margin-page .history-header { color: var(--m-ink) !important; }
 html.margin-page .video-card .up-name, html.margin-page .video-card .video-stat, html.margin-page .rank-item .detail,
 html.margin-page .rank-tips, html.margin-page .popular-tips { color: var(--m-muted) !important; }
+
+/* 搜索联想：盖在结果之上，不透明卡片 */
+html.margin-search .search-header, html.margin-search .search-input { position: relative; z-index: 40 !important; }
+html.margin-search .search-panel, html.margin-search .search-panel-popover {
+  z-index: 1003 !important; margin-top: 8px; padding: 6px !important;
+  background: var(--m-surface) !important; border: 1px solid var(--m-line) !important; border-radius: 16px !important;
+  box-shadow: 0 24px 48px -24px rgb(0 0 0 / .28), 0 2px 6px rgb(0 0 0 / .04) !important;
+}
+html.margin-search .search-panel .suggestions, html.margin-search .search-panel .suggest-item { background: transparent !important; }
+html.margin-search .search-panel .suggest-item { border-radius: 10px; padding: 0 12px !important; color: var(--m-ink) !important; }
+html.margin-search .search-panel .suggest-item:hover, html.margin-search .search-panel .suggest-item.is-focus { background: var(--m-chip) !important; }
+html.margin-search .search-panel .suggest_high_light, html.margin-search .search-panel em { color: var(--m-accent) !important; font-style: normal; }
+/* B 站滚动后冒出的吸顶搜索条会和映间顶栏叠在一起：隐藏它，顶栏里的搜索（/ 或 Ctrl+K）代替 */
+html.margin-search .search-fixed-header, html.margin-search .search-sticky-header { display: none !important; }
