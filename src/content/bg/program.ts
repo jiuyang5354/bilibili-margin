@@ -29,14 +29,18 @@ export class ShaderProgram {
   }
 
   /** t 是秒 */
-  draw(w: number, h: number, t: number, theme: 'light' | 'dark'): void {
+  /** k：0 = 亮色调色板，1 = 暗色；昼夜切换时在两者之间插值，和日月按钮同速 */
+  draw(w: number, h: number, t: number, theme: 'light' | 'dark' | number): void {
     const gl = this.gl, L = this.loc;
+    const k = typeof theme === 'number' ? theme : theme === 'dark' ? 1 : 0;
+    const mix3 = (a: number[], b: number[]) => a.map((v, i) => v + (b[i] - v) * k);
     if (isBuilder(this.id)) {
       const pr = BUILDER[this.id], u = pr.u;
-      const cols = pr[theme].map(hex);
-      while (cols.length < 8) cols.push(cols[cols.length - 1]);
+      const pad = (c: number[][]) => { const o = c.slice(); while (o.length < 8) o.push(o[o.length - 1]); return o; };
+      const lc = pad(pr.light.map(hex)), dc = pad(pr.dark.map(hex));
+      const cols = lc.map((c, i) => mix3(c, dc[i]));
       gl.uniform3fv(L.u_colors, new Float32Array(cols.flat()));
-      gl.uniform4f(L.u_scene, w, h, t * u.timeScale, pr[theme].length);
+      gl.uniform4f(L.u_scene, w, h, t * u.timeScale, (k < 0.5 ? pr.light : pr.dark).length);
       gl.uniform4f(L.u_shape, u.scale, u.intensity, u.paramA, u.warp);
       gl.uniform4f(L.u_surface, u.detail, u.contrast, u.brightness, u.saturation);
       gl.uniform4f(L.u_finish, u.hue, u.vignette, u.blur, u.grain);
@@ -44,13 +48,13 @@ export class ShaderProgram {
       gl.uniform4f(L.u_space, u.offsetX, u.offsetY, 0, 0);
       gl.uniform4f(L.u_cursor, 0, 0, 0, 0);
     } else {
-      const pal = PALETTES[theme][this.id]!;
+      const a = PALETTES.light[this.id]!, b = PALETTES.dark[this.id]!;
       gl.uniform2f(L.u_res, w, h);
       gl.uniform1f(L.u_t, t);
-      gl.uniform3fv(L.u_bg, pal.bg);
-      gl.uniform3fv(L.u_c1, pal.c[0]);
-      gl.uniform3fv(L.u_c2, pal.c[1]);
-      gl.uniform3fv(L.u_c3, pal.c[2]);
+      gl.uniform3fv(L.u_bg, mix3(Array.from(a.bg), Array.from(b.bg)));
+      gl.uniform3fv(L.u_c1, mix3(Array.from(a.c[0]), Array.from(b.c[0])));
+      gl.uniform3fv(L.u_c2, mix3(Array.from(a.c[1]), Array.from(b.c[1])));
+      gl.uniform3fv(L.u_c3, mix3(Array.from(a.c[2]), Array.from(b.c[2])));
     }
     gl.drawArrays(gl.TRIANGLES, 0, 3);
   }
