@@ -38,6 +38,16 @@ export class BackgroundLayer {
     for (const ev of ['play', 'playing', 'pause', 'ended', 'emptied']) document.addEventListener(ev, vid, true);
   }
   private quietUntil = 0;
+  /** 昼夜切换的调色板插值，时长/缓动和日月按钮一致（1740ms，cubic-bezier(.65,0,.35,1)） */
+  fadeMs = 1740;
+  private kFrom = 0; private kTo = 0; private kT0 = 0;
+  private kNow(now: number): number {
+    if (!this.kT0) return this.kTo;
+    const x = Math.min(1, (now - this.kT0) / this.fadeMs);
+    if (x >= 1) { this.kT0 = 0; return this.kTo; }
+    const e = x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;
+    return this.kFrom + (this.kTo - this.kFrom) * e;
+  }
   private videoPlaying = false;
 
   async apply(cfg: Background, theme: 'light' | 'dark', palette: Palette = 'classic'): Promise<void> {
@@ -45,6 +55,9 @@ export class BackgroundLayer {
     const first = !this.cfg;
     const prevMode = this.cfg?.mode;
     this.cfg = cfg;
+    const target = theme === 'dark' ? 1 : 0;
+    if (!first && theme !== this.theme && !this.reduced.matches) { this.kFrom = this.kNow(performance.now()); this.kTo = target; this.kT0 = performance.now(); }
+    else { this.kFrom = this.kTo = target; this.kT0 = 0; }
     this.theme = theme;
     this.el.dataset.mode = cfg.mode;
     this.el.style.setProperty('--bg-o', String(cfg.intensity));
@@ -124,12 +137,13 @@ export class BackgroundLayer {
     const rect = this.lensRect();
     // 有玻璃时由 GL 自己合成强度和遮罩（canvas 满不透明），没有时走原来的 CSS opacity + scrim
     this.el.toggleAttribute('data-composite', !!rect);
-    if (!rect) { this.prog.bind(); this.prog.draw(w, hh, t, this.theme); return; }
+    const k = this.kNow(now);
+    if (!rect) { this.prog.bind(); this.prog.draw(w, hh, t, k); return; }
     this.lens ??= new GlassLens(gl);
     this.lens.target(w, hh);
     this.prog.bind();
-    this.prog.draw(w, hh, t, this.theme);
-    this.lens.present(w, hh, rect, this.theme, this.cfg.intensity);
+    this.prog.draw(w, hh, t, k);
+    this.lens.present(w, hh, rect, k, this.cfg.intensity);
   }
 
   /** 透镜元素在画布上的矩形（画布像素，y 向上）；不可见时返回 null */
@@ -147,11 +161,12 @@ export class BackgroundLayer {
     if (this.raf || !this.cfg || (this.cfg.mode !== 'random' && this.cfg.mode !== 'fixed') || document.hidden) return;
     const tick = (now: number) => {
       this.raf = requestAnimationFrame(tick);
-      if (now - this.last < 42) return;
-      if (this.videoPlaying || now < this.quietUntil) return;
+      const fading = !!this.kT0;
+      if (!fading && now - this.last < 42) return;
+      if (!fading && (this.videoPlaying || now < this.quietUntil)) return;
       this.last = now;
       this.draw(now);
-      if (this.reduced.matches) this.stop();
+      if (this.reduced.matches && !this.kT0) this.stop();
     };
     this.raf = requestAnimationFrame(tick);
   };
