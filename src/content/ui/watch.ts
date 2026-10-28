@@ -154,11 +154,11 @@ export class WatchSkin {
     // 卡出半亮半暗。改用 View Transition 整页（含顶栏）一次交叉淡化；新画面是实时的，日月动画照常跑。
     const vt = (document as Document & { startViewTransition?: (cb: () => void) => { finished: Promise<void>; skipTransition: () => void } }).startViewTransition;
     if (reduce || !vt) { this.applyTheme(true); return; }
-    de.style.setProperty('--m-vt', `${Math.round(ms * 0.42)}ms`);
+    de.style.setProperty('--m-vt', `${ms}ms`); // 与日月按钮同一时长、同一缓动
     de.classList.add('margin-vt');
     const t = vt.call(document, () => this.applyTheme(true));
-    // 保险：页面卡顿时最多等 1.6s，过时直接跳到终态，不让整页停在快照上
-    const guard = window.setTimeout(() => t.skipTransition(), 1600);
+    // 保险：页面卡顿时最多多等 0.8s，过时直接跳到终态，不让整页停在快照上
+    const guard = window.setTimeout(() => t.skipTransition(), ms + 800);
     t.finished.finally(() => { clearTimeout(guard); de.classList.remove('margin-vt'); });
   }
 
