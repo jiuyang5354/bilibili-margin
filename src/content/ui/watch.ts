@@ -19,6 +19,7 @@ import css from '../styles.css?inline';
 import pageCss from '../watch.css?inline';
 import skinCss from '../pages.css?inline';
 import { BackgroundLayer } from '../bg/background';
+import { startTriple } from './triple';
 
 export type SkinKind = 'watch' | 'search' | 'page';
 
@@ -114,7 +115,7 @@ export class WatchSkin {
 
     this.applyTheme(false);
     this.media.addEventListener('change', () => this.applyTheme(false));
-    if (isWatch) this.watchScreen();
+    if (isWatch) { this.watchScreen(); startTriple(); }
   }
 
   update(s: Settings): void {
@@ -169,6 +170,27 @@ export class WatchSkin {
       const hide = screen === 'web' || screen === 'full' || !!document.fullscreenElement;
       this.host.toggleAttribute('hidden', hide);
       document.documentElement.classList.toggle('margin-webscreen', hide);
+      wide(screen === 'wide');
+    };
+    // 宽屏：B 站把播放器拉满左右两栏，但右栏不会让位（原版靠被我们隐藏/重排掉的结构），这里把右栏推到播放器下面
+    let ro: ResizeObserver | null = null;
+    const de = document.documentElement;
+    const place = () => {
+      const pl = document.querySelector('.bpx-player-container'), rc = document.querySelector<HTMLElement>('.right-container');
+      if (!pl || !rc) return;
+      const prev = parseFloat(getComputedStyle(rc).paddingTop) || 0;
+      const top = rc.getBoundingClientRect().top + prev;
+      const pad = Math.max(0, Math.round(pl.getBoundingClientRect().bottom - (top - prev) + 24));
+      de.style.setProperty('--m-wide-pad', `${pad}px`);
+    };
+    const wide = (on: boolean) => {
+      de.classList.toggle('margin-wide', on);
+      if (on) {
+        requestAnimationFrame(place);
+        if (!ro) { ro = new ResizeObserver(() => { if (de.classList.contains('margin-wide')) place(); }); }
+        const pl = document.querySelector('.bpx-player-container');
+        if (pl) ro.observe(pl);
+      } else { ro?.disconnect(); de.style.removeProperty('--m-wide-pad'); }
     };
     new MutationObserver(sync).observe(document.documentElement, { subtree: true, attributes: true, attributeFilter: ['data-screen'] });
     document.addEventListener('fullscreenchange', sync);
