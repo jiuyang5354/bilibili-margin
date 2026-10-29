@@ -2,6 +2,14 @@
 
 # Changelog
 
+## [v0.30.2](https://github.com/jiuyang5354/bilibili-margin/releases/tag/v0.30.2) · 2026-10-29
+
+Shader background for the opening animation.
+
+- The intro background is now a flowing nebula using the Live Orb fbm domain warp: Bilibili blue breathes at the centre like an orb, pink and orange drift around it; soft tinted paper in light mode, a dim glow on near-black in dark mode.
+- The glass tile refracts this moving backdrop, so its rim dispersion visibly bends it.
+- Reverted the v0.30.1 skeleton shader (misunderstood request); skeletons use the CSS shimmer again.
+
 ## [v0.30.1](https://github.com/jiuyang5354/bilibili-margin/releases/tag/v0.30.1) · 2026-10-29
 
 Shader loading skeletons.

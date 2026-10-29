@@ -1113,9 +1113,6 @@ canvas.gf-sheet-art[data-ready] { opacity: 1; filter: none; }
   animation: sk-shimmer 1.5s ease-in-out infinite; }
 .app[data-theme="dark"] { --sk-hi: rgb(255 255 255 / .07); }
 @keyframes sk-shimmer { to { transform: translateX(100%); } }
-/* 封面占位的着色器底纹（sk-shader.ts）：有 WebGL 时盖住 CSS 流光 */
-.sk-gl::after { display: none; }
-.sk-gl > .sk-canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; pointer-events: none; }
 @media (prefers-reduced-motion: reduce) { .card.sk .cover::after, .card.sk .line::after, .dw-item.sk .dw-cover::after, .dw-item.sk .line::after { animation: none; } }
 
 /* ── 刻度尺滚动进度（21st Scroll Bars 移植，播放页右缘） ── */

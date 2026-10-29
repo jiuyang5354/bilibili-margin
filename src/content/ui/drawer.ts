@@ -1,9 +1,6 @@
-import { skShader } from './sk-shader';
 import { removeWatchLater, watchLater, type LaterItem } from '../api/search';
 import { toast } from './controls';
 import { fmtAgo, fmtDuration, h, icon, ICONS } from './dom';
-const skCover = () => { const c = h('span', { class: 'dw-cover' }); skShader(c); return c; };
-
 
 /**
  * 侧边抽屉：21st「Drawer」（ddoemonn）的原生移植。
@@ -90,7 +87,7 @@ export function createLaterDrawer(toastRoot: () => HTMLElement): Drawer {
     }));
   }
   async function refresh(): Promise<void> {
-    body.replaceChildren(...Array.from({ length: 5 }, () => h('div', { class: 'dw-item sk' }, skCover(), h('span', { class: 'dw-meta' }, h('span', { class: 'line' }), h('span', { class: 'line short' })))));
+    body.replaceChildren(...Array.from({ length: 5 }, () => h('div', { class: 'dw-item sk' }, h('span', { class: 'dw-cover' }), h('span', { class: 'dw-meta' }, h('span', { class: 'line' }), h('span', { class: 'line short' })))));
     try { render(await watchLater()); loaded = true; } catch { body.replaceChildren(h('div', { class: 'dw-empty' }, h('p', {}, '加载失败'), h('button', { type: 'button', class: 'ghost', onclick: () => refresh() }, '重试'))); }
   }
 

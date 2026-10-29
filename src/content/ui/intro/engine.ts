@@ -322,6 +322,8 @@ uniform float uSweep;      // where that band is, plate sizes along its diagonal
 uniform float uLightAng;   // how far the rim light has turned, radians
 
 uniform vec3 uBg;
+uniform float uTime;       // seconds since the intro began
+uniform float uWash;       // strength of the flowing backdrop (0 = flat uBg)
 uniform vec3 uPlateCol;
 uniform vec3 uLogoCol;
 
@@ -393,12 +395,47 @@ vec3 spectrum(float x) {
 
 float hash(vec2 p) { return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }
 
+// Flowing backdrop (Live Orb technique: fbm domain warp). Site colours drift as a slow aurora
+// around the glass; light scene = soft tinted paper, dark scene = a dim glow on near-black.
+float vnoise(vec2 p) {
+  vec2 i = floor(p), f = fract(p);
+  vec2 u = f * f * (3.0 - 2.0 * f);
+  return mix(mix(hash(i), hash(i + vec2(1.0, 0.0)), u.x), mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), u.x), u.y);
+}
+float fbm(vec2 p) {
+  float v = 0.0, a = 0.5;
+  mat2 m = mat2(1.6, 1.2, -1.2, 1.6);
+  for (int i = 0; i < 4; i++) { v += a * vnoise(p); p = m * p; a *= 0.5; }
+  return v;
+}
+vec3 BG(vec2 q) {
+  if (uWash < 0.001) return uBg;
+  float t = uTime;
+  vec2 w = q * 0.42;
+  vec2 o = vec2(fbm(w + vec2(0.0, t * 0.1)), fbm(w + vec2(5.2, 1.3) - vec2(t * 0.08, 0.0)));
+  w += 1.25 * (o - 0.5);
+  float f = fbm(w + vec2(t * 0.04, -t * 0.06));
+  float h = fbm(w * 0.7 + vec2(7.7, -t * 0.05));
+  vec3 blue = vec3(0.0, 0.682, 0.925), pink = vec3(0.984, 0.447, 0.6), orange = vec3(1.0, 0.624, 0.353);
+  // Blue holds the centre like the orb's core; pink and a little orange swirl around it.
+  vec3 tint = mix(blue, pink, smoothstep(0.34, 0.56, h));
+  tint = mix(tint, orange, smoothstep(0.56, 0.76, f) * 0.7);
+  float r = length(q * vec2(0.8, 1.0));
+  float breathe = 0.5 + 0.5 * sin(t * 1.4);
+  float orb = exp(-r * r / mix(3.2, 4.2, breathe));
+  float body = orb * (0.4 + 0.6 * smoothstep(0.3, 0.72, f)) + 0.3 * smoothstep(0.42, 0.78, f);
+  float amt = mix(0.95, 0.6, uLightScene) * body * uWash;
+  vec3 lightC = mix(uBg, mix(tint, vec3(1.0), 0.3), amt);
+  vec3 darkC = uBg + tint * amt * 0.7;
+  return mix(darkC, lightC, uLightScene);
+}
+
 void main() {
   px = 2.0 / uTile;
   vec2 p = (gl_FragCoord.xy - uCenter) * px;
 
   vec4 lg = logoAt(p, uBlur, px);
-  vec3 plain = mix(uBg, lg.rgb, lg.a * uBare);
+  vec3 plain = mix(BG(p), lg.rgb, lg.a * uBare);
 
   vec2 nOut, dg; float g;
   float sd = shape(p, uPlateScale, uShapeN, nOut, g, dg);
@@ -425,7 +462,7 @@ void main() {
   float foot = max(max(length(dFdx(qc)), length(dFdy(qc))), 0.25 * px);
 
   // Backdrop: anticipation ghost, ripple, soft lift shadow and glow.
-  vec3 bg = uBg;
+  vec3 bg = BG(p);
   vec3 lift = mix(uBg + vec3(0.06), mix(uBg, vec3(1.0), 0.55), uLightScene);
   if (uGhost > 0.001) {
     vec2 gn, gdg; float gg;
@@ -487,7 +524,7 @@ void main() {
       sp *= 1.0 + uFaceDisp * cf * faceOnly;
       vec4 l = logoAt(sp, rblur + 0.12 * streak + uFaceDisp * 0.5 * max(c, 0.0) * faceOnly, foot);
       vec3 w = spectrum(lam);
-      acc += mix(back, l.rgb, l.a) * w;
+      acc += mix(mix(BG(sp), uPlateCol, uIconPlate), l.rgb, l.a) * w;
       wsum += w;
     }
     vec3 trans = acc / wsum;
@@ -764,6 +801,8 @@ function frameAt(T: number, P: Settings, outro = 0) {
     uLightScene: luminance(bg) > 0.5 ? 1 : 0,
     uLightGlass: luminance(P.iconPlate ? hexToRgb(P.plateColor) : bg) > 0.5 ? 1 : 0,
     uBg: bg,
+    uTime: T,
+    uWash: smooth(0, 0.6, T),
     uPlateCol: hexToRgb(P.plateColor),
     uLogoCol: hexToRgb(P.logoColor),
   }
