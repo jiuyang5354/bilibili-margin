@@ -2,6 +2,10 @@
 
 # Changelog
 
+## [v0.34.1](https://github.com/jiuyang5354/bilibili-margin/releases/tag/v0.34.1) · 2026-10-30
+
+- Fixed the Footprint heatmap tooltip on the home page getting cut off when hovering the rightmost column (today). The tooltip now stays inside the card horizontally and flips below the cell when there is no room above.
+
 ## [v0.34.0](https://github.com/jiuyang5354/bilibili-margin/releases/tag/v0.34.0) · 2026-10-29
 
 Watch page title area and right column redesigned.

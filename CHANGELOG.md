@@ -2,6 +2,10 @@
 
 # 更新日志
 
+## [v0.34.1](https://github.com/jiuyang5354/bilibili-margin/releases/tag/v0.34.1) · 2026-10-30
+
+- 修复首页「B 站足迹」热力图悬浮提示被裁切：鼠标停在最右一列（今天）时提示框超出卡片被截断。现在提示框会夹在卡片内左右对齐，顶部放不下时翻到格子下方。
+
 ## [v0.34.0](https://github.com/jiuyang5354/bilibili-margin/releases/tag/v0.34.0) · 2026-10-29
 
 播放页标题区和右栏重新排版。

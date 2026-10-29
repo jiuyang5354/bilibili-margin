@@ -157,10 +157,16 @@ export function createFootprintCard(): HTMLElement {
         ...(s || f ? [`首次打开 ${f ?? '—'} · 时长 ${fmt(s)}`, h('br'),
           h('small', { class: `fp-src fp-src-${sourceOf(r) ?? 'local'}` }, `${SRC[sourceOf(r) ?? 'local']}${activeOf(r) ? '' : ' · 不计入打开天数'}`)]
           : [h('small', {}, '没有打开 B 站')]));
-      const b = c.getBoundingClientRect(), card = el.getBoundingClientRect();
-      tip.style.left = `${b.left + b.width / 2 - card.left - el.clientLeft}px`;
-      tip.style.top = `${b.top - card.top - el.clientTop}px`;
       tip.hidden = false;
+      // 夹在卡片内：最右一列（今天）居中会被卡片的 overflow 裁掉，顶部放不下就翻到格子下方
+      const b = c.getBoundingClientRect(), card = el.getBoundingClientRect(), pad = 8, gap = 8;
+      const tw = tip.offsetWidth, th = tip.offsetHeight;
+      const cx = b.left + b.width / 2 - card.left - el.clientLeft;
+      const left = Math.max(pad, Math.min(el.clientWidth - tw - pad, cx - tw / 2));
+      const above = b.top - card.top - el.clientTop - gap - th;
+      const top = above >= pad ? above : b.bottom - card.top - el.clientTop + gap;
+      tip.style.left = `${Math.round(left)}px`;
+      tip.style.top = `${Math.round(top)}px`;
     };
     graph.onpointerleave = () => { tip.hidden = true; };
     graph.onscroll = () => { tip.hidden = true; };
