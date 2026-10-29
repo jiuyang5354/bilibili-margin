@@ -2,6 +2,13 @@
 
 # 更新日志
 
+## [v0.28.3](https://github.com/jiuyang5354/bilibili-margin/releases/tag/v0.28.3) · 2026-10-29
+
+次级信息可读性。
+
+- 全站次级文字颜色加深（亮色）/提亮（暗色）：--muted、--faint 及 B 站原生 --text3、--graph_medium，在彩色流动背景上也能看清。
+- 视频页标题下的播放、弹幕、时间、版权和 AI 声明行改用 --muted；新版 B 站已没有 .video-info-detail，选择器同步更新；暗色下加一层淡投影。
+
 ## [v0.28.2](https://github.com/jiuyang5354/bilibili-margin/releases/tag/v0.28.2) · 2026-10-29
 
 工牌反面重新排版（沿用 21st ID Card Lanyard 原版的 Connect 行）。

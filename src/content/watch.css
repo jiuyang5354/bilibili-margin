@@ -26,7 +26,7 @@ html.margin-skin {
   --m-radius: 16px;
 
   --bg1: #ffffff; --bg2: #f5f4f1; --bg3: #efeeea; --bg1_float: #ffffff; --bg2_float: #f1f0ec;
-  --text1: #17181a; --text2: #55575c; --text3: #8d8f94; --text4: #c4c5c8;
+  --text1: #17181a; --text2: #55575c; --text3: #7a7c81; --text4: #c4c5c8;
   --text_link: #0089c0; --text_hover: #6f7177; --text_active: #55575c;
   --line_light: #ecebe7; --line_regular: #e3e2dd; --line_bold: #cfcdc8; --line_border: #cfcdc8;
   --graph_white: #ffffff; --graph_bg_thin: #f5f4f1; --graph_bg_regular: #efeeea; --graph_bg_thick: #e3e2dd;
@@ -39,11 +39,11 @@ html.margin-skin[data-margin-theme="dark"] {
   --m-line: rgb(255 255 255 / .08); --m-chip: rgb(255 255 255 / .06);
 
   --bg1: #1a1a1c; --bg2: #111112; --bg3: #232326; --bg1_float: #1f1f22; --bg2_float: #2a2a2d;
-  --text1: #ededee; --text2: #b4b5b9; --text3: #8a8b90; --text4: #55565a;
+  --text1: #ededee; --text2: #b4b5b9; --text3: #9a9ba0; --text4: #55565a;
   --text_link: #4cc3f0; --text_hover: #c9cacd; --text_active: #b4b5b9;
   --line_light: #222225; --line_regular: #2c2c30; --line_bold: #3a3a3f; --line_border: #3a3a3f;
   --graph_white: #1a1a1c; --graph_bg_thin: #18181a; --graph_bg_regular: #232326; --graph_bg_thick: #2c2c30;
-  --graph_weak: #3a3a3f; --graph_medium: #6a6b70; --graph_icon: #a0a1a6;
+  --graph_weak: #3a3a3f; --graph_medium: #85868b; --graph_icon: #a0a1a6;
   --brand_blue_thin: #0c2c38;
   color-scheme: dark;
 }
@@ -71,9 +71,9 @@ html.margin-watch h1.video-title, html.margin-watch .video-info-title .video-tit
 }
 html.margin-watch .video-info-detail, html.margin-watch .video-info-detail-list,
 html.margin-watch .video-info-detail .item, html.margin-watch .pubdate-ip-text {
-  font-family: var(--m-mono) !important; font-size: 12px !important; letter-spacing: .02em; color: var(--m-faint) !important;
+  font-family: var(--m-mono) !important; font-size: 12px !important; letter-spacing: .02em; color: var(--m-muted) !important;
 }
-html.margin-watch .video-info-detail svg, html.margin-watch .video-info-detail .icon { color: var(--m-faint) !important; fill: currentColor; }
+html.margin-watch .video-info-detail svg, html.margin-watch .video-info-detail .icon { color: var(--m-muted) !important; fill: currentColor; }
 
 /* 播放器：圆角卡片 + 柔和阴影（只在普通 / 宽屏模式） */
 html.margin-watch #playerWrap { border-radius: var(--m-radius); background: transparent !important; }
@@ -215,3 +215,11 @@ html.margin-triple .video-toolbar-left-item.mt-done { color: var(--m-accent) !im
 .mt-tag b { font: 400 16px/1 var(--m-serif); letter-spacing: .08em; }
 .mt-tag span { font: 500 10px/1 var(--m-mono); letter-spacing: .2em; color: var(--m-accent, #00aeec); }
 @media (prefers-reduced-motion: reduce) { html.margin-triple .mt-ring rect { filter: none; } }
+
+/* v0.28.3 次级信息可读性：标题下的播放/弹幕/时间/版权/AI 声明行直接压在流动背景上（新版 B 站已没有 .video-info-detail），
+   统一提到 --m-muted，暗色再加一层很淡的投影把字和彩色背景分开 */
+html.margin-watch .video-info-container .video-info-title ~ * :is(.item, .item *, .video-argue, .video-argue *, .copyright, .copyright *) {
+  color: var(--m-muted) !important; font-size: 12px !important;
+}
+html.margin-watch .video-info-container .video-info-title ~ * .item :is(svg, .icon) { color: var(--m-muted) !important; }
+html.margin-skin[data-margin-theme="dark"].margin-watch .video-info-container .video-info-title ~ * { text-shadow: 0 1px 2px rgb(0 0 0 / .45); }

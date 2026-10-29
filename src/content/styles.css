@@ -21,7 +21,7 @@
   --sh-sm: 0 2px 4px rgb(var(--shadow-rgb) / 0.06), 0 7px 7px rgb(var(--shadow-rgb) / 0.05), 0 16px 9px rgb(var(--shadow-rgb) / 0.03), 0 29px 11px rgb(var(--shadow-rgb) / 0.01);
   --sh-md: 0 4px 8px rgb(var(--shadow-rgb) / 0.08), 0 14px 14px rgb(var(--shadow-rgb) / 0.07), 0 32px 19px rgb(var(--shadow-rgb) / 0.04), 0 57px 22px rgb(var(--shadow-rgb) / 0.01);
   --sh-lg: 0 7px 14px rgb(var(--shadow-rgb) / 0.12), 0 27px 25px rgb(var(--shadow-rgb) / 0.1), 0 60px 34px rgb(var(--shadow-rgb) / 0.06), 0 106px 41px rgb(var(--shadow-rgb) / 0.02);
-  --canvas: #f5f4f1; --surface: #ffffff; --ink: #17181a; --muted: #6f7177; --faint: #a3a5aa;
+  --canvas: #f5f4f1; --surface: #ffffff; --ink: #17181a; --muted: #5f6167; --faint: #86888d;
   --g: max(32px, calc((100vw - 1440px) / 2));
   --line: rgb(23 24 26 / .09); --chip: rgb(23 24 26 / .05); --accent: #00aeec;
   --serif: "Instrument Serif", "Margin Serif SC", "Noto Serif SC", "Source Han Serif SC", "Songti SC", serif;
@@ -38,7 +38,7 @@
   --sh-sm: 0 2px 4px rgb(var(--shadow-rgb) / 0.15), 0 7px 7px rgb(var(--shadow-rgb) / 0.13), 0 16px 9px rgb(var(--shadow-rgb) / 0.08), 0 29px 11px rgb(var(--shadow-rgb) / 0.02);
   --sh-md: 0 4px 8px rgb(var(--shadow-rgb) / 0.2), 0 14px 14px rgb(var(--shadow-rgb) / 0.18), 0 32px 19px rgb(var(--shadow-rgb) / 0.1), 0 57px 22px rgb(var(--shadow-rgb) / 0.03);
   --sh-lg: 0 7px 14px rgb(var(--shadow-rgb) / 0.31), 0 27px 25px rgb(var(--shadow-rgb) / 0.27), 0 60px 34px rgb(var(--shadow-rgb) / 0.16), 0 106px 41px rgb(var(--shadow-rgb) / 0.05), 0 166px 45px rgb(var(--shadow-rgb) / 0.01);
-  --canvas: #111112; --surface: #1a1a1c; --ink: #ededee; --muted: #9a9ba0; --faint: #64656a;
+  --canvas: #111112; --surface: #1a1a1c; --ink: #ededee; --muted: #b0b1b6; --faint: #8a8b90;
   --line: rgb(255 255 255 / .08); --chip: rgb(255 255 255 / .06); color-scheme: dark;
 }
 * { box-sizing: border-box; }
