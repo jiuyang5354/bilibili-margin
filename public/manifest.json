@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "映间 MARGIN",
   "short_name": "MARGIN",
-  "version": "0.28.1",
+  "version": "0.28.2",
   "description": "重新设计的 B 站首页、播放页、搜索页与其他页面：安静的排版、干净的推荐流。",
   "icons": {
     "16": "icons/16.png",

@@ -101,7 +101,8 @@ export function createUserMenu(a: Account): HTMLElement {
   );
 
   const link = (label: string, ic: string, href: string) => h('a', { class: 'idcl-link', href, target: '_blank', rel: 'noopener' }, icon(ic), h('span', {}, label));
-  const out = h('button', { class: 'idcl-link danger', type: 'button' }, icon(ICONS.exit), h('span', {}, '退出登录'));
+  const dot = (label: string, ic: string, href: string) => h('a', { href, target: '_blank', rel: 'noopener', title: label, 'aria-label': label }, icon(ic));
+  const out = h('button', { class: 'idcl-out', type: 'button' }, icon(ICONS.exit), h('span', {}, '退出登录'));
   out.addEventListener('click', async () => {
     if (!confirm('退出当前 B 站账号？')) return;
     out.setAttribute('aria-disabled', 'true');
@@ -116,14 +117,24 @@ export function createUserMenu(a: Account): HTMLElement {
     h('div', { class: 'idcl-backrow' },
       qr(space),
       h('div', { class: 'idcl-scan' }, h('b', {}, '个人空间'), `space.bilibili.com/${a.mid}`, h('br'), '手机扫码直达')),
+    h('div', { class: 'idcl-eyebrow' }, 'ACCOUNT', h('span', {}, '账号')),
     h('div', { class: 'idcl-links' },
       link('个人空间', ICONS.user, space),
       link('投稿管理', ICONS.upload, 'https://member.bilibili.com/platform/upload-manager/article'),
       link('大会员', ICONS.vip, 'https://account.bilibili.com/big'),
       link('我的钱包', ICONS.wallet, 'https://pay.bilibili.com/'),
-      link('账号设置', ICONS.gear, 'https://account.bilibili.com/account/home'),
-      out),
-    h('div', { class: 'idcl-sig' }, h('div', { class: 'idcl-script' }, a.name), h('small', {}, 'Authorized Signature')),
+      link('消息中心', ICONS.message, 'https://message.bilibili.com/'),
+      link('账号设置', ICONS.gear, 'https://account.bilibili.com/account/home')),
+    h('div', { class: 'idcl-connect' },
+      h('span', {}, '快捷入口'),
+      h('div', { class: 'idcl-connect-icons' },
+        dot('收藏', ICONS.fav, `${space}/favlist`),
+        dot('历史记录', ICONS.history, 'https://www.bilibili.com/account/history'),
+        dot('稍后再看', ICONS.later, 'https://www.bilibili.com/watchlater/#/list'),
+        dot('动态', ICONS.moments, 'https://t.bilibili.com/'))),
+    h('div', { class: 'idcl-sig' },
+      h('div', { class: 'idcl-script' }, a.name),
+      h('div', { class: 'idcl-sigline' }, h('small', {}, 'Authorized Signature'), out)),
   );
 
   const flipper = h('div', { class: 'idcl-flipper' }, front, back);

@@ -2,6 +2,14 @@
 
 # 更新日志
 
+## [v0.28.2](https://github.com/jiuyang5354/bilibili-margin/releases/tag/v0.28.2) · 2026-10-29
+
+工牌反面重新排版（沿用 21st ID Card Lanyard 原版的 Connect 行）。
+
+- 入口改为带「ACCOUNT · 账号」小标题的 2×3 网格，新增消息中心。
+- 新增「快捷入口」圆形图标：收藏、历史记录、稍后再看、动态。
+- 退出登录移到签名行右侧，签名区不再留大片空白；条纹与条码压缩。
+
 ## [v0.28.1](https://github.com/jiuyang5354/bilibili-margin/releases/tag/v0.28.1) · 2026-10-29
 
 工牌正面重新排版（参考 21st ID Card Lanyard 与 Flip Card 的数据栏）。

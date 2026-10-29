@@ -2,6 +2,14 @@
 
 # Changelog
 
+## [v0.28.2](https://github.com/jiuyang5354/bilibili-margin/releases/tag/v0.28.2) · 2026-10-29
+
+ID card back re-laid out (keeps the original 21st ID Card Lanyard Connect row).
+
+- Links as a 2×3 grid under an "ACCOUNT" eyebrow; adds Message center.
+- New quick-access icon row: favourites, history, watch later, dynamics.
+- Log out moved to the signature line; no more empty gap, stripe and barcode tightened.
+
 ## [v0.28.1](https://github.com/jiuyang5354/bilibili-margin/releases/tag/v0.28.1) · 2026-10-29
 
 ID card front re-laid out (after 21st ID Card Lanyard + Flip Card stats row).
