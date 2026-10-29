@@ -171,3 +171,366 @@ These changes do not guarantee stable 60fps in every scenario. Earlier live conc
 ## v0.22.4 · 2026-10-28
 
 - Reserved folder-opening headroom and narrowed the fan/clipping region to reduce overlap with adjacent cards.
+
+## [v0.22.3](https://github.com/jiuyang5354/bilibili-margin/releases/tag/v0.22.3) · 2026-10-28
+
+Watch menu English sub-labels.
+
+- Each floating-menu item gets an Instrument Serif italic English sub-label.
+
+## [v0.22.2](https://github.com/jiuyang5354/bilibili-margin/releases/tag/v0.22.2) · 2026-10-28
+
+Watch menu font.
+
+- Floating menu uses LXGW WenKai Medium, subset to the menu characters only (5.6KB).
+
+## [v0.22.1](https://github.com/jiuyang5354/bilibili-margin/releases/tag/v0.22.1) · 2026-10-28
+
+Day/night switch colours.
+
+- Warm paper track, white clouds and a Bilibili pink-to-orange sun by day; ink track and cool white moon by night.
+
+## [v0.22.0](https://github.com/jiuyang5354/bilibili-margin/releases/tag/v0.22.0) · 2026-10-28
+
+New day/night switch.
+
+- Theme toggle replaced by a native port of Uiverse theme-switch, keeping its structure, proportions and curves.
+- Page colour fade now 500ms, in sync with the switch.
+
+## [v0.21.1](https://github.com/jiuyang5354/bilibili-margin/releases/tag/v0.21.1) · 2026-10-28
+
+Sun/moon toggle fixes.
+
+- Back to the original 21st Sun Moon Theme Toggle behaviour: colour-only page fade, 150ms button easing, twinkling stars.
+
+## [v0.21.0](https://github.com/jiuyang5354/bilibili-margin/releases/tag/v0.21.0) · 2026-10-28
+
+Scroll performance and motion tokens.
+
+- Large blurred surfaces drop their backdrop while scrolling; off-screen cards skip rendering.
+- Motion unified to three easing curves and 150/200/300/400ms durations; press feedback on buttons.
+
+## [v0.20.0](https://github.com/jiuyang5354/bilibili-margin/releases/tag/v0.20.0) · 2026-10-28
+
+Footprint card glass.
+
+- Footprint card uses 21st Glass Calendar glass (translucent fill, 24px blur, hairline border, 24px radius); GL refractive lens disabled.
+
+## [v0.19.0](https://github.com/jiuyang5354/bilibili-margin/releases/tag/v0.19.0) · 2026-10-28
+
+Footprint month view.
+
+- Footprint card gains a 21st Glass Calendar month view: year/month toggle, scrollable day strip, tap a day for details.
+- Background targets ~60fps and steps down on slow frames.
+- Header selection pill becomes a clear highlight.
+
+## [v0.18.1](https://github.com/jiuyang5354/bilibili-margin/releases/tag/v0.18.1) · 2026-10-28
+
+Typography pass.
+
+- Font sizes reduced to a 12-step integer scale on a 4px spacing grid.
+- Serif only for titles ≥16px, mono only for numbers and English eyebrows, tighter CJK tracking, concentric radii.
+
+## [v0.18.0](https://github.com/jiuyang5354/bilibili-margin/releases/tag/v0.18.0) · 2026-10-28
+
+History and feed pages.
+
+- History and the feed home become Margin pages (21st Activity Timeline / SocialPostCard).
+- Instrument Serif Latin titles and italic English eyebrows.
+- Fixed the square corner on the collapsed danmaku list.
+
+## [v0.17.0](https://github.com/jiuyang5354/bilibili-margin/releases/tag/v0.17.0) · 2026-10-28
+
+Intro animation.
+
+- Home intro (21st Glass Reveal with the Bilibili TV), once per session, skippable, can be turned off.
+- Fixed a stray blue dot on the triple-action button.
+
+## [v0.16.0](https://github.com/jiuyang5354/bilibili-margin/releases/tag/v0.16.0) · 2026-10-28
+
+Header complete.
+
+- Header adds VIP, Creator Center and Upload, plus unread badges for messages and feed.
+- Avatar card with level, following, followers, coins and sign-out.
+- Create and delete favourite folders.
+
+## [v0.15.0](https://github.com/jiuyang5354/bilibili-margin/releases/tag/v0.15.0) · 2026-10-28
+
+"Flux" background.
+
+- New Flux background: a WebGPU compute particle flow field, loaded only when selected, with a WebGL fallback.
+
+## [v0.14.2](https://github.com/jiuyang5354/bilibili-margin/releases/tag/v0.14.2) · 2026-10-28
+
+Performance.
+
+- Background thumbnails in settings compile lazily and are cached.
+- Scrolling reuses the background texture; software rendering keeps the background static.
+
+## [v0.14.1](https://github.com/jiuyang5354/bilibili-margin/releases/tag/v0.14.1) · 2026-10-28
+
+Watch page shadows.
+
+- Action pills, description and comment cards and the floating menu use Smooth Shadows with a hairline ring.
+
+## [v0.14.0](https://github.com/jiuyang5354/bilibili-margin/releases/tag/v0.14.0) · 2026-10-28
+
+Shadow and radius tokens.
+
+- Shadows unified to --sh-xs/sm/md/lg plus a --ring hairline (movements.dev Smooth Shadows); nested radii are concentric.
+
+## [v0.13.2](https://github.com/jiuyang5354/bilibili-margin/releases/tag/v0.13.2) · 2026-10-28
+
+Heatmap glass tweak.
+
+- Softer edge bend and aberration on the heatmap glass, lighter border and shadow.
+
+## [v0.13.1](https://github.com/jiuyang5354/bilibili-margin/releases/tag/v0.13.1) · 2026-10-28
+
+Refractive heatmap glass.
+
+- Heatmap glass follows movements.dev Refractive Glass, with inner stroke and sheen.
+
+## [v0.13.0](https://github.com/jiuyang5354/bilibili-margin/releases/tag/v0.13.0) · 2026-10-28
+
+Space and messages layout.
+
+- Space header becomes a large fading banner with a big serif name; videos gain a list view.
+- Messages grouped by day with sentence-style notices and quotes; DMs grouped by date.
+
+## [v0.12.0](https://github.com/jiuyang5354/bilibili-margin/releases/tag/v0.12.0) · 2026-10-28
+
+Space and messages.
+
+- Personal space rebuilt as a Margin page: editorial profile bar, videos and posts.
+- Message center rebuilt: categories, notice stream and DM conversations.
+
+## [v0.11.5](https://github.com/jiuyang5354/bilibili-margin/releases/tag/v0.11.5) · 2026-10-28
+
+Theme switch sync.
+
+- Removed the header bottom hairline.
+- Background palette and toggle animate in step; watch page fade is 1740ms.
+
+## [v0.11.4](https://github.com/jiuyang5354/bilibili-margin/releases/tag/v0.11.4) · 2026-10-28
+
+Performance and search page.
+
+- Background shader renders at lower resolution and 24fps, pausing while scrolling or playing video.
+- Search page box matches the header, suggestion popup fixed, sticky search bar hidden.
+
+## [v0.11.3](https://github.com/jiuyang5354/bilibili-margin/releases/tag/v0.11.3) · 2026-10-28
+
+Update notice and Edge listing.
+
+- Popup shows when a new version is available.
+- Edge Add-ons listing assets: privacy policy, screenshots, logo, publish script.
+
+## [v0.11.2](https://github.com/jiuyang5354/bilibili-margin/releases/tag/v0.11.2) · 2026-10-28
+
+Favourites, wide mode, triple action.
+
+- Favourites wrap to multiple rows; right column yields in wide mode; danmaku list edges fixed.
+- Margin triple-action animation (21st Hold to Confirm + Like Burst).
+
+## v0.11.1 · 2026-10-28
+
+Header hover.
+
+- Header shortcuts expand into labelled pills on hover.
+
+## v0.11.0 · 2026-10-28
+
+Fonts and typography.
+
+- Bundled font subsets: Geist, Geist Mono, Source Han Sans, LXGW Neo ZhiSong; editorial typography.
+- Header tooltips (21st Tooltip port).
+
+## v0.10.6 · 2026-10-28
+
+Full-strength liquid glass.
+
+- Background strength and fade mask moved into GL compositing so the glass is no longer washed out.
+
+## v0.10.5 · 2026-10-28
+
+Physically based liquid glass.
+
+- Heatmap glass rewritten: curved-edge refraction with Fresnel, dispersion, light blur and directional highlights.
+
+## v0.10.4 · 2026-10-28
+
+Clear glass.
+
+- Heatmap glass drops the milky tint and heavy blur for edge refraction, dispersion and highlights.
+
+## v0.10.3 · 2026-10-28
+
+Home search box.
+
+- Large centred search box on home; header search hidden there.
+
+## v0.10.2 · 2026-10-28
+
+Search page fix.
+
+- Only one search box on the search page.
+
+## v0.10.1 · 2026-10-28
+
+Theme fade safeguard.
+
+- 1.6s fallback so the theme cross-fade never gets stuck.
+
+## v0.10.0 · 2026-10-28
+
+Site-wide takeover.
+
+- Search and other pages get the Margin look; shader backgrounds site-wide.
+- Liquid-glass heatmap; two-column command palette.
+
+## v0.9.3 · 2026-10-28
+
+Watch page theme switch.
+
+- Whole-page cross-fade on the watch page; softer dark-mode glass highlights.
+
+## v0.9.2 · 2026-10-27
+
+Feed bar fix.
+
+- Removed the grey glass strip under the feed tabs.
+
+## v0.9.1 · 2026-10-27
+
+Header logo removed.
+
+- Removed the top-left header logo.
+
+## v0.9.0 · 2026-10-27
+
+Shader backgrounds.
+
+- Six 21st shader backgrounds; footprint card loses its border.
+
+## v0.8.0 · 2026-10-27
+
+Glass footprint card and scroll ruler.
+
+- Glass footprint card, shimmer skeletons and a ruler-style scroll indicator.
+
+## v0.7.1 · 2026-10-27
+
+Watch Later drawer.
+
+- New Watch Later side drawer.
+
+## v0.7.0 · 2026-10-27
+
+Command palette and context menu.
+
+- Command palette (Ctrl+K) and a right-click menu on video cards.
+
+## v0.6.2 · 2026-10-27
+
+Sticky tabs.
+
+- Sticky category bar becomes liquid glass.
+
+## v0.6.1 · 2026-10-27
+
+Watch page menu.
+
+- Floating quick menu on the watch page.
+
+## v0.6.0 · 2026-10-27
+
+Liquid-glass header.
+
+- Header becomes liquid glass.
+
+## v0.5.2 · 2026-10-27
+
+Player bottom corners.
+
+- Fixed the player bottom corners.
+
+## v0.5.1 · 2026-10-27
+
+Player edge.
+
+- Removed the black edge outside the rounded player.
+
+## v0.5.0 · 2026-10-27
+
+Watch page redesign.
+
+- Watch page gets the Margin look: title, player, description and related column.
+
+## v0.4.2 · 2026-10-27
+
+Sun/moon toggle.
+
+- New sun/moon theme toggle.
+
+## v0.4.1 · 2026-10-27
+
+Footprint on home.
+
+- Footprint heatmap moved onto the home page.
+
+## v0.4.0 · 2026-10-27
+
+Footprint heatmap and expandable tabs.
+
+- Bilibili footprint heatmap (first open time and duration per day).
+- Header uses Expandable Tabs.
+
+## v0.3.0 · 2026-10-27
+
+Palettes and favourites.
+
+- Mist blue / night blue palettes, ice background and glass-folder favourites.
+
+## v0.2.1 · 2026-10-27
+
+UI fixes.
+
+- Fixed broken blur, narrow-screen header and sticky bar overlap.
+
+## v0.2.0 · 2026-10-27
+
+Settings and home features.
+
+- Settings panel, feed filters, hover preview, favourites and animated backgrounds.
+
+## v0.1.0 · 2026-10-27
+
+Clean-room rewrite.
+
+- Margin rewritten from scratch with Vite + TypeScript (vanilla DOM + Shadow DOM), no longer based on BewlyBewly.
+- New home feed and header.
+
+## Legacy (based on BewlyBewly, branch `legacy-v0.6`)
+
+The first build before the clean-room rewrite, which restarted numbering at v0.1.0.
+
+### v0.6.4 · 2026-10-27
+
+- 6 random shader backgrounds plus custom image background.
+
+### v0.6.3 · 2026-10-27
+
+- Glass-folder favourites in the right column.
+
+### v0.6.2 · 2026-10-27
+
+- Footprint heatmap in the right column (first visit time and duration per day).
+
+### v0.6.1 · 2026-10-27
+
+- 21st interactions: hover preview, shimmer search, typewriter command palette, circular theme reveal.
+
+### [v0.6.0](https://github.com/jiuyang5354/bilibili-margin/releases/tag/v0.6.0) · 2026-10-27
+
+- First preview: Bilibili home and watch page redesign on top of BewlyBewly.

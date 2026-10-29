@@ -30,7 +30,7 @@ jobs:
         run: |
           tag="${GITHUB_REF_NAME}"
           for f in CHANGELOG.md CHANGELOG.en.md; do
-            awk -v t="## [$tag]" 'index($0,t)==1{on=1;next} on&&/^## \[v/{exit} on' "$f"
+            awk -v t="[$tag](" '/^##/&&index($0,t){on=1;next} on&&(/^###? \[?v[0-9]/||/^## [^[v]/){exit} on' "$f"
             echo; echo '---'; echo
           done > release-notes.md
       - if: startsWith(github.ref, 'refs/tags/v')
