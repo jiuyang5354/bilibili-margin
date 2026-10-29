@@ -1,3 +1,4 @@
+import { every } from '../sched';
 import { forgetSearch, hotSearch, rememberSearch, searchHistory, searchUrl, suggest, type Hot } from '../api/search';
 import { h, icon, ICONS } from './dom';
 
@@ -35,7 +36,7 @@ export function createHeroSearch(app: () => HTMLElement, _onPalette?: () => void
   // ── 热搜词轮播占位 ──
   let hot: Hot[] = [];
   let hi = 0;
-  let rot = 0;
+  let rot: (() => void) | null = null;
   const phWord = (text: string, cls = '') => h('span', { class: `hs-ph-w ${cls}` }, text);
   const phWords = h('span', { class: 'hs-ph-ws' });
   ph.append(h('span', { class: 'hs-ph-pre' }, '搜索视频、UP 主'), phWords);
@@ -54,11 +55,11 @@ export function createHeroSearch(app: () => HTMLElement, _onPalette?: () => void
     ph.firstElementChild!.textContent = '大家都在搜';
     ph.classList.add('has-hot');
     showHot(true);
-    rot = window.setInterval(() => {
-      if (document.hidden || input.value) return;
+    rot = every(3200, () => {
+      if (input.value) return;
       hi = (hi + 1) % hot.length;
       showHot();
-    }, 3200);
+    });
     if (isOpen()) render();
   }).catch(() => {});
   void rot;

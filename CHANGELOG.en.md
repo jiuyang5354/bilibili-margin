@@ -2,6 +2,16 @@
 
 # Changelog
 
+## [v0.31.0](https://github.com/jiuyang5354/bilibili-margin/releases/tag/v0.31.0) · 2026-10-29
+
+Performance: per-page code loading, sliced CJK fonts, one scheduler for timers.
+
+- The entry script injected into every Bilibili page drops from 447 KB to 34 KB: UI code for home, watch, search, space, messages, history and feed now loads on demand by route; the intro engine and the ID-card QR code library load only when used.
+- Both CJK fonts (Noto Sans SC subset 1.7 MB, LXGW Neo ZhiSong subset 1.3 MB) are split into ~100 frequency-ordered slices so pages only download the characters they show; font traffic on a first home load drops from 3.25 MB to 1.68 MB.
+- All periodic work (footprint timing, unread badges, trending rotation, weather animation, comment skin) shares one scheduler and pauses entirely while the tab is in the background.
+- Footprint time is now accumulated by a background service worker, so several Bilibili tabs no longer overwrite or double-count each other. Data format unchanged.
+- The watch-page skin stylesheet is applied at document start without waiting for the UI code, so the native page doesn't flash.
+
 ## [v0.30.3](https://github.com/jiuyang5354/bilibili-margin/releases/tag/v0.30.3) · 2026-10-29
 
 Lighter opening animation, fixes stutter.

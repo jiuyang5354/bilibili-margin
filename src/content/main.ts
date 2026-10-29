@@ -1,14 +1,36 @@
-import { loadSettings, onSettingsChange } from '../shared/settings';
-import { MarginApp } from './ui/app';
-import { startTracking } from './footprint/store';
-import { WatchSkin, type SkinKind } from './ui/watch';
+/**
+ * 入口脚本（document_start 注入所有 B 站页面）：只做路由判断、读设置、注册字体、足迹心跳、
+ * 先藏原版 / 拦原版脚本。各页面的界面代码按路由从 dist/pages/*.js 动态 import（和 flux.js 同一套做法），
+ * 不再把整站代码塞进一个 447KB 的 content.js。
+ */
+import { loadSettings, onSettingsChange, type Settings } from '../shared/settings';
+import { startTracking } from './footprint/beat';
 import { injectFonts } from './fonts';
-import { hideOriginal } from './ui/shell';
-import { SpaceApp } from './ui/space';
-import { MessageApp } from './ui/message';
-import { HistoryApp } from './ui/history';
-import { FeedApp } from './ui/feedpage';
 import { muteNative, setGuard, guardEnabled } from './native-guard';
+import type { SkinKind } from './ui/watch';
+import watchCss from './watch.css?inline';
+import pagesCss from './pages.css?inline';
+
+type Pages = {
+  home: typeof import('./pages/home');
+  watch: typeof import('./pages/watch');
+  space: typeof import('./pages/space');
+  message: typeof import('./pages/message');
+  history: typeof import('./pages/history');
+  feed: typeof import('./pages/feed');
+};
+/** 按需加载页面模块；content script 不能是 ES module，但可以动态 import 扩展里的 ES 模块 */
+const load = <K extends keyof Pages>(name: K): Promise<Pages[K]> => import(/* @vite-ignore */ chrome.runtime.getURL(`pages/${name}.js`));
+
+const HIDE_CSS = 'html{background:#111!important;overflow:hidden!important}body{display:none!important}@media (prefers-color-scheme: light){html{background:#f5f4f1!important}}';
+/** document_start 时先把原页面藏起来，避免闪一下原版 */
+function hideOriginal(): HTMLStyleElement {
+  const hide = document.createElement('style');
+  hide.id = 'margin-hide';
+  hide.textContent = HIDE_CSS;
+  document.documentElement.append(hide);
+  return hide;
+}
 
 const isHome = () => location.hostname === 'www.bilibili.com' && /^\/(?:[a-z]{2}(?:-[A-Za-z]{2,4})?\/?)?(?:index\.html)?$/.test(location.pathname);
 
@@ -24,12 +46,46 @@ const isHistory = () => location.hostname === 'www.bilibili.com' && /^\/(?:accou
 const isFeed = () => location.hostname === 't.bilibili.com' && /^\/?$/.test(location.pathname) && window.top === window;
 const offByUrl = () => new URLSearchParams(location.search).get('margin') === 'off';
 
+/**
+ * 播放页 / 搜索页等换皮页面的全局样式。入口脚本里同步挂上（用 localStorage 里上次设置的镜像判断开没开），
+ * 不等页面模块加载，避免先闪一下原版。
+ */
+const SKIN_KEY = 'margin:skin';
+function skinMirror(): string | null { try { return localStorage.getItem(SKIN_KEY); } catch { return null; } }
+function setSkinMirror(v: string): void { try { if (skinMirror() !== v) localStorage.setItem(SKIN_KEY, v); } catch { /* 隐私模式 */ } }
+function skinStyle(kind: SkinKind, theme: string): HTMLStyleElement {
+  const de = document.documentElement;
+  de.classList.add('margin-skin', `margin-${kind}`);
+  de.dataset.marginTheme = theme === 'auto' ? (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : theme;
+  let st = document.getElementById('margin-watch-css') as HTMLStyleElement | null;
+  if (!st) {
+    st = document.createElement('style');
+    st.id = 'margin-watch-css';
+    st.textContent = watchCss + '\n' + pagesCss;
+    de.append(st);
+  }
+  return st;
+}
+function unskin(kind: SkinKind): void {
+  const de = document.documentElement;
+  document.getElementById('margin-watch-css')?.remove();
+  de.classList.remove('margin-skin', `margin-${kind}`, 'margin-has-bg');
+  delete de.dataset.marginTheme;
+}
+
 async function startWatch(kind: SkinKind = 'watch'): Promise<void> {
   if (sessionStorage.getItem('margin:off') || offByUrl()) { sessionStorage.removeItem('margin:off'); return; }
+  // 设置和页面模块并行读取
+  const mod = load('watch');
+  mod.catch(() => {});
+  const mirror = skinMirror();
+  if (mirror && mirror !== '0') skinStyle(kind, mirror);
   const settings = await loadSettings();
-  if (!settings.enabled || !settings.watch) return;
-  // document_start 就挂上，避免先闪一下原版
-  const skin = new WatchSkin(settings, kind);
+  const on = settings.enabled && settings.watch;
+  setSkinMirror(on ? settings.theme : '0');
+  if (!on) { unskin(kind); return; }
+  skinStyle(kind, settings.theme);
+  const skin = new (await mod).WatchSkin(settings, kind);
   onSettingsChange((next, prev) => {
     if (next.enabled !== prev.enabled || next.watch !== prev.watch) location.reload();
     else skin.update(next);
@@ -42,10 +98,10 @@ async function start(): Promise<void> {
   if (isWatch()) return startWatch();
   const sm = spaceMatch();
   // 空间页的投稿接口依赖原版脚本写的指纹 cookie，不拦会 412
-  if (sm) return takeover((st) => new SpaceApp(st, Number(sm[1]), sm[2] === 'dynamic' ? 'dynamic' : 'video'), false);
-  if (isMessage()) return takeover((st) => new MessageApp(st));
-  if (isHistory()) return takeover((st) => new HistoryApp(st));
-  if (isFeed()) return takeover((st) => new FeedApp(st));
+  if (sm) return takeover(load('space'), (m, st) => new m.SpaceApp(st, Number(sm[1]), sm[2] === 'dynamic' ? 'dynamic' : 'video'), false);
+  if (isMessage()) return takeover(load('message'), (m, st) => new m.MessageApp(st));
+  if (isHistory()) return takeover(load('history'), (m, st) => new m.HistoryApp(st));
+  if (isFeed()) return takeover(load('feed'), (m, st) => new m.FeedApp(st));
   if (isSearch()) return startWatch('search');
   if (!isHome() && isPage()) return startWatch('page');
   if (!isHome() || sessionStorage.getItem('margin:off') || offByUrl()) {
@@ -53,17 +109,16 @@ async function start(): Promise<void> {
     return;
   }
   // Hide the original page as early as possible to avoid a flash.
-  const hide = document.createElement('style');
-  hide.id = 'margin-hide';
-  hide.textContent = 'html{background:#111!important;overflow:hidden!important}body{display:none!important}@media (prefers-color-scheme: light){html{background:#f5f4f1!important}}';
-  document.documentElement.append(hide);
+  const hide = hideOriginal();
   const unmute = muteNative();
+  const mod = load('home');
+  mod.catch(() => {});
 
   const settings = await loadSettings();
   if (!settings.enabled) { hide.remove(); unmute(); return disabledAfterMute(); }
   setGuard(true);
 
-  const app = new MarginApp(settings);
+  const app = new (await mod).MarginApp(settings);
   document.documentElement.append(app.host);
 
   onSettingsChange((next, prev) => {
@@ -73,14 +128,15 @@ async function start(): Promise<void> {
 }
 
 /** 接管式页面：先藏原版，再挂映间页面；设置里关掉「其他页面重设计」就保留原版 */
-async function takeover(make: (s: Awaited<ReturnType<typeof loadSettings>>) => { shell: { host: HTMLElement }; update(s: Awaited<ReturnType<typeof loadSettings>>): void }, mute = true): Promise<void> {
+async function takeover<M>(mod: Promise<M>, make: (m: M, s: Settings) => { shell: { host: HTMLElement }; update(s: Settings): void }, mute = true): Promise<void> {
+  mod.catch(() => {});
   if (sessionStorage.getItem('margin:off') || offByUrl()) { sessionStorage.removeItem('margin:off'); return; }
   const hide = hideOriginal();
   const unmute = mute ? muteNative() : () => {};
   const settings = await loadSettings();
   if (!settings.enabled || !settings.watch) { hide.remove(); unmute(); return mute ? disabledAfterMute() : undefined; }
   if (mute) setGuard(true);
-  const page = make(settings);
+  const page = make(await mod, settings);
   document.documentElement.append(page.shell.host);
   onSettingsChange((next, prev) => {
     if (next.enabled !== prev.enabled || next.watch !== prev.watch) location.reload();

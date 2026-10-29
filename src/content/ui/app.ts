@@ -8,7 +8,7 @@ import { toast } from './controls';
 import { h, icon, ICONS } from './dom';
 import { createFavorites } from './favorites';
 import { createHeader, SITE_LINKS } from './header';
-import { playIntro, shouldPlayIntro } from './intro/intro';
+import { shouldPlayIntro, setIntroActive } from './intro/gate';
 import { createHeroSearch } from './hero-search';
 import { createFootprintCard } from './footprint';
 import { createWeather } from './weather';
@@ -162,7 +162,15 @@ export class MarginApp {
       cm.el,
     );
     this.root.append(this.app);
-    if (shouldPlayIntro(this.settings.intro)) playIntro(this.app, this.resolvedTheme());
+    if (shouldPlayIntro(this.settings.intro)) {
+      // 开场引擎（WebGL，约 37KB）按需加载；加载前先用同色底板盖住首页，避免闪一下
+      const theme = this.resolvedTheme();
+      const cover = h('div', { class: 'intro', role: 'presentation', style: `background:${theme === 'dark' ? '#111112' : '#f5f4f1'}` });
+      this.app.append(cover);
+      setIntroActive(true);
+      import('./intro/intro').then((m) => { void m.playIntro(this.app, theme); requestAnimationFrame(() => cover.remove()); })
+        .catch((e) => { console.error('[MARGIN] intro', e); cover.remove(); setIntroActive(false); });
+    }
     let scrollT = 0;
     this.app.addEventListener('scroll', () => {
       this.bg.redraw();

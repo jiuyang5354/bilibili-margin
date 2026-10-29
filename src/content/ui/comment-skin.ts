@@ -1,3 +1,4 @@
+import { every } from '../sched';
 // B 站原生评论（bili-comments，lit 组件，多层 open shadow root）外层 CSS 进不去：
 // 找到关键组件后往它们的 shadowRoot 里追加一张样式表，变量从 html 继承（--m-*）。
 const SKINS: Record<string, string> = {
@@ -50,8 +51,9 @@ function skin(root: ParentNode, depth = 0): void {
 
 export function skinComments(): void {
   const run = () => { const bc = document.querySelector('bili-comments'); if (bc) skin(bc.parentElement ?? document); };
+  // 前 90 秒每秒补一次（评论区是懒加载的 Web Components）；页面隐藏时暂停
   let n = 0;
-  const t = window.setInterval(() => { run(); if (++n > 90) clearInterval(t); }, 1000);
+  const stop = every(1000, () => { run(); if (++n > 90) stop(); });
   let pending = 0;
   addEventListener('scroll', () => { if (pending) return; pending = window.setTimeout(() => { pending = 0; run(); }, 400); }, { passive: true });
 }

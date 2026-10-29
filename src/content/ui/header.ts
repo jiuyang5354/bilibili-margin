@@ -1,10 +1,11 @@
+import { every } from '../sched';
 import { account, dynamicUpdates, resetDynamicBaseline, unreadTotal } from '../api/account';
 import { h, icon, ICONS } from './dom';
 import { createExpandableTabs, type TabItem, type TabSpec } from './expandable-tabs';
 import { createUserMenu } from './user-menu';
 import { createSunMoon, type SunMoon } from './sun-moon';
 import { attachTooltips } from './tooltip';
-import { BILI_TIGHT } from './intro/intro';
+import { BILI_TIGHT } from './intro/logo';
 import { liveTv } from './tv-eyes';
 
 /** 顶栏左上角的小电视：开场动画结束时图标就飞落到这里 */
@@ -56,14 +57,17 @@ export function createHeader(o: { tabs: TabItem[]; onTheme: () => void; onSearch
     if (!a) return;
     userSlot.replaceWith(createUserMenu(a));
     // 未读角标：页面可见时每 2 分钟问一次；切回标签页时立即刷新
+    let polled = 0;
     const poll = () => {
       if (document.hidden) return;
+      polled = Date.now();
       unreadTotal().then((n) => tabsNav.badge('msg', n)).catch(() => {});
       dynamicUpdates().then((n) => tabsNav.badge('dyn', n)).catch(() => {});
     };
     poll();
-    setInterval(poll, 120_000);
-    document.addEventListener('visibilitychange', poll);
+    every(120_000, poll);
+    // 切回标签页时刷新一次（30 秒内刚问过就不重复问）
+    document.addEventListener('visibilitychange', () => { if (Date.now() - polled > 30_000) poll(); });
   }).catch(() => {});
 
   if (!user.classList.contains('in')) user.dataset.tip = '登录 B 站';

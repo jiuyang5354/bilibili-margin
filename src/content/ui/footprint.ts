@@ -1,5 +1,6 @@
 import { backfill, dayKey, firstOf, loadActivity, secondsOf, type Activity } from '../footprint/store';
 import { h, icon } from './dom';
+import { every } from '../sched';
 
 const WEEK = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
 const fmt = (sec: number) => {
@@ -32,7 +33,7 @@ export function createFootprintCard(): HTMLElement {
       : r === 'nologin' ? '登录 B 站后可以用观看历史补全过去的天数' : '观看历史暂时读取失败，只显示本地记录';
     refresh();
   })();
-  setInterval(refresh, 60_000);
+  every(60_000, refresh); // 页面隐藏时不刷新
   let ro: ResizeObserver | null = null;
   // 21st「Glass Calendar」：年 / 月两种视图，月视图是一条可横向滑动的日期条，点哪天看哪天
   let view: 'year' | 'month' = (() => { try { return localStorage.getItem(VIEW_KEY) === 'month' ? 'month' : 'year'; } catch { return 'year'; } })();

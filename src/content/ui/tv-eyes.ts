@@ -6,7 +6,7 @@
  * 不可见、离屏、减少动态效果时停住。WebGL 不可用就保留 SVG 原来的眼睛。
  */
 import { introActive, onIntroEnd } from './intro/gate';
-import { BILI_TIGHT } from './intro/intro';
+import { BILI_TIGHT } from './intro/logo';
 
 const VERT = `attribute vec2 a;void main(){gl_Position=vec4(a,0.,1.);}`;
 

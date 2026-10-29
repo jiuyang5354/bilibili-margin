@@ -1,3 +1,4 @@
+import { every } from '../sched';
 import { introActive } from './intro/gate';
 import { h } from './dom';
 import { weather, geocode, setLoc, savedLoc, type Wx } from '../api/weather';
@@ -17,7 +18,8 @@ export function createWeather(): HTMLElement {
   const el = h('section', { class: 'wx', 'aria-label': '天气' });
   el.append(h('div', { class: 'wx-sky sk' }), h('div', { class: 'wx-side' }));
   let wx: Wx | null = null;
-  let tick = 0, timer = 0, visible = false;
+  let tick = 0, visible = false;
+  let stop: (() => void) | null = null;
   const reduced = matchMedia('(prefers-reduced-motion: reduce)');
 
   const localHour = () => {
@@ -51,14 +53,14 @@ export function createWeather(): HTMLElement {
   };
   const clockEl = h('span', { class: 'wx-clock' });
   const run = () => {
-    clearInterval(timer);
+    stop?.(); stop = null;
     const app = el.closest('.app');
     if (!wx || !visible || reduced.matches || document.hidden) return;
-    timer = window.setInterval(() => {
+    stop = every(FRAME, () => {
       if (app?.classList.contains('scrolling') || introActive()) return;
       tick++; paint();
       if (tick % 60 === 0) clockEl.textContent = clock();
-    }, FRAME);
+    });
   };
   new IntersectionObserver(([e]) => { visible = e.isIntersecting; run(); }).observe(el);
   document.addEventListener('visibilitychange', run);

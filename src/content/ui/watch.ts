@@ -17,8 +17,6 @@ import { createLaterDrawer } from './drawer';
 import { createScrollRuler } from './scroll-ruler';
 import { skinComments } from './comment-skin';
 import css from '../styles.css?inline';
-import pageCss from '../watch.css?inline';
-import skinCss from '../pages.css?inline';
 import { BackgroundLayer } from '../bg/background';
 import { startTriple } from './triple';
 
@@ -42,8 +40,8 @@ export class WatchSkin {
   constructor(private settings: Settings, private kind: SkinKind = 'watch') {
     const de = document.documentElement;
     const isWatch = kind === 'watch';
+    // 全局换皮样式（watch.css + pages.css）由入口脚本在 document_start 挂上（见 main.ts skinStyle），这里只补类名
     de.classList.add('margin-skin', `margin-${kind}`);
-    de.append(h('style', { id: 'margin-watch-css' }, pageCss + '\n' + skinCss));
 
     // Shader 背景：独立宿主，fixed 铺满、z-index -1，在 B 站内容之下、画布底色之上
     const bgHost = h('div', { id: 'margin-bg' });

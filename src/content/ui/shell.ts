@@ -101,15 +101,6 @@ export class PageShell {
   }
 }
 
-/** document_start 时先把原页面藏起来，避免闪一下原版 */
-export function hideOriginal(): HTMLStyleElement {
-  const hide = document.createElement('style');
-  hide.id = 'margin-hide';
-  hide.textContent = 'html{background:#111!important;overflow:hidden!important}body{display:none!important}@media (prefers-color-scheme: light){html{background:#f5f4f1!important}}';
-  document.documentElement.append(hide);
-  return hide;
-}
-
 /** B 站的 csrf：bili_jct cookie */
 export const csrf = () => document.cookie.match(/(?:^|;\s*)bili_jct=([^;]+)/)?.[1] ?? '';
 export const https = (u: string | undefined) => String(u ?? '').replace(/^\/\//, 'https://').replace(/^http:/, 'https:');

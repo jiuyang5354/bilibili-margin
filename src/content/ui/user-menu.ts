@@ -1,4 +1,3 @@
-import qrcode from 'qrcode-generator';
 import { account, accountStat, dynamicUpdates, logout, resetDynamicBaseline, unreadTotal, type Account } from '../api/account';
 import { fmtCount, h, icon, ICONS } from './dom';
 
@@ -26,13 +25,16 @@ type Pt = { x: number; y: number; oldx: number; oldy: number; pinned: boolean };
 
 /** 真二维码：手机扫一下打开个人空间。用 SVG 画，白底留静区，缩放不糊 */
 function qr(text: string, small = false): HTMLElement {
-  const q = qrcode(0, 'M');
-  q.addData(text); q.make();
-  const n = q.getModuleCount();
-  let d = '';
-  for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) if (q.isDark(r, c)) d += `M${c} ${r}h1v1h-1z`;
   const el = h('div', { class: small ? 'idcl-qr idcl-small' : 'idcl-qr', title: text });
-  el.innerHTML = `<svg viewBox="0 0 ${n} ${n}" shape-rendering="crispEdges" aria-hidden="true"><path d="${d}"/></svg>`;
+  // 二维码库（约 44KB）按需加载：卡片挂上后才画
+  import('qrcode-generator').then(({ default: qrcode }) => {
+    const q = qrcode(0, 'M');
+    q.addData(text); q.make();
+    const n = q.getModuleCount();
+    let d = '';
+    for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) if (q.isDark(r, c)) d += `M${c} ${r}h1v1h-1z`;
+    el.innerHTML = `<svg viewBox="0 0 ${n} ${n}" shape-rendering="crispEdges" aria-hidden="true"><path d="${d}"/></svg>`;
+  }).catch(() => {});
   return el;
 }
 
