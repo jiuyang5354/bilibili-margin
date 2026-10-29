@@ -11,7 +11,8 @@ import { fmtCount, h, icon, ICONS } from './dom';
  */
 
 const NUM_POINTS = 13;
-const REST_LENGTH = 140;
+const REST_LENGTH = 92;
+const CARD_SCALE = 0.86;
 const SEGMENT_LENGTH = REST_LENGTH / (NUM_POINTS - 1);
 const GRAVITY = 0.55;
 const FRICTION = 0.98;
@@ -125,7 +126,7 @@ export function createUserMenu(a: Account): HTMLElement {
   let flipTarget = 0, flipCurrent = 0;
   const tiltTarget = { x: 0, y: 0 }, tiltCurrent = { x: 0, y: 0 };
   let mouse = { x: -9999, y: -9999 };
-  let raf = 0, isOpen = false, dpr = 1, t = 0;
+  let raf = 0, isOpen = false, dpr = 1, t = 0, restX = 0, gx = 0, restAngle = 0;
 
   const resize = () => {
     dpr = Math.min(2, devicePixelRatio || 1);
@@ -133,9 +134,12 @@ export function createUserMenu(a: Account): HTMLElement {
     canvas.style.width = `${innerWidth}px`; canvas.style.height = `${innerHeight}px`;
     const r = trigger.getBoundingClientRect();
     anchor.x = r.left + r.width / 2;
-    anchor.y = r.bottom + 10;
-    // 卡片宽 236，别让它挂出视口右边
-    anchor.x = Math.min(anchor.x, innerWidth - 140);
+    anchor.y = r.bottom + 6;
+    // 挂扣始终在头像正下方；卡片太靠右会出视口，就让它静止时往左偏一点（绳子斜挂）
+    restX = Math.min(anchor.x, innerWidth - (236 * CARD_SCALE) / 2 - 20);
+    const dx = restX - anchor.x, dy = Math.sqrt(Math.max(1, REST_LENGTH ** 2 - dx * dx));
+    gx = GRAVITY * dx / dy;
+    restAngle = Math.atan2(dy, dx) - Math.PI / 2;
   };
   const clamp = (p: { x: number; y: number }) => {
     p.x = Math.max(18, Math.min(innerWidth - 18, p.x));
@@ -148,7 +152,8 @@ export function createUserMenu(a: Account): HTMLElement {
       const p = points[i];
       const vx = (p.x - p.oldx) * FRICTION, vy = (p.y - p.oldy) * FRICTION;
       p.oldx = p.x; p.oldy = p.y;
-      p.x += vx; p.y += vy + GRAVITY;
+      // 重力方向朝静止点微微倾斜，绳子静止时是一条直的斜线
+      p.x += vx + gx; p.y += vy + GRAVITY;
     }
   };
   const applyConstraints = () => {
@@ -198,10 +203,11 @@ export function createUserMenu(a: Account): HTMLElement {
   };
   const positionCard = () => {
     const last = points[points.length - 1], prev = points[points.length - 2];
-    const angle = Math.atan2(last.y - prev.y, last.x - prev.x) - Math.PI / 2;
+    // 减去静止时绳子的斜角，卡片静止时保持竖直，甩动时照常转
+    const angle = Math.atan2(last.y - prev.y, last.x - prev.x) - Math.PI / 2 - restAngle;
     card.style.left = `${last.x - card.offsetWidth / 2}px`;
     card.style.top = `${last.y}px`;
-    card.style.transform = `rotate(${angle}rad)`;
+    card.style.transform = `rotate(${angle}rad) scale(${CARD_SCALE})`;
   };
   const updateTilt = () => {
     flipCurrent += (flipTarget - flipCurrent) * 0.16;
@@ -292,8 +298,14 @@ export function createUserMenu(a: Account): HTMLElement {
     if (!stage.isConnected) (wrap.closest('.app') ?? wrap.getRootNode() as ShadowRoot).append(stage);
     resize();
     points.length = 0;
-    // 和原组件一样按原长摆直，再给一点横向初速度，挂出来时轻轻晃一下
-    for (let i = 0; i < NUM_POINTS; i++) { const y = anchor.y + i * SEGMENT_LENGTH; points.push({ x: anchor.x, y, oldx: anchor.x + (i / NUM_POINTS) * 3, oldy: y, pinned: i === 0 }); }
+    // 按原长沿静止方向摆直，再给一点横向初速度，挂出来时轻轻晃一下
+    {
+      const dx = restX - anchor.x, dy = Math.sqrt(Math.max(0, REST_LENGTH ** 2 - dx * dx));
+      for (let i = 0; i < NUM_POINTS; i++) {
+        const k = i / (NUM_POINTS - 1), x = anchor.x + dx * k, y = anchor.y + dy * k;
+        points.push({ x, y, oldx: x + k * 3, oldy: y, pinned: i === 0 });
+      }
+    }
     flipped = false; flipTarget = 0; flipCurrent = 0;
     stage.hidden = false;
     stage.classList.remove('idcl-leaving');
