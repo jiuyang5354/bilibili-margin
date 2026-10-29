@@ -1,3 +1,4 @@
+import { setIntroActive } from './gate';
 import { createRenderer, endOf, frameAt, loadLogo, LOOKS, type Settings } from './engine';
 
 /** B 站小电视（Simple Icons，CC0）——只取形状，颜色由主题给 */
@@ -32,6 +33,7 @@ export function shouldPlayIntro(enabled: boolean): boolean {
  */
 export function playIntro(parent: HTMLElement, theme: 'light' | 'dark'): Promise<void> {
   try { sessionStorage.setItem(SESSION_KEY, '1'); } catch { /* ignore */ }
+  setIntroActive(true);
   const dark = theme === 'dark';
   // 底色和首页画布一致，淡出时无缝接上
   const bg = dark ? '#111112' : '#f5f4f1';
@@ -59,6 +61,7 @@ export function playIntro(parent: HTMLElement, theme: 'light' | 'dark'): Promise
       if (done) return;
       done = true;
       cancelAnimationFrame(raf);
+      setIntroActive(false);
       removeEventListener('keydown', skip, true);
       if (!fast && tilePx && flyToBrand()) return;
       el.style.transition = `opacity ${fast ? 0.25 : 0.6}s cubic-bezier(.4, 0, .2, 1)`;
@@ -121,9 +124,17 @@ export function playIntro(parent: HTMLElement, theme: 'light' | 'dark'): Promise
       // 调试 / 截图用：localStorage margin:intro-freeze = 秒数，停在那一帧
       let freeze = NaN;
       try { freeze = parseFloat(localStorage.getItem('margin:intro-freeze') ?? ''); } catch { /* ignore */ }
+      // 自适应分辨率：连续几帧超过 ~45fps 的预算就降一档像素密度（CSS 拉伸，玻璃边缘仍够清晰）
+      let dprCap = Math.min(devicePixelRatio || 1, 1.5);
+      let last = 0, slow = 0;
       const tick = (now: number) => {
         const t = Number.isFinite(freeze) ? freeze : (now - t0) / 1000;
-        const dpr = Math.min(devicePixelRatio || 1, 1.5);
+        if (last && t > 0.15) {
+          slow = now - last > 22 ? slow + 1 : Math.max(0, slow - 1);
+          if (slow >= 4 && dprCap > 0.6) { dprCap = Math.max(0.6, dprCap * 0.75); slow = 0; }
+        }
+        last = now;
+        const dpr = dprCap;
         const cw = canvas.clientWidth, ch = canvas.clientHeight;
         const w = Math.max(1, Math.round(cw * dpr)), hh = Math.max(1, Math.round(ch * dpr));
         if (canvas.width !== w || canvas.height !== hh) { canvas.width = w; canvas.height = hh; }

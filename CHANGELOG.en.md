@@ -2,6 +2,14 @@
 
 # Changelog
 
+## [v0.30.3](https://github.com/jiuyang5354/bilibili-margin/releases/tag/v0.30.3) · 2026-10-29
+
+Lighter opening animation, fixes stutter.
+
+- While the intro plays, the home background, weather animation and header TV eyes it fully covers are paused, resuming as soon as it fades out, so they no longer compete for the GPU.
+- The intro nebula is evaluated twice per pixel instead of once per dispersion sample (20×), with 3 noise octaves instead of 4.
+- Adaptive resolution for the intro canvas: pixel density steps down on sustained dropped frames.
+
 ## [v0.30.2](https://github.com/jiuyang5354/bilibili-margin/releases/tag/v0.30.2) · 2026-10-29
 
 Shader background for the opening animation.

@@ -1,3 +1,4 @@
+import { introActive } from './intro/gate';
 import { h } from './dom';
 import { weather, geocode, setLoc, savedLoc, type Wx } from '../api/weather';
 import { WEATHER_SKIES, WEATHER_SKY_LAYERS, moonAge, weatherScene, glyphSvg, SKY_PITCH, FRAME } from './dotsky';
@@ -54,7 +55,7 @@ export function createWeather(): HTMLElement {
     const app = el.closest('.app');
     if (!wx || !visible || reduced.matches || document.hidden) return;
     timer = window.setInterval(() => {
-      if (app?.classList.contains('scrolling')) return;
+      if (app?.classList.contains('scrolling') || introActive()) return;
       tick++; paint();
       if (tick % 60 === 0) clockEl.textContent = clock();
     }, FRAME);

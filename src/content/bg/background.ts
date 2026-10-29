@@ -1,3 +1,4 @@
+import { introActive, onIntroEnd } from '../ui/intro/gate';
 import type { Background, Palette, ShaderId } from '../../shared/settings';
 import { BG_IMAGE_KEY } from '../../shared/settings';
 import { PALETTES, SHADER_IDS } from './shaders';
@@ -239,6 +240,8 @@ export class BackgroundLayer {
     if (this.reduced.matches && !this.kT0) return;
     const tick = (now: number) => {
       this.raf = 0;
+      // 开场盖住整页时不画，开场一结束接着画
+      if (introActive()) { onIntroEnd(() => this.loop()); return; }
       if (now + 0.1 >= this.nextFrame) {
         const gap = now - this.last;
         this.last = now;

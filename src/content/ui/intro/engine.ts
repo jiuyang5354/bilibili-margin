@@ -405,7 +405,7 @@ float vnoise(vec2 p) {
 float fbm(vec2 p) {
   float v = 0.0, a = 0.5;
   mat2 m = mat2(1.6, 1.2, -1.2, 1.6);
-  for (int i = 0; i < 4; i++) { v += a * vnoise(p); p = m * p; a *= 0.5; }
+  for (int i = 0; i < 3; i++) { v += a * vnoise(p); p = m * p; a *= 0.5; }
   return v;
 }
 vec3 BG(vec2 q) {
@@ -435,7 +435,8 @@ void main() {
   vec2 p = (gl_FragCoord.xy - uCenter) * px;
 
   vec4 lg = logoAt(p, uBlur, px);
-  vec3 plain = mix(BG(p), lg.rgb, lg.a * uBare);
+  vec3 bgP = BG(p);
+  vec3 plain = mix(bgP, lg.rgb, lg.a * uBare);
 
   vec2 nOut, dg; float g;
   float sd = shape(p, uPlateScale, uShapeN, nOut, g, dg);
@@ -462,7 +463,7 @@ void main() {
   float foot = max(max(length(dFdx(qc)), length(dFdy(qc))), 0.25 * px);
 
   // Backdrop: anticipation ghost, ripple, soft lift shadow and glow.
-  vec3 bg = BG(p);
+  vec3 bg = bgP;
   vec3 lift = mix(uBg + vec3(0.06), mix(uBg, vec3(1.0), 0.55), uLightScene);
   if (uGhost > 0.001) {
     vec2 gn, gdg; float gg;
@@ -501,6 +502,8 @@ void main() {
     vec2 grad = -(db + dd) * nOut + gDome;
 
     vec3 back = mix(uBg, uPlateCol, uIconPlate);
+    // The backdrop seen through the glass, sampled once at the refracted centre (not per wavelength).
+    vec3 backR = mix(BG(qc), uPlateCol, uIconPlate);
     vec3 liftG = mix(back + vec3(0.06), mix(back, vec3(1.0), 0.55), uLightGlass);
     float rblur = uBlur + 0.05 * length(qc - p) + min(uGlow * uOptics * (1.0 - xf) * foot / px, 0.04);
 
@@ -524,7 +527,7 @@ void main() {
       sp *= 1.0 + uFaceDisp * cf * faceOnly;
       vec4 l = logoAt(sp, rblur + 0.12 * streak + uFaceDisp * 0.5 * max(c, 0.0) * faceOnly, foot);
       vec3 w = spectrum(lam);
-      acc += mix(mix(BG(sp), uPlateCol, uIconPlate), l.rgb, l.a) * w;
+      acc += mix(backR, l.rgb, l.a) * w;
       wsum += w;
     }
     vec3 trans = acc / wsum;

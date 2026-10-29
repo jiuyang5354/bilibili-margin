@@ -5,6 +5,7 @@
  * 只在眼睛还在动、眨眼进行中才跑 rAF；静止时零帧，下一次眨眼/张望用定时器唤醒。
  * 不可见、离屏、减少动态效果时停住。WebGL 不可用就保留 SVG 原来的眼睛。
  */
+import { introActive, onIntroEnd } from './intro/gate';
 import { BILI_TIGHT } from './intro/intro';
 
 const VERT = `attribute vec2 a;void main(){gl_Position=vec4(a,0.,1.);}`;
@@ -145,6 +146,7 @@ export function liveTv(span: HTMLElement): void {
     timer = window.setTimeout(wake, Math.max(16, wakeAt - now));
   };
   function wake() {
+    if (introActive()) { onIntroEnd(wake); return; }
     if (raf || !awake()) return;
     clearTimeout(timer);
     raf = requestAnimationFrame(tick);
