@@ -2,6 +2,14 @@
 
 # 更新日志
 
+## [v0.29.0](https://github.com/jiuyang5354/bilibili-margin/releases/tag/v0.29.0) · 2026-10-29
+
+性能优化，详见 docs/performance-v0.29.0.md。
+
+- 首页 / 动态 / 历史 / 消息接管页拦下被隐藏的原版 B 站脚本：首页加载脚本耗时 2.0s → 0.3s，JS 堆 48.5MB → 3.6MB，节点 15k → 2.7k。空间页不拦；遇到风控 412 / -352 自动放行一次。
+- 天气点阵天空改为复用 path，只更新 d，不再每帧重建节点。
+- 工牌停稳后停止动画循环，指针一动再唤醒。
+
 ## [v0.28.3](https://github.com/jiuyang5354/bilibili-margin/releases/tag/v0.28.3) · 2026-10-29
 
 次级信息可读性。

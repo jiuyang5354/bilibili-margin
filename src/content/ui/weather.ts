@@ -1,6 +1,6 @@
 import { h } from './dom';
 import { weather, geocode, setLoc, savedLoc, type Wx } from '../api/weather';
-import { WEATHER_SKIES, moonAge, skySvg, glyphSvg, SKY_PITCH, FRAME } from './dotsky';
+import { WEATHER_SKIES, WEATHER_SKY_LAYERS, moonAge, weatherScene, glyphSvg, SKY_PITCH, FRAME } from './dotsky';
 
 /**
  * 首页天气卡：21st「Weather Widget」（vijayksingh）的横版排法——
@@ -33,9 +33,20 @@ export function createWeather(): HTMLElement {
   svg.setAttribute('preserveAspectRatio', 'xMidYMax slice');
   svg.setAttribute('shape-rendering', 'crispEdges');
   svg.setAttribute('aria-hidden', 'true');
+  // 每层一个固定的 <path>，每帧只改变了的 d：以前整段 innerHTML 重写，6 次/秒重建节点 + 重新布局
+  const layers = new Map<string, SVGPathElement>();
+  for (const l of WEATHER_SKY_LAYERS) {
+    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    path.setAttribute('class', `s-${l}`);
+    layers.set(l, path); svg.append(path);
+  }
   const paint = () => {
     if (!wx) return;
-    svg.innerHTML = skySvg({ ...GRID, hour: localHour(), sky: { ...WEATHER_SKIES[wx.kind], moonPhase: moonAge(new Date()) }, tick });
+    const p = weatherScene({ ...GRID, hour: localHour(), sky: { ...WEATHER_SKIES[wx.kind], moonPhase: moonAge(new Date()) }, tick }) as unknown as Record<string, string>;
+    for (const [l, path] of layers) {
+      const d = p[l] || '';
+      if (path.getAttribute('d') !== d) { if (d) path.setAttribute('d', d); else path.removeAttribute('d'); }
+    }
   };
   const clockEl = h('span', { class: 'wx-clock' });
   const run = () => {

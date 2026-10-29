@@ -8,6 +8,7 @@ import { SpaceApp } from './ui/space';
 import { MessageApp } from './ui/message';
 import { HistoryApp } from './ui/history';
 import { FeedApp } from './ui/feedpage';
+import { muteNative, setGuard, guardEnabled } from './native-guard';
 
 const isHome = () => location.hostname === 'www.bilibili.com' && /^\/(?:[a-z]{2}(?:-[A-Za-z]{2,4})?\/?)?(?:index\.html)?$/.test(location.pathname);
 
@@ -40,7 +41,8 @@ async function start(): Promise<void> {
   startTracking(); // 足迹在所有 B 站页面记录，不只首页
   if (isWatch()) return startWatch();
   const sm = spaceMatch();
-  if (sm) return takeover((st) => new SpaceApp(st, Number(sm[1]), sm[2] === 'dynamic' ? 'dynamic' : 'video'));
+  // 空间页的投稿接口依赖原版脚本写的指纹 cookie，不拦会 412
+  if (sm) return takeover((st) => new SpaceApp(st, Number(sm[1]), sm[2] === 'dynamic' ? 'dynamic' : 'video'), false);
   if (isMessage()) return takeover((st) => new MessageApp(st));
   if (isHistory()) return takeover((st) => new HistoryApp(st));
   if (isFeed()) return takeover((st) => new FeedApp(st));
@@ -55,9 +57,11 @@ async function start(): Promise<void> {
   hide.id = 'margin-hide';
   hide.textContent = 'html{background:#111!important;overflow:hidden!important}body{display:none!important}@media (prefers-color-scheme: light){html{background:#f5f4f1!important}}';
   document.documentElement.append(hide);
+  const unmute = muteNative();
 
   const settings = await loadSettings();
-  if (!settings.enabled) { hide.remove(); return; }
+  if (!settings.enabled) { hide.remove(); unmute(); return disabledAfterMute(); }
+  setGuard(true);
 
   const app = new MarginApp(settings);
   document.documentElement.append(app.host);
@@ -69,17 +73,26 @@ async function start(): Promise<void> {
 }
 
 /** 接管式页面：先藏原版，再挂映间页面；设置里关掉「其他页面重设计」就保留原版 */
-async function takeover(make: (s: Awaited<ReturnType<typeof loadSettings>>) => { shell: { host: HTMLElement }; update(s: Awaited<ReturnType<typeof loadSettings>>): void }): Promise<void> {
+async function takeover(make: (s: Awaited<ReturnType<typeof loadSettings>>) => { shell: { host: HTMLElement }; update(s: Awaited<ReturnType<typeof loadSettings>>): void }, mute = true): Promise<void> {
   if (sessionStorage.getItem('margin:off') || offByUrl()) { sessionStorage.removeItem('margin:off'); return; }
   const hide = hideOriginal();
+  const unmute = mute ? muteNative() : () => {};
   const settings = await loadSettings();
-  if (!settings.enabled || !settings.watch) { hide.remove(); return; }
+  if (!settings.enabled || !settings.watch) { hide.remove(); unmute(); return mute ? disabledAfterMute() : undefined; }
+  if (mute) setGuard(true);
   const page = make(settings);
   document.documentElement.append(page.shell.host);
   onSettingsChange((next, prev) => {
     if (next.enabled !== prev.enabled || next.watch !== prev.watch) location.reload();
     else page.update(next);
   });
+}
+
+/** 映间被关掉但原版脚本已被拦：记下来，刷新一次让原版完整加载 */
+function disabledAfterMute(): void {
+  if (!guardEnabled()) return;
+  setGuard(false);
+  location.reload();
 }
 
 start().catch((e) => console.error("[MARGIN]", e));

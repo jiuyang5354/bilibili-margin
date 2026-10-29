@@ -263,17 +263,26 @@ export function createUserMenu(a: Account): HTMLElement {
     tiltCurrent.y += (tiltTarget.y - tiltCurrent.y) * 0.12;
     flipper.style.transform = `rotateY(${flipCurrent + tiltCurrent.y}deg) rotateX(${tiltCurrent.x}deg)`;
   };
+  // 链子和卡片停稳后就不再每帧重算重画（以前打开期间一直 60fps 跑），指针一动或翻面再唤醒
+  let still = 0;
+  const settled = () => {
+    if (dragging) return false;
+    for (const p of points) if (Math.abs(p.x - p.oldx) + Math.abs(p.y - p.oldy) > 0.02) return false;
+    return Math.abs(flipTarget - flipCurrent) < 0.05 && Math.abs(tiltTarget.x - tiltCurrent.x) + Math.abs(tiltTarget.y - tiltCurrent.y) < 0.01;
+  };
   const loop = () => {
     updatePoints(); applyConstraints(); positionCard(); drawChain(); updateTilt();
-    raf = requestAnimationFrame(loop);
+    still = settled() ? still + 1 : 0;
+    raf = still > 20 ? 0 : requestAnimationFrame(loop);
   };
+  const wake = () => { still = 0; if (isOpen && !raf) raf = requestAnimationFrame(loop); };
 
   /* ── 指针 ──────────────────────────────────────── */
   const pos = (e: PointerEvent) => ({ x: e.clientX, y: e.clientY });
   card.addEventListener('pointerdown', (e) => {
     if ((e.target as HTMLElement).closest('a, button')) return;
     e.preventDefault();
-    dragging = true;
+    dragging = true; wake();
     if (!interacted) { interacted = true; hint.classList.add('idcl-hint-hidden'); localStorage.setItem(HINT_KEY, '1'); }
     card.setPointerCapture(e.pointerId);
     // 记住抓的位置相对绳端的偏移，免得一按下卡片顶端就跳到鼠标处（原组件会跳）
@@ -295,6 +304,7 @@ export function createUserMenu(a: Account): HTMLElement {
   let grab = { x: 0, y: 0 };
   const onMove = (e: PointerEvent) => {
     if (!e.isTrusted) return; // 页面脚本派发的合成事件不算
+    wake();
     mouse = pos(e);
     if (!dragging) {
       const out = !inside(mouse.x, mouse.y);
@@ -313,7 +323,7 @@ export function createUserMenu(a: Account): HTMLElement {
     const p = pos(e);
     const last = points[points.length - 1];
     if (Math.hypot(p.x - downPos.x, p.y - downPos.y) < TAP_THRESHOLD) {
-      flipped = !flipped; flipTarget = flipped ? 180 : 0;
+      flipped = !flipped; flipTarget = flipped ? 180 : 0; wake();
       last.oldx = last.x; last.oldy = last.y;
       return;
     }
@@ -322,7 +332,7 @@ export function createUserMenu(a: Account): HTMLElement {
     if (away) scheduleClose();
   };
   // 鼠标离开窗口时只取消倾斜；回到页面并移出范围时再收起
-  const onOut = () => { mouse = { x: -9999, y: -9999 }; };
+  const onOut = () => { mouse = { x: -9999, y: -9999 }; wake(); };
 
   /* ── 打开 / 收起：在头像上停 200ms 才垂下（划过不弹），，离开头像和卡片 .4s 后收起 ── */
   let loaded = false;
@@ -347,7 +357,7 @@ export function createUserMenu(a: Account): HTMLElement {
     stage.classList.remove('idcl-leaving');
     addEventListener('pointermove', onMove);
     addEventListener('pointerup', onUp);
-    addEventListener('resize', resize);
+    addEventListener('resize', resize); addEventListener('resize', wake);
     addEventListener('blur', onOut);
     cancelAnimationFrame(raf); loop();
     wrap.setAttribute('data-open', '');
@@ -370,7 +380,7 @@ export function createUserMenu(a: Account): HTMLElement {
       cancelAnimationFrame(raf);
       removeEventListener('pointermove', onMove);
       removeEventListener('pointerup', onUp);
-      removeEventListener('resize', resize);
+      removeEventListener('resize', resize); removeEventListener('resize', wake);
       removeEventListener('blur', onOut);
     }, 220);
   };

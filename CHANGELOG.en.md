@@ -2,6 +2,14 @@
 
 # Changelog
 
+## [v0.29.0](https://github.com/jiuyang5354/bilibili-margin/releases/tag/v0.29.0) · 2026-10-29
+
+Performance, see docs/performance-v0.29.0.md.
+
+- Takeover pages (home, feed, history, messages) now block the hidden native Bilibili scripts: home load script time 2.0s → 0.3s, JS heap 48.5MB → 3.6MB, nodes 15k → 2.7k. Space page excluded; risk-control 412 / -352 lets native scripts through once.
+- Weather dot sky reuses its paths and only updates d.
+- ID card animation loop sleeps once settled and wakes on pointer input.
+
 ## [v0.28.3](https://github.com/jiuyang5354/bilibili-margin/releases/tag/v0.28.3) · 2026-10-29
 
 Secondary text legibility.
