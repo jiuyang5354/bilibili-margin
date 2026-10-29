@@ -1,3 +1,4 @@
+import { every } from '../sched';
 import type { Settings } from '../../shared/settings';
 import { saveSettings } from '../../shared/settings';
 import { h, ICONS } from './dom';
@@ -113,7 +114,7 @@ export class WatchSkin {
 
     this.applyTheme(false);
     this.media.addEventListener('change', () => this.applyTheme(false));
-    if (isWatch) { this.watchScreen(); startTriple(); }
+    if (isWatch) { this.watchScreen(); startTriple(); podProgress(); }
   }
 
   update(s: Settings): void {
@@ -183,4 +184,21 @@ export class WatchSkin {
     document.addEventListener('fullscreenchange', sync);
     sync();
   }
+}
+
+/** 选集进度条：把「（3/14）」换算成 0–1 写到 .video-pod__header 的 --pod-p。
+ *  只在切集时变，所以每 2 秒读一次那行文字（页面隐藏时不跑），不挂 MutationObserver。 */
+function podProgress(): void {
+  let last = '';
+  every(2000, () => {
+    const amt = document.querySelector<HTMLElement>('.video-pod__header .amt');
+    const t = amt?.textContent ?? '';
+    if (t === last) return;
+    last = t;
+    const m = t.match(/(\d+)\s*\/\s*(\d+)/);
+    const head = amt?.closest<HTMLElement>('.video-pod__header');
+    if (!head) return;
+    if (m) head.style.setProperty('--pod-p', String(Math.min(1, +m[1] / Math.max(1, +m[2]))));
+    else head.style.removeProperty('--pod-p');
+  }, { immediate: true });
 }

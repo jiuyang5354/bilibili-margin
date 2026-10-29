@@ -28,6 +28,8 @@ v0.22.7 restores folder-opening transitions and reduces pointer/theme-switch wor
 
 ## Design references
 
+The watch page uploader card (v0.34.0) follows 21st "Item With Actions" (felipemenezes098) and "Profile Hover Card" (isaiahbjork).
+
 The "Gateway" background (v0.33.0) ports 21st "Gateway Flow" (Neuform) to Canvas 2D.
 
 Detail pages (v0.32.0) for single posts, opus articles, and columns port the two-column layout of 21st "Article With Author Sidebar" (olewandowski1).

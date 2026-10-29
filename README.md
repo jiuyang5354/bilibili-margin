@@ -33,6 +33,7 @@ v0.22.7 修复收藏夹展开动画失效，减少悬停定位和昼夜切换开
 - 首页搜索栏（v0.23.0）：21st Placeholders And Vanish Input / Morphing Search / Expandable Search Bar；X 上 @MSchwaibold、@vponamariov 的搜索交互；热榜序号像素字体 Pirkkala（Otto Ojala，dafont，Public domain/OFL）
 - 播放页悬浮菜单字体（v0.23.2）：中文改无衬线 Margin Sans SC（思源黑体子集），英文副标 Alte Haas Grotesk（Yann Le Coroller，dafont，freeware，许可见 public/fonts/licenses/）
 - 头像工牌（v0.27.0）：移植自 21st「ID Card Lanyard」（用户提供代码）；v0.25.x 的推荐画廊（21st Elastic Gallery）已在 v0.27.0 移除
+- 播放页 UP 卡（v0.34.0）：参考 21st「Item With Actions」（felipemenezes098）、「Profile Hover Card」（isaiahbjork）；选集参考课程播放页的编号目录
 - 背景「汇流」（v0.33.0）：移植自 21st「Gateway Flow」（Neuform），Canvas 2D 点线汇流 + 点击冲击波
 - 详情页（v0.32.0）：单条动态、图文、专栏的两栏版式移植自 21st「Article With Author Sidebar」（olewandowski1）
 - 首页天气卡（v0.26.0）：点阵天空与小图标移植自 21st「Weather Widget」（vijayksingh）；数据来自 Open-Meteo（CC BY 4.0），定位 ipwho.is

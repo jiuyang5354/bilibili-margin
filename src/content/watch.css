@@ -230,3 +230,122 @@ html.margin-watch .video-info-container .video-info-title ~ * :is(.item, .item *
 }
 html.margin-watch .video-info-container .video-info-title ~ * .item :is(svg, .icon) { color: var(--m-muted) !important; }
 html.margin-skin[data-margin-theme="dark"].margin-watch .video-info-container .video-info-title ~ * { text-shadow: 0 1px 2px rgb(0 0 0 / .45); }
+
+/* ── v0.34.0 标题信息行 + 右栏（UP 卡 / 弹幕列表 / 选集）重排 ──────────────────────────────
+   参考：21st「Item With Actions」（felipemenezes098）的头像 + 名字 + 尾部按钮行、「Profile Hover Card」（isaiahbjork）
+   的统计行和整宽关注按钮；选集参考课程播放页（Syllabus / shadcn Course Detail）的编号目录 + 进度条。 */
+
+/* 信息行：一条通透胶囊，项之间发丝分隔；数字等宽 */
+html.margin-watch .video-info-meta { margin-top: 2px; }
+html.margin-watch .video-info-meta > .video-info-detail-list, html.margin-watch .video-info-detail-list.video-info-detail-content {
+  width: fit-content !important; max-width: 100%; flex: 0 1 auto !important;
+  display: inline-flex !important; align-items: center; flex-wrap: wrap; gap: 0 !important; height: auto !important;
+  padding: 0 4px; border-radius: 999px; border: 1px solid var(--m-line);
+  background: color-mix(in srgb, var(--m-surface) 78%, transparent) !important;
+  box-shadow: 0 1px 2px rgb(0 0 0 / .04);
+}
+html.margin-watch .video-info-detail-list > .item {
+  display: inline-flex !important; align-items: center; gap: 6px; margin: 0 !important; padding: 0 12px !important;
+  height: 28px; line-height: 28px; position: relative; white-space: nowrap;
+}
+html.margin-watch .video-info-detail-list > .item + .item::before {
+  content: ''; position: absolute; left: 0; top: 8px; bottom: 8px; width: 1px; background: var(--m-line);
+}
+html.margin-watch .video-info-detail-list > .item :is(.view-text, .dm-text, .pubdate-ip-text) {
+  font-family: var(--m-mono) !important; font-size: 12px !important; color: var(--m-ink) !important; letter-spacing: .02em;
+}
+html.margin-watch .video-info-detail-list > .item :is(.copyright-text, .video-argue-text) { font-size: 12px !important; color: var(--m-muted) !important; }
+html.margin-watch .video-info-detail-list > .item svg { width: 16px !important; height: 16px !important; margin: 0 !important; flex: none; color: var(--m-muted) !important; }
+html.margin-watch .video-info-detail-list > .item svg :is(path, circle, rect) { fill: currentColor !important; }
+html.margin-skin[data-margin-theme="dark"].margin-watch .video-info-container .video-info-detail-list,
+html.margin-skin[data-margin-theme="dark"].margin-watch .video-info-container .video-info-detail-list * { text-shadow: none !important; }
+
+/* UP 卡：头像 48 + 名字/签名，下面一排整宽按钮（充电 | 关注·粉丝数） */
+html.margin-watch .up-panel-container { height: auto !important; padding: 16px !important; box-shadow: 0 1px 2px rgb(0 0 0 / .04); }
+html.margin-watch .up-info-container { display: grid !important; grid-template-columns: 56px minmax(0, 1fr); column-gap: 12px; align-items: start; height: auto !important; }
+html.margin-watch .up-info--left { width: 56px !important; height: 56px !important; margin: 0 !important; display: grid; place-items: center; }
+/* 头像带挂件时外框是 80px：整体缩到 56px 的格子里，挂件也一起缩 */
+html.margin-watch .up-info--left .up-avatar-wrap { transform: scale(.7); transform-origin: center; flex: none; }
+html.margin-watch .up-info--right { margin: 0 !important; min-width: 0; display: contents !important; }
+html.margin-watch .up-info__detail { grid-column: 2; min-width: 0; padding-top: 2px; }
+html.margin-watch .up-detail-top { display: flex !important; align-items: center; gap: 8px; height: auto !important; line-height: 22px !important; }
+html.margin-watch .up-detail-top .up-name {
+  font-size: 16px !important; line-height: 22px !important; max-width: none !important; flex: 0 1 auto; min-width: 0;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin: 0 !important;
+}
+html.margin-watch .up-detail-top .send-msg {
+  margin-left: auto !important; flex: none; display: inline-flex !important; align-items: center; gap: 4px;
+  height: 24px; padding: 0 8px; border-radius: 8px; font-size: 12px !important; color: var(--m-muted) !important;
+  background: var(--m-chip); transition: background .15s, color .15s;
+}
+html.margin-watch .up-detail-top .send-msg:hover { color: var(--m-ink) !important; background: color-mix(in srgb, var(--m-ink) 10%, transparent); }
+html.margin-watch .up-detail-top .send-msg i { font-size: 14px; }
+html.margin-watch .up-description {
+  margin-top: 4px !important; font-size: 12px !important; line-height: 18px !important; color: var(--m-muted) !important;
+  white-space: normal !important; display: -webkit-box !important; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; height: auto !important;
+}
+html.margin-watch .up-info__btn-panel { grid-column: 1 / -1; margin: 14px 0 0 !important; padding-top: 14px; border-top: 1px solid var(--m-line); }
+html.margin-watch .upinfo-btn-panel { display: flex !important; gap: 8px; width: 100% !important; margin: 0 !important; }
+html.margin-watch .upinfo-btn-panel > .default-btn:empty { display: none !important; }
+html.margin-watch .upinfo-btn-panel > .default-btn {
+  flex: 1 1 0; width: auto !important; max-width: none !important; min-width: 0; height: 34px !important; line-height: 34px !important; margin: 0 !important;
+  border-radius: 10px !important; font-size: 13px !important; display: flex !important; align-items: center; justify-content: center;
+}
+html.margin-watch .upinfo-btn-panel > :is(.new-charge-btn, .charge-btn, .old-charge-btn) {
+  flex: 0 0 auto; padding: 0 14px !important; background: transparent !important; border: 1px solid var(--m-line) !important; color: var(--m-ink) !important;
+}
+html.margin-watch .upinfo-btn-panel > .follow-btn.not-follow,
+html.margin-watch .upinfo-btn-panel > .follow-btn.not-follow .follow-btn-inner {
+  background: var(--m-ink) !important; color: var(--m-canvas) !important; border: 0 !important;
+}
+html.margin-watch .upinfo-btn-panel > .follow-btn .follow-btn-inner { display: inline-flex; align-items: center; gap: 6px; font-variant-numeric: tabular-nums; }
+html.margin-watch .upinfo-btn-panel > .follow-btn:not(.not-follow) { background: var(--m-chip) !important; color: var(--m-muted) !important; }
+html.margin-watch .upinfo-btn-panel > .default-btn { transition: transform .15s var(--ease-out, ease), opacity .15s; }
+html.margin-watch .upinfo-btn-panel > .default-btn:active { transform: scale(.97); }
+
+/* 弹幕列表：一行 44px 的标题条 */
+html.margin-watch #danmukuBox .bui-collapse-header { height: 44px !important; line-height: 44px !important; padding: 0 16px !important; }
+html.margin-watch #danmukuBox .bui-collapse-header :is(.danmaku-title, .bui-collapse-title, span) { font-size: 14px !important; font-weight: 600; color: var(--m-ink) !important; }
+
+/* 选集：编号目录 + 进度 */
+html.margin-watch .video-pod { padding: 16px 8px 8px !important; box-shadow: 0 1px 2px rgb(0 0 0 / .04); }
+html.margin-watch .video-pod__header { padding: 0 8px 12px !important; margin: 0 !important; border-bottom: 1px solid var(--m-line); position: relative; }
+html.margin-watch .video-pod__header .header-top { display: flex !important; align-items: center; height: 24px; }
+html.margin-watch .video-pod__header .header-top .left { display: flex !important; align-items: center; gap: 8px; }
+html.margin-watch .video-pod__header .title { font-size: 14px !important; font-weight: 600 !important; color: var(--m-ink) !important; }
+html.margin-watch .video-pod__header .amt {
+  font-family: var(--m-mono) !important; font-size: 11px !important; color: var(--m-muted) !important;
+  padding: 2px 8px; border-radius: 999px; background: var(--m-chip); letter-spacing: .04em;
+}
+html.margin-watch .video-pod__header .view-mode { color: var(--m-muted) !important; margin-left: 2px !important; }
+/* 进度：当前第几集 / 共几集（watch.ts 写 --pod-p） */
+html.margin-watch .video-pod__header::after {
+  content: ''; position: absolute; left: 8px; right: 8px; bottom: -1px; height: 2px; border-radius: 2px;
+  background: linear-gradient(90deg, var(--m-accent) calc(var(--pod-p, 0) * 100%), transparent 0);
+  transition: background-size .3s;
+}
+html.margin-watch .video-pod__body { margin: 8px 0 0 !important; }
+html.margin-watch .video-pod__list { counter-reset: pod; padding: 0 !important; margin: 0 !important; scrollbar-width: thin; }
+html.margin-watch .video-pod__list .simple-base-item {
+  counter-increment: pod; display: grid !important; grid-template-columns: 28px minmax(0, 1fr) auto; align-items: center; column-gap: 4px;
+  height: 36px !important; padding: 0 10px 0 8px !important; margin: 0 0 2px !important; border-radius: 10px; cursor: pointer;
+  background: transparent !important; transition: background .15s;
+}
+html.margin-watch .video-pod__list .simple-base-item::before {
+  content: counter(pod, decimal-leading-zero); font: 500 11px/1 var(--m-mono); color: var(--m-faint); letter-spacing: .02em;
+}
+html.margin-watch .video-pod__list .simple-base-item:hover { background: var(--m-chip) !important; }
+html.margin-watch .video-pod__list .simple-base-item .title { display: flex !important; align-items: center; min-width: 0; gap: 6px; }
+html.margin-watch .video-pod__list .simple-base-item .title-txt {
+  font-size: 13px !important; color: var(--m-ink) !important; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+html.margin-watch .video-pod__list .simple-base-item .stats { margin: 0 !important; }
+html.margin-watch .video-pod__list .simple-base-item .stat-item { font-family: var(--m-mono) !important; font-size: 11px !important; color: var(--m-muted) !important; }
+html.margin-watch .video-pod__list .simple-base-item.active { background: color-mix(in srgb, var(--m-accent) 12%, transparent) !important; }
+html.margin-watch .video-pod__list .simple-base-item.active::before { color: var(--m-accent); font-weight: 600; }
+html.margin-watch .video-pod__list .simple-base-item.active .title-txt { color: var(--m-accent) !important; font-weight: 600; }
+html.margin-watch .video-pod__list .simple-base-item.active .stat-item { color: var(--m-accent) !important; }
+html.margin-watch .video-pod__list .simple-base-item .playing-gif { flex: none; }
+/* 封面模式（view-mode 切到图文）不套编号栅格 */
+html.margin-watch .video-pod__list:not(.list) .simple-base-item { display: flex !important; height: auto !important; }
+html.margin-watch .video-pod__list:not(.list) .simple-base-item::before { content: none; }

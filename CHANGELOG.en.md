@@ -2,6 +2,15 @@
 
 # Changelog
 
+## [v0.34.0](https://github.com/jiuyang5354/bilibili-margin/releases/tag/v0.34.0) · 2026-10-29
+
+Watch page title area and right column redesigned.
+
+- Views, danmaku, date, and copyright under the title now sit in one clear capsule with hairline dividers and monospace numbers instead of directly on the background.
+- Uploader card follows 21st "Item With Actions" and "Profile Hover Card": avatar, name, two-line bio, a small message button at top right, and full-width buttons below a divider (solid follow with follower count, outlined charge). Avatars with pendants are scaled into the grid so they no longer cover the name.
+- Episode list follows course-player tables of contents: monospace 01, 02… numbers, right-aligned monospace durations, a tinted current row, a count chip, and a progress line under the header. Cover mode keeps the native layout.
+- The danmaku list header is a consistent 44px row.
+
 ## [v0.33.0](https://github.com/jiuyang5354/bilibili-margin/releases/tag/v0.33.0) · 2026-10-29
 
 New background: Gateway (汇流).
