@@ -3,7 +3,7 @@
  * 各标签页在活跃时发心跳（一段时间区间），这里串行地读-改-写 chrome.storage.local，
  * 多标签页同时打开也不会互相覆盖或重复累计（v0.30 及更早是各页面自己读改写，会丢数据）。
  */
-import { ACTIVITY_KEY, SLOTS_KEY, applyBeat, dayKey, hhmm, type Activity, type FpMessage } from '../shared/activity';
+import { ACTIVITY_KEY, SLOTS_KEY, applyBeat, dayKey, hhmm, mergeActivity, sanitizeActivity, type Activity, type FpMessage } from '../shared/activity';
 
 let queue: Promise<unknown> = Promise.resolve();
 const serial = <T>(fn: () => Promise<T>): Promise<T> => { const p = queue.then(fn, fn); queue = p.catch(() => {}); return p; };
@@ -38,6 +38,13 @@ async function handle(m: FpMessage): Promise<unknown> {
     }
     await chrome.storage.local.set({ [ACTIVITY_KEY]: data });
     return { ok: true };
+  }
+  if (m.op === 'import') {
+    const add = sanitizeActivity(m.days);
+    if (!add) return { ok: false };
+    mergeActivity(data, add);
+    await chrome.storage.local.set({ [ACTIVITY_KEY]: data });
+    return { ok: true, days: Object.keys(add).length };
   }
   return { ok: false };
 }

@@ -129,6 +129,38 @@ for (const theme of THEMES) {
     console.log(`${ok ? 'PASS' : 'FAIL'} ${theme.padEnd(5)} ${name.padEnd(15)}${miss.length ? ` problems: ${miss.join(', ')}` : ' native page restored'}${unexpected.length ? `\n      errors: ${unexpected.join('\n              ')}` : ''}`);
   }
 
+  // 足迹热力图：不到 60 秒的日子不点亮；没有本机记录的日子用历史估算，提示里标明来源
+  if (sw && theme === THEMES[0] && (!ONLY || ONLY.includes('home'))) {
+    let miss = [];
+    try {
+      await sw.evaluate(async () => {
+        const p = (n) => String(n).padStart(2, '0'), k = (d) => `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+        const a = {}, ago = (i) => { const d = new Date(); d.setDate(d.getDate() - i); return k(d); };
+        a[ago(2)] = { s: 1800, f: '08:30' }; a[ago(3)] = { s: 30, f: '09:00' }; a[ago(4)] = { s: 0, h: 1200, hf: '21:00' };
+        await chrome.storage.local.set({ 'margin:activity': a, 'margin:activity-bf': Date.now() });
+      });
+      await page.goto('https://www.bilibili.com/', { waitUntil: 'domcontentloaded' });
+      await page.waitForFunction(() => document.getElementById('margin-root')?.shadowRoot?.querySelector('.fp-cells .fp-cell'), null, { timeout: 15000 });
+      await sleep(800);
+      miss = await page.evaluate(() => {
+        const r = document.getElementById('margin-root').shadowRoot, m = [];
+        const p = (n) => String(n).padStart(2, '0'), ago = (i) => { const d = new Date(); d.setDate(d.getDate() - i); return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`; };
+        const cell = (i) => r.querySelector(`.fp-cell[data-k="${ago(i)}"]`);
+        if (cell(3)?.dataset.l !== '0') m.push('30s day should not light');
+        if (cell(2)?.dataset.l === '0') m.push('30min local day should light');
+        if (cell(4)?.dataset.l === '0') m.push('history-only day should light');
+        const tip = (i) => { cell(i).dispatchEvent(new PointerEvent('pointerover', { bubbles: true })); return r.querySelector('.fp-tip').textContent; };
+        if (!tip(2).includes('本机记录')) m.push('tooltip local source');
+        if (!tip(4).includes('历史估算')) m.push('tooltip history source');
+        return m;
+      });
+    } catch (e) { miss = [`footprint-ui: ${e.message}`]; }
+    const ok = !miss.length;
+    if (!ok) failed++;
+    results.push({ theme, name: 'footprint-ui', ok, miss });
+    console.log(`${ok ? 'PASS' : 'FAIL'} ${theme.padEnd(5)} footprint-ui${miss.length ? ` problems: ${miss.join(', ')}` : ' 60s threshold + source tooltip'}`);
+  }
+
   // 足迹计时在后台 service worker：打开过页面后今天应该有首次打开时间
   if (sw) {
     const today = await sw.evaluate(async () => {

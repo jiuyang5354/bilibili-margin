@@ -76,3 +76,36 @@ export function onSettingsChange(cb: (s: Settings, prev: Settings) => void): voi
     cb(merge(changes[KEY].newValue as Partial<Settings>), merge(changes[KEY].oldValue as Partial<Settings>));
   });
 }
+
+/**
+ * 校验导入的设置：只取认识的字段、类型不对的丢掉，其余用默认值补齐。整体不是对象时返回 null。
+ */
+export function sanitizeSettings(raw: unknown): Settings | null {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null;
+  const r = raw as Record<string, unknown>;
+  const out: Partial<Settings> = {};
+  const bool = (k: 'enabled' | 'hoverPreview' | 'watch' | 'intro') => { if (typeof r[k] === 'boolean') out[k] = r[k] as boolean; };
+  bool('enabled'); bool('hoverPreview'); bool('watch'); bool('intro');
+  if (r.theme === 'auto' || r.theme === 'light' || r.theme === 'dark') out.theme = r.theme;
+  const strs = (v: unknown) => (Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string' && x.length <= 200).slice(0, 500) : undefined);
+  const num = (v: unknown, max: number) => (typeof v === 'number' && Number.isFinite(v) && v >= 0 && v <= max ? v : undefined);
+  const f = (r.filters && typeof r.filters === 'object' ? r.filters : {}) as Record<string, unknown>;
+  out.filters = { ...DEFAULTS.filters };
+  out.filters.keywords = strs(f.keywords) ?? DEFAULTS.filters.keywords;
+  out.filters.ups = strs(f.ups) ?? DEFAULTS.filters.ups;
+  out.filters.minViews = num(f.minViews, 1e10) ?? DEFAULTS.filters.minViews;
+  out.filters.minDuration = num(f.minDuration, 86400) ?? DEFAULTS.filters.minDuration;
+  const b = (r.bg && typeof r.bg === 'object' ? r.bg : {}) as Record<string, unknown>;
+  const SHADERS: ShaderId[] = ['aurora', 'silk', 'mesh', 'grain', 'ice', 'veil', 'smoke', 'neuro', 'flow', 'rays', 'blend', 'flux'];
+  out.bg = {
+    mode: (['random', 'fixed', 'image', 'off'] as BgMode[]).includes(b.mode as BgMode) ? (b.mode as BgMode) : DEFAULTS.bg.mode,
+    shader: SHADERS.includes(b.shader as ShaderId) ? (b.shader as ShaderId) : DEFAULTS.bg.shader,
+    intensity: num(b.intensity, 1) ?? DEFAULTS.bg.intensity,
+  };
+  return merge(out);
+}
+
+/** 整份替换设置（导入用） */
+export async function replaceSettings(next: Settings): Promise<void> {
+  await chrome.storage.local.set({ [KEY]: merge(next) });
+}

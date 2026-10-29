@@ -27,7 +27,40 @@ export const hhmm = (d: Date) => `${pad(d.getHours())}:${pad(d.getMinutes())}`;
 export type FpMessage =
   | { margin: 'fp'; op: 'open'; at: number }
   | { margin: 'fp'; op: 'beat'; from: number; to: number }
-  | { margin: 'fp'; op: 'merge'; days: Record<string, { h: number; hf?: string }> };
+  | { margin: 'fp'; op: 'merge'; days: Record<string, { h: number; hf?: string }> }
+  | { margin: 'fp'; op: 'import'; days: Activity };
+
+const HM = /^([01]\d|2[0-3]):[0-5]\d$/;
+const DAY = /^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/;
+/** 校验导入的足迹：只留格式正确的日期和字段；整体不是对象时返回 null */
+export function sanitizeActivity(raw: unknown): Activity | null {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null;
+  const out: Activity = {};
+  for (const [k, v] of Object.entries(raw as Record<string, unknown>)) {
+    if (!DAY.test(k) || !v || typeof v !== 'object') continue;
+    const d = v as Record<string, unknown>;
+    const sec = (x: unknown) => (typeof x === 'number' && Number.isFinite(x) && x >= 0 ? Math.min(Math.round(x), 86400) : undefined);
+    const rec: DayRecord = { s: sec(d.s) ?? 0 };
+    const h = sec(d.h); if (h !== undefined) rec.h = h;
+    if (typeof d.f === 'string' && HM.test(d.f)) rec.f = d.f;
+    if (typeof d.hf === 'string' && HM.test(d.hf)) rec.hf = d.hf;
+    if (rec.s || rec.h || rec.f || rec.hf) out[k] = rec;
+  }
+  return out;
+}
+
+/** 合并两份足迹：同一天时长取较大值、首次打开取较早值 */
+export function mergeActivity(into: Activity, add: Activity): Activity {
+  const early = (a?: string, b?: string) => (a && b ? (a < b ? a : b) : a || b);
+  for (const [k, r] of Object.entries(add)) {
+    const d = (into[k] ??= { s: 0 });
+    d.s = Math.max(d.s || 0, r.s || 0);
+    if (r.h != null) d.h = Math.max(d.h || 0, r.h);
+    const f = early(d.f, r.f); if (f) d.f = f;
+    const hf = early(d.hf, r.hf); if (hf) d.hf = hf;
+  }
+  return into;
+}
 
 /**
  * 把一段「活跃」时间 [from, to]（毫秒时间戳）记进 activity：

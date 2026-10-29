@@ -2,6 +2,19 @@
 
 # Changelog
 
+## [v0.31.2](https://github.com/jiuyang5354/bilibili-margin/releases/tag/v0.31.2) · 2026-10-29
+
+More accurate footprint, better keyboard and screen-reader support, settings backup.
+
+- Footprint timing: audibly playing video in a background tab now counts (listening only); in the foreground it still needs input within 90s or playback.
+- A day only counts as "opened" and towards the streak after 1 minute in total; a bare open no longer lights a cell.
+- History backfill only fills days without a local record, estimates each item conservatively (min of duration, progress and 20 minutes) and pages back to the earliest day shown on the heatmap (up to 60 pages).
+- Adaptive heatmap levels: quartiles of your own active days over the last year, falling back to 15 / 45 / 90 minutes with fewer than 14 active days.
+- The hover tooltip says where a duration comes from: local record or history estimate.
+- Accessibility: clear keyboard focus rings on every control (search capsules light up when tabbed into), the closed settings sheet is no longer reachable by Tab, and icon-only buttons, avatar and image links now have accessible names.
+- Contrast: light-theme secondary text (--faint) goes from 3.2:1 to 5.1:1, small accent-coloured text uses a deeper blue (≥4.6:1), and the watch page's tertiary text is darkened to match; the dark theme already passed.
+- New "Data" section in settings: export settings and footprint to a JSON file, or import a backup (validated and confirmed first; footprint days are merged, keeping the longer time).
+
 ## [v0.31.1](https://github.com/jiuyang5354/bilibili-margin/releases/tag/v0.31.1) · 2026-10-29
 
 Stability: history overlap fix, fall back to the native page on module errors, automated smoke tests.

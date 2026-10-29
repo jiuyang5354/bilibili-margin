@@ -130,7 +130,7 @@ export class MessageApp {
       : n.kind === 'at' ? document.createTextNode('@') : icon(ICONS.message);
     const showQuote = n.quote && n.quote !== n.title;
     return h('article', { class: `ms-row ${n.kind}` },
-      h('a', { class: 'ms-faces', href: u ? `https://space.bilibili.com/${u.mid}` : '#', ...ext },
+      h('a', { class: 'ms-faces', href: u ? `https://space.bilibili.com/${u.mid}` : '#', 'aria-label': u ? `${u.name} 的个人空间` : '个人空间', ...ext },
         ...n.users.slice(0, n.kind === 'like' ? 3 : 1).map((x) => h('img', { class: 'ms-face', src: x.face ? `${x.face}@80w_80h_1c.webp` : '', alt: '', referrerpolicy: 'no-referrer', loading: 'lazy' })),
         h('i', { class: 'ms-badge' }, badge)),
       h('div', { class: 'ms-main' },
@@ -141,7 +141,7 @@ export class MessageApp {
         n.content ? h('p', { class: 'ms-text' }, n.content) : null,
         showQuote ? h('a', { class: 'ms-quote', href: n.url || '#', ...ext }, h('span', { class: 'ms-q-k' }, '原文'), n.quote) : null,
         n.kind === 'reply' && n.url ? h('div', { class: 'ms-acts' }, h('a', { class: 'ms-act ghost', href: n.url, ...ext }, icon(ICONS.message), '去回复')) : null),
-      n.image ? h('a', { class: 'ms-thumb', href: n.url || '#', ...ext }, h('img', { src: `${n.image}@240w_150h_1c.webp`, alt: '', referrerpolicy: 'no-referrer', loading: 'lazy' })) : null);
+      n.image ? h('a', { class: 'ms-thumb', href: n.url || '#', 'aria-label': n.title ? `打开「${n.title}」` : '打开原内容', ...ext }, h('img', { src: `${n.image}@240w_150h_1c.webp`, alt: '', referrerpolicy: 'no-referrer', loading: 'lazy' })) : null);
   }
 
   // ---- 私信 ----

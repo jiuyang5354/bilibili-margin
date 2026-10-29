@@ -26,7 +26,8 @@ html.margin-skin {
   --m-radius: 16px;
 
   --bg1: #ffffff; --bg2: #f5f4f1; --bg3: #efeeea; --bg1_float: #ffffff; --bg2_float: #f1f0ec;
-  --text1: #17181a; --text2: #55575c; --text3: #7a7c81; --text4: #c4c5c8;
+  /* v0.31.2：--text3 从 #7a7c81（3.8:1）加深到 #66686d，和映间 --faint 一致，≥4.5:1 */
+  --text1: #17181a; --text2: #55575c; --text3: #66686d; --text4: #c4c5c8;
   --text_link: #0089c0; --text_hover: #6f7177; --text_active: #55575c;
   --line_light: #ecebe7; --line_regular: #e3e2dd; --line_bold: #cfcdc8; --line_border: #cfcdc8;
   --graph_white: #ffffff; --graph_bg_thin: #f5f4f1; --graph_bg_regular: #efeeea; --graph_bg_thick: #e3e2dd;

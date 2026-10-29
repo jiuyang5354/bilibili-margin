@@ -93,8 +93,16 @@ async function startWatch(kind: SkinKind = 'watch'): Promise<void> {
   });
 }
 
+/** 键盘导航模式：按 Tab 后在映间的 Shadow DOM 宿主上标记 data-kbd，指针一按就撤销；样式里用 :host([data-kbd]) 给输入框外层画聚焦环 */
+function trackKeyboard(): void {
+  const hosts = () => ['margin-root', 'margin-watch-top'].map((id) => document.getElementById(id)).filter((e): e is HTMLElement => !!e);
+  addEventListener('keydown', (e) => { if (e.key === 'Tab') hosts().forEach((x) => { if (!('kbd' in x.dataset)) x.dataset.kbd = ''; }); }, true);
+  addEventListener('pointerdown', () => hosts().forEach((x) => { if ('kbd' in x.dataset) delete x.dataset.kbd; }), true);
+}
+
 async function start(): Promise<void> {
   injectFonts();
+  trackKeyboard();
   startTracking(); // 足迹在所有 B 站页面记录，不只首页
   if (isWatch()) return startWatch();
   const sm = spaceMatch();

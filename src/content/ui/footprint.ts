@@ -1,13 +1,15 @@
-import { backfill, dayKey, firstOf, loadActivity, secondsOf, type Activity } from '../footprint/store';
+import { activeOf, backfill, dayKey, firstOf, levelOf, levelThresholds, loadActivity, secondsOf, sourceOf, type Activity, type DayRecord } from '../footprint/store';
 import { h, icon } from './dom';
 import { every } from '../sched';
 
+/** 时长来源：本机后台计时 / B 站观看历史估算 */
+const SRC = { local: '本机记录', history: '历史估算' } as const;
 const WEEK = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
 const fmt = (sec: number) => {
   const s = Math.round(sec || 0), hr = Math.floor(s / 3600), m = Math.round((s % 3600) / 60);
+  if (s > 0 && s < 60) return '不到 1 分钟';
   return hr ? `${hr} 小时 ${m} 分` : `${m} 分钟`;
 };
-const level = (s: number) => (s <= 0 ? 0 : s < 900 ? 1 : s < 2700 ? 2 : s < 5400 ? 3 : 4);
 
 const BF_KEY = 'margin:activity-bf';
 const VIEW_KEY = 'margin:fp-view';
@@ -19,17 +21,18 @@ const CHEV_L = '<path d="m14.5 6-6 6 6 6"/>', CHEV_R = '<path d="m9.5 6 6 6-6 6"
 export function createFootprintCard(): HTMLElement {
   const el = h('section', { class: 'fp-card', 'aria-label': 'B 站足迹' });
   const tip = h('div', { class: 'fp-tip', hidden: '' });
-  let note = '时长按页面可见且有操作或在播放时计算';
+  let note = '时长按页面可见且 90 秒内有操作、或正在播放时计算；满 1 分钟才算打开过';
 
   const refresh = async () => { try { paint(await loadActivity()); } catch { /* 扩展已重载 */ } };
   (async () => {
     await refresh();
     // 观看历史补全：每 6 小时最多一次
     const last = ((await chrome.storage.local.get(BF_KEY))[BF_KEY] as number | undefined) ?? 0;
-    if (Date.now() - last < 6 * 3600e3) { note = '已用 B 站观看历史补全过去的天数'; return refresh(); }
-    const r = await backfill();
+    if (Date.now() - last < 6 * 3600e3) { note = '没有本机记录的日子用 B 站观看历史估算'; return refresh(); }
+    const since = new Date(); since.setHours(0, 0, 0, 0); since.setDate(since.getDate() - 364 - since.getDay());
+    const r = await backfill(since);
     if (r === 'ok') await chrome.storage.local.set({ [BF_KEY]: Date.now() });
-    note = r === 'ok' ? '已用 B 站观看历史补全过去的天数 · 时长取本地记录与观看历史的较大值'
+    note = r === 'ok' ? '没有本机记录的日子用 B 站观看历史估算（每条最多算 20 分钟）'
       : r === 'nologin' ? '登录 B 站后可以用观看历史补全过去的天数' : '观看历史暂时读取失败，只显示本地记录';
     refresh();
   })();
@@ -41,6 +44,8 @@ export function createFootprintCard(): HTMLElement {
   let picked: string | null = null;
   let activity: Activity = {};
   let renderedKey = '', renderedCells: HTMLElement[] = [];
+  let thr: [number, number, number] = [900, 2700, 5400];
+  const lv = (rec: DayRecord | undefined) => String(levelOf(secondsOf(rec), thr));
 
   function paint(data: Activity) {
     activity = data;
@@ -53,16 +58,19 @@ export function createFootprintCard(): HTMLElement {
     const months: [number, number][] = [];
     let active = 0, total = 0, best = 0, run = 0, lastMonth = -1;
     const n = Math.round((+today - +start) / 864e5) + 1 + (6 - today.getDay());
+    // 分档阈值跟着自己近一年的分布走（活跃日不到 14 天时用 15 / 45 / 90 分钟）
+    const yearAgo = dayKey(new Date(+today - 364 * 864e5)), todayK = dayKey(today);
+    thr = levelThresholds(Object.keys(data).filter((k) => k >= yearAgo && k <= todayK).map((k) => secondsOf(data[k])));
     for (let i = 0; i < n; i++) {
       const d = new Date(start); d.setDate(start.getDate() + i);
       const k = dayKey(d), rec = data[k], s = secondsOf(rec), future = d > today;
-      const on = !future && (s > 0 || !!firstOf(rec));
+      const on = !future && activeOf(rec);
       if (!future) { if (on) { active++; total += s; run++; best = Math.max(best, run); } else run = 0; }
       if (d.getDate() <= 7 && d.getDay() === 0 && d.getMonth() !== lastMonth) { months.push([Math.floor(i / 7), d.getMonth() + 1]); lastMonth = d.getMonth(); }
       if (view === 'year') {
         const c = (sameView && renderedCells[i]) || h('i', { class: `fp-cell${future ? ' future' : ''}${+d === +today ? ' today' : ''}` });
         if (c.dataset.k !== k) c.dataset.k = k;
-        const l = String(future ? 0 : level(s) || (on ? 1 : 0));
+        const l = future ? '0' : lv(rec);
         if (c.dataset.l !== l) c.dataset.l = l;
         cells.push(c);
       }
@@ -71,7 +79,7 @@ export function createFootprintCard(): HTMLElement {
     for (let i = 0; ; i++) {
       const d = new Date(today); d.setDate(d.getDate() - i);
       const r = data[dayKey(d)];
-      if (secondsOf(r) > 0 || firstOf(r)) streak++;
+      if (activeOf(r)) streak++;
       else if (i > 0) break;
     }
     const pk = view === 'month' && picked ? picked : dayKey(today);
@@ -90,8 +98,8 @@ export function createFootprintCard(): HTMLElement {
       text('.fp-stat:last-child small', `当前连续 · 最长 ${best} 天`);
       text('.fp-foot > span:first-child', note);
       el.querySelectorAll<HTMLElement>('.fp-day-b').forEach((b) => {
-        const rec = data[b.dataset.k!], s = secondsOf(rec);
-        const l = String(b.hasAttribute('disabled') ? 0 : level(s) || (s > 0 || firstOf(rec) ? 1 : 0));
+        const rec = data[b.dataset.k!];
+        const l = b.hasAttribute('disabled') ? '0' : lv(rec);
         if (b.dataset.l !== l) b.dataset.l = l;
         const pressed = String(picked === b.dataset.k);
         if (b.getAttribute('aria-pressed') !== pressed) b.setAttribute('aria-pressed', pressed);
@@ -146,7 +154,9 @@ export function createFootprintCard(): HTMLElement {
       if (!c || c.classList.contains('future')) { tip.hidden = true; return; }
       const r = activity[c.dataset.k!], d = new Date(`${c.dataset.k}T00:00:00`), s = secondsOf(r), f = firstOf(r);
       tip.replaceChildren(h('b', {}, `${d.getMonth() + 1}月${d.getDate()}日 ${WEEK[d.getDay()]}`), h('br'),
-        s || f ? `首次打开 ${f ?? '—'} · 时长 ${fmt(s)}` : h('small', {}, '没有打开 B 站'));
+        ...(s || f ? [`首次打开 ${f ?? '—'} · 时长 ${fmt(s)}`, h('br'),
+          h('small', { class: `fp-src fp-src-${sourceOf(r) ?? 'local'}` }, `${SRC[sourceOf(r) ?? 'local']}${activeOf(r) ? '' : ' · 不计入打开天数'}`)]
+          : [h('small', {}, '没有打开 B 站')]));
       const b = c.getBoundingClientRect(), card = el.getBoundingClientRect();
       tip.style.left = `${b.left + b.width / 2 - card.left - el.clientLeft}px`;
       tip.style.top = `${b.top - card.top - el.clientTop}px`;
@@ -163,9 +173,9 @@ export function createFootprintCard(): HTMLElement {
     let sel: HTMLElement | null = null;
     for (let i = 1; i <= days; i++) {
       const d = new Date(y, m, i), k = dayKey(d), future = d > today, rec = data[k], s = secondsOf(rec);
-      const on = s > 0 || !!firstOf(rec);
       const b = h('button', { type: 'button', class: 'fp-day-b', disabled: future, 'aria-pressed': String(picked === k), title: `${m + 1}月${i}日` }, String(i));
-      b.dataset.l = String(future ? 0 : level(s) || (on ? 1 : 0));
+      b.dataset.l = future ? '0' : lv(rec);
+      if (!future && s) b.title = `${m + 1}月${i}日 · ${fmt(s)} · ${SRC[sourceOf(rec) ?? 'local']}`;
       b.dataset.k = k;
       if (+d === +today) b.dataset.today = '';
       b.onclick = () => { picked = picked === k ? null : k; paint(activity); };

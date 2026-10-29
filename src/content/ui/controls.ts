@@ -65,10 +65,10 @@ export function chipInput(values: string[], placeholder: string, onChange: (v: s
 }
 
 /** 细线滑杆：按档位取值（参考 21st「Minimal Slider」的 hairline 样式） */
-export function stepSlider(steps: number[], value: number, fmt: (n: number) => string, onChange: (v: number) => void): HTMLElement {
+export function stepSlider(steps: number[], value: number, fmt: (n: number) => string, onChange: (v: number) => void, label = ''): HTMLElement {
   const idx = Math.max(0, steps.findIndex((s) => s >= value));
   const out = h('output', {}, fmt(steps[idx]));
-  const range = h('input', { type: 'range', min: 0, max: steps.length - 1, step: 1, value: idx, 'aria-valuetext': fmt(steps[idx]) });
+  const range = h('input', { type: 'range', min: 0, max: steps.length - 1, step: 1, value: idx, 'aria-valuetext': fmt(steps[idx]), 'aria-label': label || undefined });
   const paint = () => range.style.setProperty('--p', `${(Number(range.value) / (steps.length - 1)) * 100}%`);
   range.addEventListener('input', () => { out.textContent = fmt(steps[Number(range.value)]); range.setAttribute('aria-valuetext', out.textContent); paint(); });
   range.addEventListener('change', () => onChange(steps[Number(range.value)]));
@@ -76,11 +76,11 @@ export function stepSlider(steps: number[], value: number, fmt: (n: number) => s
   return h('div', { class: 'slider' }, range, out);
 }
 
-export function rangeSlider(value: number, fmt: (n: number) => string, onChange: (v: number) => void): HTMLElement {
+export function rangeSlider(value: number, fmt: (n: number) => string, onChange: (v: number) => void, label = ''): HTMLElement {
   const out = h('output', {}, fmt(value));
-  const range = h('input', { type: 'range', min: 0, max: 100, step: 1, value: Math.round(value * 100) });
+  const range = h('input', { type: 'range', min: 0, max: 100, step: 1, value: Math.round(value * 100), 'aria-label': label || undefined, 'aria-valuetext': fmt(value) });
   const paint = () => range.style.setProperty('--p', `${range.value}%`);
-  range.addEventListener('input', () => { out.textContent = fmt(Number(range.value) / 100); paint(); onChange(Number(range.value) / 100); });
+  range.addEventListener('input', () => { out.textContent = fmt(Number(range.value) / 100); range.setAttribute('aria-valuetext', out.textContent); paint(); onChange(Number(range.value) / 100); });
   paint();
   return h('div', { class: 'slider' }, range, out);
 }

@@ -18,7 +18,7 @@
 .sp-who { min-width: 0; }
 .sp-who h1 { margin: 0; font: 600 clamp(44px, 4.4vw, 56px)/1.08 var(--serif); letter-spacing: .01em; max-width: 16em; overflow-wrap: anywhere; }
 .sp-vip { color: #fb7299 !important; }
-.sp-official { margin: 16px 0 0; font-size: 13px; color: var(--accent); }
+.sp-official { margin: 16px 0 0; font-size: 13px; color: var(--accent-text); }
 .sp-sign { margin: 16px 0 0; max-width: 56ch; color: var(--muted); font-size: 16px; line-height: 1.75; }
 .sp-side { display: flex; flex-direction: column; align-items: flex-end; gap: 20px; padding-bottom: 6px; }
 .sp-stats { display: flex; gap: 28px; }
@@ -65,7 +65,7 @@ a.sp-stat:hover b { color: var(--accent); }
 .dy { padding: 28px 0; border-bottom: 1px solid var(--line); }
 .dy:first-child { padding-top: 12px; }
 .dy-eyebrow { display: flex; align-items: center; gap: 16px; font: 500 11px/1 var(--mono); letter-spacing: .06em; color: var(--faint); margin-bottom: 16px; }
-.dy-kind { color: var(--accent); letter-spacing: .16em; }
+.dy-kind { color: var(--accent-text); letter-spacing: .16em; }
 .dy-open { margin-left: auto; display: inline-grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; color: var(--faint); transition: background-color .2s var(--ease-out), color .2s var(--ease-out); }
 .dy-open:hover { background: var(--chip); color: var(--ink); }
 .dy-open svg { width: 15px; height: 15px; }
@@ -94,7 +94,7 @@ a.sp-stat:hover b { color: var(--accent); }
 .dy-article b { display: block; font: 600 16px/1.45 var(--serif); margin-bottom: 6px; }
 .dy-article span span { font-size: 13px; color: var(--muted); }
 .dy-orig { padding: 16px 20px; border-radius: 16px; background: var(--chip); }
-.dy-orig-by { font-size: 13px; color: var(--accent); margin-bottom: 8px; }
+.dy-orig-by { font-size: 13px; color: var(--accent-text); margin-bottom: 8px; }
 .dy.nested { padding: 0; border: 0; }
 .dy-by { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 12px; align-items: center; margin-bottom: 16px; }
 .dy-by-face img { width: 42px; height: 42px; border-radius: 50%; object-fit: cover; display: block; background: var(--chip); box-shadow: var(--ring); }
@@ -244,7 +244,7 @@ a.sp-stat:hover b { color: var(--accent); }
 .hi-up { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .hi-badge { flex: none; font-size: 11px; padding: 2px 6px; border-radius: 5px; background: var(--chip); color: var(--muted); }
 .hi-note { display: flex; gap: 16px; font: 500 11px/1 var(--mono); letter-spacing: .04em; color: var(--faint); }
-.hi-kind { color: var(--accent); letter-spacing: .14em; }
+.hi-kind { color: var(--accent-text); letter-spacing: .14em; }
 .hi-del { justify-self: end; display: grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; color: var(--faint); opacity: 0; transition: opacity .2s var(--ease-out), background-color .2s var(--ease-out), color .2s var(--ease-out); }
 .hi-del svg { width: 15px; height: 15px; }
 .hi-row:hover .hi-del, .hi-del:focus-visible { opacity: 1; }
@@ -313,7 +313,7 @@ a.sp-stat:hover b { color: var(--accent); }
 .fd-hot-list a span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; transition: color .2s var(--ease-out); }
 .fd-hot-list a:hover span { color: var(--accent); }
 .fd-hot-list i { font: 500 11px/1 var(--mono); font-style: normal; color: var(--faint); }
-.fd-hot-list i.hot { color: var(--accent); }
+.fd-hot-list i.hot { color: var(--accent-text); }
 @media (max-width: 1240px) { .fd { grid-template-columns: 232px minmax(0, 1fr); } .fd-right { display: none; } }
 
 .tk-foot { padding: 32px var(--g) 48px; }

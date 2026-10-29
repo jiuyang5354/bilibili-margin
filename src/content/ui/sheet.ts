@@ -18,6 +18,8 @@ export function createSheet(opts: { title: string; eyebrow: string; width?: numb
   );
   const scrim = h('div', { class: 'scrim' });
   const el = h('div', { class: 'sheet-layer', 'data-open': 'false' }, scrim, panel);
+  // 关着的时候整层 inert：里面的控件不进 Tab 顺序、读屏也跳过
+  el.inert = true;
   let last: Element | null = null;
 
   const api: Sheet = {
@@ -26,12 +28,14 @@ export function createSheet(opts: { title: string; eyebrow: string; width?: numb
       if (api.isOpen()) return;
       last = (el.getRootNode() as ShadowRoot).activeElement;
       el.dataset.open = 'true';
+      el.inert = false;
       opts.onOpen?.();
       requestAnimationFrame(() => panel.focus({ preventScroll: true }));
     },
     close() {
       if (!api.isOpen()) return;
       el.dataset.open = 'false';
+      el.inert = true;
       (last as HTMLElement | null)?.focus?.({ preventScroll: true });
     },
     isOpen: () => el.dataset.open === 'true',
