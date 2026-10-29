@@ -2,6 +2,17 @@
 
 # Changelog
 
+## [v0.28.0](https://github.com/jiuyang5354/bilibili-margin/releases/tag/v0.28.0) · 2026-10-29
+
+Avatar ID card upgrade.
+
+### Improved
+
+- ID card enlarged ~1.28× (scale 0.86 → 1.1) for readability.
+- Front/back QR codes are now real (qrcode-generator, MIT) and open your space when scanned.
+- Front footer now shows unread messages and new dynamics counts (clickable, highlighted when non-zero) instead of placeholder text.
+- Hovering the avatar must dwell 200ms before the card drops, so passing over it no longer opens it.
+
 ## [v0.23.0](https://github.com/jiuyang5354/bilibili-margin/releases/tag/v0.23.0) · 2026-10-28
 
 Combined homepage-search and performance update. Includes all optimizations and fixes from v0.22.5 through v0.22.7; no separate performance patch is required.

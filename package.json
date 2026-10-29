@@ -1,6 +1,6 @@
 {
   "name": "margin",
-  "version": "0.27.3",
+  "version": "0.28.0",
   "private": true,
   "description": "映间 MARGIN — 一个重新设计的 B 站首页浏览器扩展",
   "type": "module",
@@ -15,5 +15,8 @@
     "vgpu": "^0.6.0",
     "vite": "^8.0.0"
   },
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "qrcode-generator": "^2.0.4"
+  }
 }

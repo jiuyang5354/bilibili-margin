@@ -1,4 +1,5 @@
-import { account, accountStat, logout, type Account } from '../api/account';
+import qrcode from 'qrcode-generator';
+import { account, accountStat, dynamicUpdates, logout, resetDynamicBaseline, unreadTotal, type Account } from '../api/account';
 import { fmtCount, h, icon, ICONS } from './dom';
 
 /**
@@ -12,7 +13,7 @@ import { fmtCount, h, icon, ICONS } from './dom';
 
 const NUM_POINTS = 13;
 const REST_LENGTH = 70;
-const CARD_SCALE = 0.86;
+const CARD_SCALE = 1.1;
 const SEGMENT_LENGTH = REST_LENGTH / (NUM_POINTS - 1);
 const GRAVITY = 0.55;
 const FRICTION = 0.97;
@@ -23,10 +24,15 @@ const HINT_KEY = 'margin:idcl-hint';
 
 type Pt = { x: number; y: number; oldx: number; oldy: number; pinned: boolean };
 
-function qr(seed: number, small = false): HTMLElement {
-  const el = h('div', { class: small ? 'idcl-qr idcl-small' : 'idcl-qr', 'aria-hidden': 'true' });
-  const seedOn = new Set([0, 1, 2, 9, 10, 11, 18, 19, 20, 6, 7, 8, 15, 16, 17, 24, 25, 26, 54, 55, 56, 63, 64, 65, 72, 73, 74]);
-  for (let i = 0; i < 81; i++) el.append(h('i', { class: seedOn.has(i) || (i * seed) % 97 < 46 ? 'on' : '' }));
+/** 真二维码：手机扫一下打开个人空间。用 SVG 画，白底留静区，缩放不糊 */
+function qr(text: string, small = false): HTMLElement {
+  const q = qrcode(0, 'M');
+  q.addData(text); q.make();
+  const n = q.getModuleCount();
+  let d = '';
+  for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) if (q.isDark(r, c)) d += `M${c} ${r}h1v1h-1z`;
+  const el = h('div', { class: small ? 'idcl-qr idcl-small' : 'idcl-qr', title: text });
+  el.innerHTML = `<svg viewBox="0 0 ${n} ${n}" shape-rendering="crispEdges" aria-hidden="true"><path d="${d}"/></svg>`;
   return el;
 }
 
@@ -50,6 +56,10 @@ export function createUserMenu(a: Account): HTMLElement {
   const space = `https://space.bilibili.com/${a.mid}`;
   const n = (v: string) => h('b', {}, v);
   const following = n('–'), follower = n('–');
+  const unreadN = n('–'), dynN = n('–');
+  const dynLink = h('a', { href: 'https://t.bilibili.com/', target: '_blank', rel: 'noopener' }, h('span', {}, '新动态'), dynN);
+  dynLink.addEventListener('click', () => { resetDynamicBaseline(); dynN.textContent = '0'; });
+  const mark = (el: HTMLElement, v: number) => { el.textContent = v > 99 ? '99+' : String(v); el.classList.toggle('hot', v > 0); };
   const pct = a.next > 0 ? Math.min(100, (a.exp / a.next) * 100) : 100;
   const name = h('h2', { class: 'idcl-name' }, a.name);
   if (a.vip && a.vipColor) name.style.color = a.vipColor;
@@ -79,8 +89,11 @@ export function createUserMenu(a: Account): HTMLElement {
         h('a', { href: `${space}/relation/follow`, target: '_blank', rel: 'noopener' }, h('span', {}, '关注'), following),
         h('a', { href: `${space}/relation/fans`, target: '_blank', rel: 'noopener' }, h('span', {}, '粉丝'), follower),
         h('div', {}, h('span', {}, '硬币 · B币'), n(`${a.coins} · ${a.bcoin}`))),
-      qr(574123 + a.mid % 997, true)),
-    h('div', { class: 'idcl-footer' }, '点赞', h('i', {}, '·'), '投币', h('i', {}, '·'), '收藏'),
+      qr(space, true)),
+    h('div', { class: 'idcl-footer' },
+      h('a', { href: 'https://message.bilibili.com/', target: '_blank', rel: 'noopener' }, h('span', {}, '未读消息'), unreadN),
+      h('i'),
+      dynLink),
   );
 
   const link = (label: string, ic: string, href: string) => h('a', { class: 'idcl-link', href, target: '_blank', rel: 'noopener' }, icon(ic), h('span', {}, label));
@@ -97,8 +110,8 @@ export function createUserMenu(a: Account): HTMLElement {
     h('div', { class: 'idcl-idnum' }, h('span', {}, `NO. ${a.mid}`), h('em', {}, `LV${a.level}`)),
     barcode(a.mid),
     h('div', { class: 'idcl-backrow' },
-      qr(928371 + a.mid % 991),
-      h('div', { class: 'idcl-scan' }, h('b', {}, '个人空间'), `space.bilibili.com/${a.mid}`, h('br'), '投稿、收藏与动态')),
+      qr(space),
+      h('div', { class: 'idcl-scan' }, h('b', {}, '个人空间'), `space.bilibili.com/${a.mid}`, h('br'), '手机扫码直达')),
     h('div', { class: 'idcl-links' },
       link('个人空间', ICONS.user, space),
       link('投稿管理', ICONS.upload, 'https://member.bilibili.com/platform/upload-manager/article'),
@@ -296,7 +309,7 @@ export function createUserMenu(a: Account): HTMLElement {
   // 鼠标离开窗口时只取消倾斜；回到页面并移出范围时再收起
   const onOut = () => { mouse = { x: -9999, y: -9999 }; };
 
-  /* ── 打开 / 收起：悬停头像垂下，离开头像和卡片 .4s 后收起 ── */
+  /* ── 打开 / 收起：在头像上停 200ms 才垂下（划过不弹），，离开头像和卡片 .4s 后收起 ── */
   let loaded = false;
   const open = () => {
     clearTimeout(t);
@@ -323,6 +336,9 @@ export function createUserMenu(a: Account): HTMLElement {
     addEventListener('blur', onOut);
     cancelAnimationFrame(raf); loop();
     wrap.setAttribute('data-open', '');
+    // 未读和新动态每次打开都刷新（会变）
+    unreadTotal().then((v) => mark(unreadN, v)).catch(() => {});
+    dynamicUpdates().then((v) => mark(dynN, v)).catch(() => {});
     if (!loaded) {
       loaded = true;
       accountStat().then((s) => { following.textContent = fmtCount(s.following); follower.textContent = fmtCount(s.follower); }).catch(() => { loaded = false; });
@@ -345,7 +361,7 @@ export function createUserMenu(a: Account): HTMLElement {
   };
   const scheduleClose = () => { clearTimeout(t); t = window.setTimeout(close, 500); };
 
-  wrap.addEventListener('pointerenter', (e) => { if ((e as PointerEvent).pointerType !== 'touch') { clearTimeout(t); t = window.setTimeout(open, 120); } });
+  wrap.addEventListener('pointerenter', (e) => { if ((e as PointerEvent).pointerType !== 'touch') { clearTimeout(t); t = window.setTimeout(open, 200); } });
   wrap.addEventListener('pointerleave', () => { if (!isOpen) clearTimeout(t); });
   wrap.addEventListener('focusin', open);
   card.addEventListener('focusout', (e) => { if (!card.contains((e as FocusEvent).relatedTarget as Node)) scheduleClose(); });

@@ -1390,16 +1390,20 @@ canvas.gf-sheet-art[data-ready] { opacity: 1; filter: none; }
 .idcl-idrow-labels span { width: 56px; flex-shrink: 0; font-size: 8px; letter-spacing: .06em; text-transform: uppercase; color: var(--idcl-card-soft); }
 .idcl-idrow-labels b { font-size: 10px; font-weight: 600; color: var(--idcl-card-ink); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .idcl-idrow-labels a:hover b { color: var(--idcl-accent); }
-.idcl-footer { width: 100%; margin-top: auto; padding-top: 10px; border-top: 1px solid var(--idcl-card-line); text-align: center; font-family: var(--idcl-font-mono); font-size: 9px; letter-spacing: .14em; color: var(--idcl-card-soft); }
-.idcl-footer i { color: var(--idcl-card-line); font-style: normal; margin: 0 5px; }
+.idcl-footer { width: 100%; margin-top: auto; padding-top: 10px; border-top: 1px solid var(--idcl-card-line); display: flex; align-items: center; }
+.idcl-footer a { flex: 1; display: flex; align-items: baseline; justify-content: center; gap: 6px; color: var(--idcl-card-soft); text-decoration: none; font-size: 10px; letter-spacing: .06em; border-radius: 6px; padding: 2px 0; transition: background-color 150ms var(--ease-out), color 150ms var(--ease-out); }
+.idcl-footer a:hover { background: var(--idcl-card-line); color: var(--idcl-card-ink); }
+.idcl-footer b { font-family: var(--idcl-font-mono); font-size: 12px; font-weight: 700; color: var(--idcl-card-ink); font-variant-numeric: tabular-nums; }
+.idcl-footer b.hot { color: var(--idcl-accent); }
+.idcl-footer i { width: 1px; height: 12px; background: var(--idcl-card-line); }
 .idcl-stripe { width: 100%; height: 30px; background: repeating-linear-gradient(45deg, #1b1d24, #1b1d24 6px, #26282f 6px, #26282f 12px); border-radius: 3px; margin-bottom: 12px; flex-shrink: 0; }
 .idcl-barcode { display: flex; align-items: flex-end; gap: 2px; height: 32px; width: 100%; background: #fff; border-radius: 3px; padding: 0 4px; margin-bottom: 10px; overflow: hidden; flex-shrink: 0; }
 .idcl-barcode span { width: 2px; background: #1a1c22; }
 .idcl-idnum { margin: 0 0 8px; font-family: var(--idcl-font-mono); font-size: 10px; font-weight: 600; letter-spacing: .03em; display: flex; justify-content: space-between; font-variant-numeric: tabular-nums; }
 .idcl-idnum em { font-style: normal; color: var(--idcl-card-soft); }
 .idcl-backrow { display: flex; gap: 12px; align-items: flex-start; margin-bottom: 10px; }
-.idcl-qr { display: grid; grid-template-columns: repeat(9, 1fr); gap: 1px; width: 58px; height: 58px; background: #fff; padding: 4px; border-radius: 4px; flex-shrink: 0; box-shadow: 0 0 0 1px var(--idcl-card-line); }
-.idcl-qr i.on { background: #181a20; }
+.idcl-qr { width: 64px; height: 64px; background: #fff; padding: 4px; border-radius: 4px; flex-shrink: 0; box-shadow: 0 0 0 1px var(--idcl-card-line); box-sizing: border-box; }
+.idcl-qr svg { display: block; width: 100%; height: 100%; fill: #181a20; }
 .idcl-qr.idcl-small { width: 46px; height: 46px; padding: 3px; }
 .idcl-scan { font-family: var(--idcl-font-mono); font-size: 8.5px; color: var(--idcl-card-soft); line-height: 1.6; padding-top: 2px; word-break: break-all; }
 .idcl-scan b { color: var(--idcl-card-ink); display: block; font-size: 10px; margin-bottom: 2px; letter-spacing: .03em; font-family: var(--sans); }
