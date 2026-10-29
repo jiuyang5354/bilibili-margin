@@ -9,7 +9,7 @@ const EXT = resolve(process.argv[2] || 'dist');
 const RUNS = Number(process.argv[3] || 5);
 const URLS = { home: 'https://www.bilibili.com/', watch: 'https://www.bilibili.com/video/BV1mdxN68E7F/', history: 'https://www.bilibili.com/account/history' };
 const dir = mkdtempSync(join(tmpdir(), 'margin-mt-'));
-const exe = process.env.CHROMIUM_PATH || (existsSync('/usr/bin/chromium') ? '/usr/bin/chromium' : undefined);
+const exe = process.env.SMOKE_BUNDLED ? undefined : process.env.CHROMIUM_PATH || (existsSync('/usr/bin/chromium') ? '/usr/bin/chromium' : undefined);
 const ctx = await chromium.launchPersistentContext(dir, { ...(exe ? { executablePath: exe } : { channel: 'chromium' }), headless: true,
   args: ['--headless=new', '--no-sandbox', `--disable-extensions-except=${EXT}`, `--load-extension=${EXT}`], viewport: { width: 1440, height: 900 } });
 await installMocks(ctx);

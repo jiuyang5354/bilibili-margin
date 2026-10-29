@@ -85,7 +85,8 @@ async function startWatch(kind: SkinKind = 'watch'): Promise<void> {
   setSkinMirror(on ? settings.theme : '0');
   if (!on) { unskin(kind); return; }
   skinStyle(kind, settings.theme);
-  const skin = new (await mod).WatchSkin(settings, kind);
+  const skin = await guarded('watch', () => mod.then((m) => new m.WatchSkin(settings, kind)), () => unskin(kind));
+  if (!skin) return;
   onSettingsChange((next, prev) => {
     if (next.enabled !== prev.enabled || next.watch !== prev.watch) location.reload();
     else skin.update(next);
@@ -118,8 +119,12 @@ async function start(): Promise<void> {
   if (!settings.enabled) { hide.remove(); unmute(); return disabledAfterMute(); }
   setGuard(true);
 
-  const app = new (await mod).MarginApp(settings);
-  document.documentElement.append(app.host);
+  const app = await guarded('home', () => mod.then((m) => {
+    const a = new m.MarginApp(settings);
+    document.documentElement.append(a.host);
+    return a;
+  }), () => restoreNative(hide, guardEnabled()));
+  if (!app) return;
 
   onSettingsChange((next, prev) => {
     if (next.enabled !== prev.enabled) location.reload();
@@ -136,12 +141,44 @@ async function takeover<M>(mod: Promise<M>, make: (m: M, s: Settings) => { shell
   const settings = await loadSettings();
   if (!settings.enabled || !settings.watch) { hide.remove(); unmute(); return mute ? disabledAfterMute() : undefined; }
   if (mute) setGuard(true);
-  const page = make(await mod, settings);
-  document.documentElement.append(page.shell.host);
+  const name = location.hostname.split('.')[0] + location.pathname;
+  const page = await guarded(name, () => mod.then((m) => {
+    const p = make(m, settings);
+    document.documentElement.append(p.shell.host);
+    return p;
+  }), () => restoreNative(hide, mute && guardEnabled()));
+  if (!page) return;
   onSettingsChange((next, prev) => {
     if (next.enabled !== prev.enabled || next.watch !== prev.watch) location.reload();
     else page.update(next);
   });
+}
+
+/**
+ * 页面模块加载或挂载出错时：记日志、拆掉映间注入的界面，把这一页还给 B 站原版，而不是留一张空白页。
+ * 调试钩子：localStorage['margin:test-throw'] 写页面名（home / watch / www/account/history …）时故意抛错，冒烟测试用。
+ */
+async function guarded<T>(name: string, mount: () => Promise<T>, restore: () => void): Promise<T | null> {
+  try {
+    let t: string | null = null;
+    try { t = localStorage.getItem('margin:test-throw'); } catch { /* ignore */ }
+    if (t && name.startsWith(t)) throw new Error(`margin:test-throw ${name}`);
+    return await mount();
+  } catch (e) {
+    console.error('[MARGIN] 页面模块挂载失败，这一页回到 B 站原版：', name, e);
+    for (const id of ['margin-root', 'margin-watch-top', 'margin-bg']) document.getElementById(id)?.remove();
+    try { restore(); } catch { /* ignore */ }
+    return null;
+  }
+}
+
+/** 撤掉遮罩；原版脚本已经被拦掉的话只能刷新一次（只这一次加载不接管），让原版完整加载 */
+function restoreNative(hide: HTMLStyleElement, muted: boolean): void {
+  hide.remove();
+  document.documentElement.style.removeProperty('background');
+  if (!muted) return;
+  sessionStorage.setItem('margin:off', '1');
+  location.reload();
 }
 
 /** 映间被关掉但原版脚本已被拦：记下来，刷新一次让原版完整加载 */

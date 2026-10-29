@@ -1,0 +1,33 @@
+name: smoke
+# 冒烟测试：构建扩展，在离线伪造的 B 站上打开各接管页面，断言无未捕获错误、关键元素存在，截图作为产物上传。
+# 发布逻辑在 build.yml，这里只测试。
+on:
+  push:
+    branches: [main]
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run build
+      - name: Smoke test (offline mocked bilibili)
+        run: npm run test:smoke
+        env:
+          SMOKE_BUNDLED: '1'
+          SMOKE_OUT: smoke-artifacts
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: smoke-screenshots
+          path: smoke-artifacts/
+          if-no-files-found: warn

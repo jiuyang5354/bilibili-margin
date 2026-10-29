@@ -42,7 +42,7 @@ export class HistoryApp {
 
   private render(): void {
     const s = this.shell;
-    const rec = h('button', { class: 'hs-rec', type: 'button', role: 'switch', 'aria-checked': 'true' }, h('i'), h('span', {}, '记录历史'));
+    const rec = h('button', { class: 'hi-rec', type: 'button', role: 'switch', 'aria-checked': 'true' }, h('i'), h('span', {}, '记录历史'));
     rec.addEventListener('click', async () => {
       const on = rec.getAttribute('aria-checked') !== 'true';
       rec.setAttribute('aria-checked', String(on));
@@ -51,10 +51,10 @@ export class HistoryApp {
     });
     historyPaused().then((p) => rec.setAttribute('aria-checked', String(!p))).catch(() => { /* 未登录 */ });
 
-    const input = h('input', { class: 'hs-input', type: 'search', placeholder: '搜索标题或 UP 主', enterkeyhint: 'search' });
+    const input = h('input', { class: 'hi-input', type: 'search', placeholder: '搜索标题或 UP 主', enterkeyhint: 'search' });
     let t = 0;
     input.addEventListener('input', () => { clearTimeout(t); t = window.setTimeout(() => { this.keyword = input.value.trim(); this.reload(); }, 350); });
-    const search = h('label', { class: 'hs-search' }, icon(ICONS.search), input);
+    const search = h('label', { class: 'hi-search' }, icon(ICONS.search), input);
 
     const clear = h('button', { class: 'ghost small', type: 'button' }, '清空历史');
     clear.addEventListener('click', async () => {
@@ -64,13 +64,13 @@ export class HistoryApp {
 
     this.count = h('span', {});
     const seg = segmented<HistKind>(KINDS, this.kind, (v) => { this.kind = v; this.reload(); });
-    const head = h('header', { class: 'hs-head' },
+    const head = h('header', { class: 'hi-head' },
       h('div', {},
         h('div', { class: 'eyebrow' }, h('span', { class: 'en' }, 'History'), this.count),
-        h('h1', { class: 'hs-h1' }, '历史记录')),
-      h('div', { class: 'hs-tools' }, rec, clear));
-    const bar = h('div', { class: 'hs-bar' }, seg, search);
-    this.list = h('div', { class: 'hs-list' });
+        h('h1', { class: 'hi-h1' }, '历史记录')),
+      h('div', { class: 'hi-tools' }, rec, clear));
+    const bar = h('div', { class: 'hi-bar' }, seg, search);
+    this.list = h('div', { class: 'hi-list' });
     this.status = h('div', { class: 'status' });
     this.sentinel = h('div', { class: 'sentinel' });
     s.main.append(h('div', { class: 'hs' }, head, bar, this.list, this.status, this.sentinel));
@@ -99,7 +99,7 @@ export class HistoryApp {
     if (this.loading || this.done) return;
     this.loading = true;
     const gen = this.gen;
-    const sk = Array.from({ length: this.total ? 2 : 5 }, () => h('div', { class: 'hs-row sk' }, h('span', { class: 'hs-time' }), h('i', { class: 'hs-dot' }), h('div', { class: 'hs-card' }, h('span', { class: 'hs-cover' }), h('div', {}, h('div', { class: 'line' }), h('div', { class: 'line short' })))));
+    const sk = Array.from({ length: this.total ? 2 : 5 }, () => h('div', { class: 'hi-row sk' }, h('span', { class: 'hi-time' }), h('i', { class: 'hi-dot' }), h('div', { class: 'hi-card' }, h('span', { class: 'hi-cover' }), h('div', {}, h('div', { class: 'line' }), h('div', { class: 'line short' })))));
     this.list.append(...sk);
     try {
       let items: HistItem[];
@@ -131,8 +131,8 @@ export class HistoryApp {
     const b = dayBucket(it.viewAt, true);
     if (b !== this.bucket || !this.group) {
       this.bucket = b;
-      this.group = h('ol', { class: 'hs-group' });
-      this.list.append(h('div', { class: 'ms-day hs-day' }, h('span', {}, b)), this.group);
+      this.group = h('ol', { class: 'hi-group' });
+      this.list.append(h('div', { class: 'ms-day hi-day' }, h('span', {}, b)), this.group);
     }
     this.group.append(this.row(it));
   }
@@ -142,23 +142,23 @@ export class HistoryApp {
     const pct = it.duration > 0 ? (done ? 100 : Math.max(2, Math.min(100, (it.progress / it.duration) * 100))) : 0;
     const prog = it.kind === 'live' ? (it.live ? '直播中' : '已下播')
       : it.duration ? (done ? '已看完' : `看到 ${fmtDuration(Math.max(0, it.progress))} / ${fmtDuration(it.duration)}`) : '';
-    const cover = h('span', { class: 'hs-cover' }, img(it.cover, 320, 180),
+    const cover = h('span', { class: 'hi-cover' }, img(it.cover, 320, 180),
       it.duration && it.kind !== 'live' ? h('span', { class: 'dur' }, fmtDuration(it.duration)) : null,
-      it.live ? h('span', { class: 'hs-live' }, 'LIVE') : null,
-      pct ? h('span', { class: 'hs-prog' }, h('i', { style: `width:${pct}%` })) : null);
-    const del = h('button', { class: 'hs-del', type: 'button', 'aria-label': '删除这条记录', title: '删除这条记录' }, icon(ICONS.close));
-    const li = h('li', { class: 'hs-row' },
-      h('time', { class: 'hs-time' }, clock(it.viewAt)),
-      h('i', { class: 'hs-dot' }),
-      h('a', { class: 'hs-card', href: it.url, ...ext },
+      it.live ? h('span', { class: 'hi-live' }, 'LIVE') : null,
+      pct ? h('span', { class: 'hi-prog' }, h('i', { style: `width:${pct}%` })) : null);
+    const del = h('button', { class: 'hi-del', type: 'button', 'aria-label': '删除这条记录', title: '删除这条记录' }, icon(ICONS.close));
+    const li = h('li', { class: 'hi-row' },
+      h('time', { class: 'hi-time' }, clock(it.viewAt)),
+      h('i', { class: 'hi-dot' }),
+      h('a', { class: 'hi-card', href: it.url, ...ext },
         cover,
-        h('span', { class: 'hs-body' },
-          h('span', { class: 'hs-title' }, it.title),
-          h('span', { class: 'hs-meta' },
-            it.face ? h('img', { class: 'hs-face', src: `${it.face}@48w_48h_1c.webp`, alt: '', loading: 'lazy', referrerpolicy: 'no-referrer' }) : null,
-            h('span', { class: 'hs-up' }, it.author || ' '),
-            it.badge ? h('span', { class: 'hs-badge' }, it.badge) : null),
-          h('span', { class: 'hs-note' }, h('span', { class: 'hs-kind' }, KIND_LABEL[it.kind] ?? it.kind.toUpperCase()), h('span', {}, it.device), prog ? h('span', {}, prog) : null))),
+        h('span', { class: 'hi-body' },
+          h('span', { class: 'hi-title' }, it.title),
+          h('span', { class: 'hi-meta' },
+            it.face ? h('img', { class: 'hi-face', src: `${it.face}@48w_48h_1c.webp`, alt: '', loading: 'lazy', referrerpolicy: 'no-referrer' }) : null,
+            h('span', { class: 'hi-up' }, it.author || ' '),
+            it.badge ? h('span', { class: 'hi-badge' }, it.badge) : null),
+          h('span', { class: 'hi-note' }, h('span', { class: 'hi-kind' }, KIND_LABEL[it.kind] ?? it.kind.toUpperCase()), h('span', {}, it.device), prog ? h('span', {}, prog) : null))),
       del);
     del.addEventListener('click', async (e) => {
       e.preventDefault();

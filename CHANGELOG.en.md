@@ -2,6 +2,14 @@
 
 # Changelog
 
+## [v0.31.1](https://github.com/jiuyang5354/bilibili-margin/releases/tag/v0.31.1) · 2026-10-29
+
+Stability: history overlap fix, fall back to the native page on module errors, automated smoke tests.
+
+- Fixed history timeline items overlapping each other (since v0.23): the home search box's `.hs-row` class shared its name with history rows and squeezed each entry to 54px. The history page now uses its own `hi-` prefix.
+- If a page module fails to load or mount, you no longer get a blank page: the error is logged, Margin's UI is removed and the page is handed back to native Bilibili (reloading once when native scripts were blocked).
+- New smoke test `npm run test:smoke`: loads the built extension and opens home, watch, search, space, messages, history and feed on an offline mocked Bilibili, checking for extension errors, key elements, non-overlapping history rows, native fallback and the background footprint timer, and saves light and dark screenshots. GitHub Actions runs it on every push (separate smoke workflow, screenshots uploaded as artifacts).
+
 ## [v0.31.0](https://github.com/jiuyang5354/bilibili-margin/releases/tag/v0.31.0) · 2026-10-29
 
 Performance: per-page code loading, sliced CJK fonts, one scheduler for timers.

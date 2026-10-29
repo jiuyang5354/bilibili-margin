@@ -37,7 +37,11 @@ const PAGES = [
     const miss = []; if (!r.querySelector('main.tk')) miss.push('main.tk'); return miss; })()`],
   ['history', 'https://www.bilibili.com/account/history', `(() => { const r = ${R}; if (!r) return ['#margin-root'];
     const miss = []; if (!r.querySelector('main.tk')) miss.push('main.tk');
-    if (r.querySelectorAll('main.tk a[href*="/video/"], main.tk article, main.tk li').length < 3) miss.push('history items'); return miss; })()`],
+    const rows = [...r.querySelectorAll('.hi-row:not(.sk)')].map((e) => e.getBoundingClientRect());
+    if (rows.length < 3) miss.push('.hi-row ×3');
+    // v0.31.1 回归：条目曾因和首页搜索的 .hs-row 同名被压成 54px 高、互相重叠
+    for (let i = 1; i < rows.length; i++) if (rows[i].top < rows[i - 1].bottom - 1) { miss.push('.hi-row ' + i + ' overlaps previous'); break; }
+    return miss; })()`],
   ['feed', 'https://t.bilibili.com/', `(() => { const r = ${R}; if (!r) return ['#margin-root'];
     const miss = []; if (!r.querySelector('main.tk')) miss.push('main.tk'); return miss; })()`],
 ].filter(([n]) => !ONLY || ONLY.includes(n));
@@ -48,7 +52,7 @@ let failed = 0;
 
 for (const theme of THEMES) {
   const dir = mkdtempSync(join(tmpdir(), 'margin-smoke-'));
-  const exe = process.env.CHROMIUM_PATH || (existsSync('/usr/bin/chromium') ? '/usr/bin/chromium' : undefined);
+  const exe = process.env.SMOKE_BUNDLED ? undefined : process.env.CHROMIUM_PATH || (existsSync('/usr/bin/chromium') ? '/usr/bin/chromium' : undefined);
   const ctx = await chromium.launchPersistentContext(dir, {
     ...(exe ? { executablePath: exe } : { channel: 'chromium' }),
     headless: true,
@@ -92,6 +96,37 @@ for (const theme of THEMES) {
     if (!ok) failed++;
     results.push({ theme, name, ok, ms: Date.now() - t0, miss, errors });
     console.log(`${ok ? 'PASS' : 'FAIL'} ${theme.padEnd(5)} ${name.padEnd(8)} ${Date.now() - t0}ms${miss.length ? ` missing: ${miss.join(', ')}` : ''}${errors.length ? `\n      errors: ${errors.join('\n              ')}` : ''}`);
+  }
+
+  // 模块挂载失败时回到原版：用调试钩子 margin:test-throw 让模块故意抛错
+  if (theme === THEMES[0] && !ONLY) for (const [name, url, key] of [
+    ['fallback-home', 'https://www.bilibili.com/', 'home'],
+    ['fallback-watch', 'https://www.bilibili.com/video/BV1mdxN68E7F/', 'watch'],
+    ['fallback-space', 'https://space.bilibili.com/2/video', 'space'],
+  ]) {
+    errors = [];
+    let miss = [];
+    try {
+      await page.goto(url, { waitUntil: 'domcontentloaded' });
+      await page.evaluate((k) => localStorage.setItem('margin:test-throw', k), key);
+      await page.goto(url, { waitUntil: 'load' });
+      await sleep(2500);
+      miss = await page.evaluate(() => {
+        const m = [];
+        for (const id of ['margin-root', 'margin-watch-top', 'margin-hide', 'margin-watch-css']) if (document.getElementById(id)) m.push(`#${id} still present`);
+        if (document.documentElement.classList.contains('margin-skin')) m.push('html.margin-skin still present');
+        if (!document.body || getComputedStyle(document.body).display === 'none') m.push('native body hidden');
+        localStorage.removeItem('margin:test-throw');
+        return m;
+      });
+    } catch (e) { miss = [`goto: ${e.message}`]; }
+    const expected = errors.filter((e) => e.includes('test-throw'));
+    const unexpected = errors.filter((e) => !e.includes('test-throw'));
+    if (!expected.length) miss.push('no [MARGIN] mount-failure log');
+    const ok = !miss.length && !unexpected.length;
+    if (!ok) failed++;
+    results.push({ theme, name, ok, miss, errors: unexpected });
+    console.log(`${ok ? 'PASS' : 'FAIL'} ${theme.padEnd(5)} ${name.padEnd(15)}${miss.length ? ` problems: ${miss.join(', ')}` : ' native page restored'}${unexpected.length ? `\n      errors: ${unexpected.join('\n              ')}` : ''}`);
   }
 
   // 足迹计时在后台 service worker：打开过页面后今天应该有首次打开时间
