@@ -168,7 +168,7 @@ These changes do not guarantee stable 60fps in every scenario. Earlier live conc
 - Corrected high-refresh background scheduling, retaining load adaptation and continuous animation during scroll/playback.
 - Reduced glass-map generation, repeated WebGL uploads and activity-view node rebuilding.
 
-## v0.22.4 · 2026-10-28
+## [v0.22.4](https://github.com/jiuyang5354/bilibili-margin/releases/tag/v0.22.4) · 2026-10-28
 
 - Reserved folder-opening headroom and narrowed the fan/clipping region to reduce overlap with adjacent cards.
 
