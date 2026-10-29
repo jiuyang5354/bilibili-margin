@@ -2,6 +2,13 @@
 
 # Changelog
 
+## [v0.30.1](https://github.com/jiuyang5354/bilibili-margin/releases/tag/v0.30.1) · 2026-10-29
+
+Shader loading skeletons.
+
+- Cover placeholders on video cards and Watch Later now use a WebGL shader: the Live Orb fbm domain-warped ink fog drifts slowly, with an occasional pink-to-orange accent and a diagonal light sweep; text lines keep the CSS shimmer.
+- One shared WebGL context renders a small image; each cover copies its own region via a 2D canvas. ~30fps, stops as soon as skeletons are gone, one still frame under reduced motion, CSS shimmer kept without WebGL.
+
 ## [v0.30.0](https://github.com/jiuyang5354/bilibili-margin/releases/tag/v0.30.0) · 2026-10-29
 
 The header TV comes alive.

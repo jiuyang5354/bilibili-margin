@@ -2,6 +2,13 @@
 
 # 更新日志
 
+## [v0.30.1](https://github.com/jiuyang5354/bilibili-margin/releases/tag/v0.30.1) · 2026-10-29
+
+加载骨架加入着色器。
+
+- 视频卡片和稍后再看的封面占位改为 WebGL 着色器底纹：Live Orb 同款 fbm 域扭曲的墨雾缓慢流动，偶尔透出粉→橙强调色，再叠一道斜向流光；文字行仍是 CSS 流光。
+- 全站只用一个 WebGL 上下文画一张小图，各封面用 2D canvas 裁取不同区域；约 30fps，骨架消失后立即停；减少动态效果时只画一帧；没有 WebGL 时保留原 CSS 流光。
+
 ## [v0.30.0](https://github.com/jiuyang5354/bilibili-margin/releases/tag/v0.30.0) · 2026-10-29
 
 顶栏小电视活过来了。

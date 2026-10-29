@@ -1,3 +1,4 @@
+import { skShader } from './sk-shader';
 import type { Video } from '../api/feed';
 import { fmtAgo, fmtCount, fmtDuration, h, icon, ICONS } from './dom';
 
@@ -38,6 +39,6 @@ export function videoCard(v: Video, index: number, opts: CardOpts = {}): HTMLEle
 
 export function skeleton(n: number): DocumentFragment {
   const f = document.createDocumentFragment();
-  for (let i = 0; i < n; i++) f.append(h('div', { class: 'card sk' }, h('div', { class: 'cover' }), h('div', { class: 'line' }), h('div', { class: 'line short' })));
+  for (let i = 0; i < n; i++) { const cover = h('div', { class: 'cover' }); skShader(cover); f.append(h('div', { class: 'card sk' }, cover, h('div', { class: 'line' }), h('div', { class: 'line short' }))); }
   return f;
 }
