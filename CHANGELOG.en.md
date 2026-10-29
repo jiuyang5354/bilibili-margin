@@ -2,6 +2,14 @@
 
 # Changelog
 
+## [v0.30.0](https://github.com/jiuyang5354/bilibili-margin/releases/tag/v0.30.0) · 2026-10-29
+
+The header TV comes alive.
+
+- The top-left TV's eyes are now drawn in WebGL (a port of the 21st Live Orb technique): the screen is a slightly convex CRT surface, the two capsule eyes sit on it and turn in 3D toward the pointer with perspective foreshortening, blink now and then, and glance around after the pointer rests for 3 seconds.
+- No animation frames while still; a timer waits for the next blink or glance. Pauses when the tab is hidden, the icon is off screen, or reduced motion is on.
+- Follows the day/night theme; falls back to the original SVG icon without WebGL or after a lost context. The intro still lands on the same spot.
+
 ## [v0.29.1](https://github.com/jiuyang5354/bilibili-margin/releases/tag/v0.29.1) · 2026-10-29
 
 Favourites card size fix.
