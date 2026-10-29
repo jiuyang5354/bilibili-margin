@@ -1,0 +1,51 @@
+name: edge-retry
+# 补交 Edge 商店：build.yml 遇到「上一版仍在审核」时会打 edge-pending 标记。
+# 这里每 3 小时检查一次，有标记就把最新 Release 的 margin.zip 再提交一次；
+# 提交成功后删除标记，仍在审核就保持标记等下一轮。没有标记时几秒内结束。
+# 手动运行（workflow_dispatch）时不看标记，直接补交最新 Release。
+on:
+  schedule:
+    - cron: '17 */3 * * *'
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: edge-publish
+  cancel-in-progress: false
+jobs:
+  retry:
+    runs-on: ubuntu-latest
+    env:
+      EDGE_PRODUCT_ID: ${{ secrets.EDGE_PRODUCT_ID }}
+      EDGE_CLIENT_ID: ${{ secrets.EDGE_CLIENT_ID }}
+      EDGE_API_KEY: ${{ secrets.EDGE_API_KEY }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Check pending mark
+        id: mark
+        run: |
+          if [ "$GITHUB_EVENT_NAME" = workflow_dispatch ] || git ls-remote --exit-code --tags "https://github.com/${GITHUB_REPOSITORY}" refs/tags/edge-pending >/dev/null; then
+            echo "pending=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "没有待补交的 Edge 版本"
+          fi
+      - if: steps.mark.outputs.pending == 'true' && env.EDGE_API_KEY != ''
+        uses: actions/checkout@v4
+      - if: steps.mark.outputs.pending == 'true' && env.EDGE_API_KEY != ''
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Download latest release
+        id: rel
+        if: steps.mark.outputs.pending == 'true' && env.EDGE_API_KEY != ''
+        run: |
+          tag=$(gh release view --json tagName -q .tagName)
+          gh release download "$tag" -p margin.zip -O margin.zip --clobber
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+      - name: Publish to Edge Add-ons
+        id: edge
+        if: steps.mark.outputs.pending == 'true' && env.EDGE_API_KEY != ''
+        run: node scripts/edge-publish.mjs margin.zip "${{ steps.rel.outputs.tag }}"
+      - name: Clear Edge pending mark
+        if: steps.edge.outputs.status == 'submitted'
+        run: git push origin :refs/tags/edge-pending
