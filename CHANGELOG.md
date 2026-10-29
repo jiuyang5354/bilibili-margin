@@ -2,6 +2,12 @@
 
 # 更新日志
 
+## [v0.29.1](https://github.com/jiuyang5354/bilibili-margin/releases/tag/v0.29.1) · 2026-10-29
+
+收藏夹卡片尺寸修复。
+
+- 收藏夹面板里的视频卡片恢复为自适应宽度（约 210px 起），不再跟随首页 6/7/8 列网格被压小。v0.25.0 引入的回归。
+
 ## [v0.29.0](https://github.com/jiuyang5354/bilibili-margin/releases/tag/v0.29.0) · 2026-10-29
 
 性能优化，详见 docs/performance-v0.29.0.md。

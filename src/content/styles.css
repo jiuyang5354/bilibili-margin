@@ -1280,7 +1280,7 @@ canvas.gf-sheet-art[data-ready] { opacity: 1; filter: none; }
 @media (max-width: 1279px) { .app.home { --g: 40px; --cols: 5; } }
 @media (max-width: 1099px) { .app.home { --cols: 4; } }
 @media (max-width: 900px) { .app.home { --g: 18px; --cols: 3; } }
-.app.home .grid { grid-template-columns: repeat(var(--cols), minmax(0, 1fr)); gap: 28px 16px; }
+.app.home .grid:not(.fav-grid) { grid-template-columns: repeat(var(--cols), minmax(0, 1fr)); gap: 28px 16px; }
 
 /* 布局：足迹(1216px，尺寸不变) + 天气同一排；放不下时天气换到下一行（480px 宽，靠左） */
 .dash { display: grid; grid-template-columns: 1216px minmax(0, 1fr); gap: 16px; margin-top: 24px; align-items: stretch; }

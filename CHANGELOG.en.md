@@ -2,6 +2,12 @@
 
 # Changelog
 
+## [v0.29.1](https://github.com/jiuyang5354/bilibili-margin/releases/tag/v0.29.1) · 2026-10-29
+
+Favourites card size fix.
+
+- Video cards in the Favourites sheet are back to auto-fill width (min ~210px) instead of inheriting the home page's 6/7/8-column grid. Regression from v0.25.0.
+
 ## [v0.29.0](https://github.com/jiuyang5354/bilibili-margin/releases/tag/v0.29.0) · 2026-10-29
 
 Performance, see docs/performance-v0.29.0.md.
