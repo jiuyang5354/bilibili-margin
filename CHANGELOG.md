@@ -44,6 +44,87 @@
 - 正面底部「点赞 · 投币 · 收藏」换成未读消息数和新动态数，可点击跳转，有新内容时高亮。
 - 悬停头像需停留 200ms 才弹出，鼠标划过不再误触。
 
+## [v0.27.3](https://github.com/jiuyang5354/bilibili-margin/releases/tag/v0.27.3) · 2026-10-29
+
+珠链工牌。
+
+- 头像下方垂下金属珠链，穿进工牌顶部孔位，随主题切换亮/暗金属色。
+- 拖动甩动、点击翻面保留，卡片以孔位为轴摆动。
+
+## [v0.27.2](https://github.com/jiuyang5354/bilibili-margin/releases/tag/v0.27.2) · 2026-10-29
+
+去掉挂绳。
+
+- 工牌直接悬在头像下方（隐藏支点），仍可拖动甩动和翻面；位置限制在视口内。
+
+## [v0.27.1](https://github.com/jiuyang5354/bilibili-margin/releases/tag/v0.27.1) · 2026-10-29
+
+工牌位置调整。
+
+- 挂扣移到头像底部，绳子缩短，卡片缩小到 86%。
+- 静止时向左倾斜的重力，保证卡片不出视口。
+
+## [v0.27.0](https://github.com/jiuyang5354/bilibili-margin/releases/tag/v0.27.0) · 2026-10-28
+
+头像卡片换成工牌。
+
+- 悬停头像弹出 21st ID Card Lanyard 风格工牌：绳索物理、拖动甩动、点击翻面，反面汇总账号入口。
+- 移离头像和卡片 0.5 秒后自动收起。
+- 移除首页的弹性画廊。
+
+## [v0.26.0](https://github.com/jiuyang5354/bilibili-margin/releases/tag/v0.26.0) · 2026-10-28
+
+点阵天气卡。
+
+- 首页新增点阵天气卡（移植 21st Weather Widget）：动态天空、逐时与三日预报。
+- Open-Meteo 数据 + IP 定位，城市可点击修改，缓存 30 分钟。
+
+## [v0.25.2](https://github.com/jiuyang5354/bilibili-margin/releases/tag/v0.25.2) · 2026-10-28
+
+画廊跟着推荐走。
+
+- 弹性画廊显示每批推荐的前 5 个视频，换一批时同步刷新，且不在下方网格重复。
+
+## [v0.25.1](https://github.com/jiuyang5354/bilibili-margin/releases/tag/v0.25.1) · 2026-10-28
+
+弹性画廊。
+
+- 首页挂件换成 21st Elastic Gallery：5 张封面手风琴展开，竖排中文标题；登录后显示最近观看并可续播。
+
+## [v0.25.0](https://github.com/jiuyang5354/bilibili-margin/releases/tag/v0.25.0) · 2026-10-28
+
+首页版式对齐搜索页。
+
+- 首页内容宽度、边距和列数与 B 站搜索页一致（6/7/8 列随屏宽变化）。
+- 足迹卡固定宽度，右侧加入挂件位。
+
+## [v0.24.0](https://github.com/jiuyang5354/bilibili-margin/releases/tag/v0.24.0) · 2026-10-28
+
+开场动画收尾。
+
+- 开场结束后小电视飞到左上角，作为回到首页的标志常驻。
+- 移除顶栏「快捷命令」，Ctrl+K 仍可用。
+
+## [v0.23.3](https://github.com/jiuyang5354/bilibili-margin/releases/tag/v0.23.3) · 2026-10-28
+
+播放页悬浮菜单字号。
+
+- 中文 18px、英文 11px 大写字距，标签 14px，层级更清楚。
+
+## [v0.23.2](https://github.com/jiuyang5354/bilibili-margin/releases/tag/v0.23.2) · 2026-10-28
+
+菜单字体与评论间距。
+
+- 悬浮菜单改用非衬线字体（Margin Sans SC + Alte Haas Grotesk）。
+- 评论区上方留白 24px。
+
+## [v0.23.1](https://github.com/jiuyang5354/bilibili-margin/releases/tag/v0.23.1) · 2026-10-28
+
+评论区皮肤。
+
+- 原生评论区头部、输入框接入映间配色。
+- 命令面板入口移到顶栏（Ctrl+K）。
+
 ## [v0.23.0](https://github.com/jiuyang5354/bilibili-margin/releases/tag/v0.23.0) · 2026-10-28
 
 首页搜索与性能优化整合版。包含 v0.22.5～v0.22.7 的全部优化及修复，不需要额外套用性能补丁。

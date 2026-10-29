@@ -44,6 +44,87 @@ Avatar ID card upgrade.
 - Front footer now shows unread messages and new dynamics counts (clickable, highlighted when non-zero) instead of placeholder text.
 - Hovering the avatar must dwell 200ms before the card drops, so passing over it no longer opens it.
 
+## [v0.27.3](https://github.com/jiuyang5354/bilibili-margin/releases/tag/v0.27.3) · 2026-10-29
+
+Ball-chain ID card.
+
+- A metal ball chain hangs from the avatar into the card slot, theme-aware.
+- Drag-swing and tap-to-flip kept; the card pivots at its slot.
+
+## [v0.27.2](https://github.com/jiuyang5354/bilibili-margin/releases/tag/v0.27.2) · 2026-10-29
+
+No more lanyard rope.
+
+- The card floats under the avatar on a hidden pivot, still draggable and flippable, kept inside the viewport.
+
+## [v0.27.1](https://github.com/jiuyang5354/bilibili-margin/releases/tag/v0.27.1) · 2026-10-29
+
+Card placement.
+
+- Clasp under the avatar, shorter rope, card at 86%.
+- Tilted gravity keeps the card inside the viewport.
+
+## [v0.27.0](https://github.com/jiuyang5354/bilibili-margin/releases/tag/v0.27.0) · 2026-10-28
+
+Avatar card becomes an ID card.
+
+- Hovering the avatar drops a 21st ID Card Lanyard style card: rope physics, drag-swing, tap to flip, account links on the back.
+- Closes 0.5s after the pointer leaves.
+- Home elastic gallery removed.
+
+## [v0.26.0](https://github.com/jiuyang5354/bilibili-margin/releases/tag/v0.26.0) · 2026-10-28
+
+Dot-matrix weather card.
+
+- New home weather card (21st Weather Widget port): animated sky, hourly and 3-day forecast.
+- Open-Meteo + IP location, editable city, 30-minute cache.
+
+## [v0.25.2](https://github.com/jiuyang5354/bilibili-margin/releases/tag/v0.25.2) · 2026-10-28
+
+Gallery follows recommendations.
+
+- The elastic gallery shows the first 5 recommended videos of each batch, refreshes with Shuffle and never repeats them in the grid.
+
+## [v0.25.1](https://github.com/jiuyang5354/bilibili-margin/releases/tag/v0.25.1) · 2026-10-28
+
+Elastic gallery.
+
+- Home widgets replaced by 21st Elastic Gallery: 5 accordion covers with vertical CJK titles; resume recent history when signed in.
+
+## [v0.25.0](https://github.com/jiuyang5354/bilibili-margin/releases/tag/v0.25.0) · 2026-10-28
+
+Home layout matches search.
+
+- Home width, gutters and columns now match the Bilibili search page (6/7/8 columns by width).
+- Footprint card fixed width with a widget slot.
+
+## [v0.24.0](https://github.com/jiuyang5354/bilibili-margin/releases/tag/v0.24.0) · 2026-10-28
+
+Intro finale.
+
+- After the intro the TV flies to the top-left and stays as the home link.
+- Header Command tab removed; Ctrl+K still works.
+
+## [v0.23.3](https://github.com/jiuyang5354/bilibili-margin/releases/tag/v0.23.3) · 2026-10-28
+
+Watch menu type scale.
+
+- CJK 18px, English 11px tracked caps, labels 14px.
+
+## [v0.23.2](https://github.com/jiuyang5354/bilibili-margin/releases/tag/v0.23.2) · 2026-10-28
+
+Menu fonts and comment spacing.
+
+- Floating menu uses sans fonts (Margin Sans SC + Alte Haas Grotesk).
+- 24px top padding on comments.
+
+## [v0.23.1](https://github.com/jiuyang5354/bilibili-margin/releases/tag/v0.23.1) · 2026-10-28
+
+Comment skin.
+
+- Native comment header and composer follow Margin colours.
+- Command palette entry moved to the header (Ctrl+K).
+
 ## [v0.23.0](https://github.com/jiuyang5354/bilibili-margin/releases/tag/v0.23.0) · 2026-10-28
 
 Combined homepage-search and performance update. Includes all optimizations and fixes from v0.22.5 through v0.22.7; no separate performance patch is required.

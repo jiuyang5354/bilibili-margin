@@ -25,10 +25,19 @@ jobs:
         with:
           name: margin
           path: dist/
+      - name: Release notes from CHANGELOG
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          tag="${GITHUB_REF_NAME}"
+          for f in CHANGELOG.md CHANGELOG.en.md; do
+            awk -v t="## [$tag]" 'index($0,t)==1{on=1;next} on&&/^## \[v/{exit} on' "$f"
+            echo; echo '---'; echo
+          done > release-notes.md
       - if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
           files: margin.zip
+          body_path: release-notes.md
       - name: Publish to Edge Add-ons
         if: startsWith(github.ref, 'refs/tags/v') && env.EDGE_API_KEY != ''
         run: node scripts/edge-publish.mjs margin.zip
