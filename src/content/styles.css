@@ -1345,7 +1345,6 @@ canvas.gf-sheet-art[data-ready] { opacity: 1; filter: none; }
 .idcl-stage:not(.idcl-leaving) .idcl-card { animation: idcl-in .35s var(--ease-out); }
 @keyframes idcl-in { from { opacity: 0; } }
 .idcl-stage * { box-sizing: border-box; }
-.idcl-rope { position: absolute; inset: 0; pointer-events: none; }
 .idcl-card { position: absolute; width: 236px; aspect-ratio: 236 / 460; perspective: 1400px; cursor: grab; touch-action: none; user-select: none; transform-origin: top center; pointer-events: auto; }
 .idcl-card:active { cursor: grabbing; }
 .idcl-flipper { position: relative; width: 100%; height: 100%; transform-style: preserve-3d; }

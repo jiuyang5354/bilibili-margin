@@ -11,11 +11,11 @@ import { fmtCount, h, icon, ICONS } from './dom';
  */
 
 const NUM_POINTS = 13;
-const REST_LENGTH = 92;
+const REST_LENGTH = 48;
 const CARD_SCALE = 0.86;
 const SEGMENT_LENGTH = REST_LENGTH / (NUM_POINTS - 1);
 const GRAVITY = 0.55;
-const FRICTION = 0.98;
+const FRICTION = 0.95;
 const CONSTRAINT_ITERATIONS = 6;
 const TAP_THRESHOLD = 6;
 const MAX_TILT = 9;
@@ -111,13 +111,11 @@ export function createUserMenu(a: Account): HTMLElement {
 
   const flipper = h('div', { class: 'idcl-flipper' }, front, back);
   const card = h('div', { class: 'idcl-card', role: 'dialog', 'aria-label': `${a.name} 的账号卡片` }, flipper);
-  const canvas = h('canvas', { class: 'idcl-rope' }) as HTMLCanvasElement;
   const hint = h('div', { class: 'idcl-hint' }, h('span', {}, '拖动摇晃 · 点击翻面'));
-  const stage = h('div', { class: 'idcl-stage', hidden: '' }, canvas, card);
+  const stage = h('div', { class: 'idcl-stage', hidden: '' }, card);
   if (!localStorage.getItem(HINT_KEY)) card.append(hint);
 
   /* ── 物理（原组件逻辑） ─────────────────────────── */
-  const ctx = canvas.getContext('2d')!;
   const anchor = { x: 0, y: 0 };
   const points: Pt[] = [];
   let dragging = false, flipped = false, interacted = false;
@@ -126,20 +124,15 @@ export function createUserMenu(a: Account): HTMLElement {
   let flipTarget = 0, flipCurrent = 0;
   const tiltTarget = { x: 0, y: 0 }, tiltCurrent = { x: 0, y: 0 };
   let mouse = { x: -9999, y: -9999 };
-  let raf = 0, isOpen = false, dpr = 1, t = 0, restX = 0, gx = 0, restAngle = 0;
+  let raf = 0, isOpen = false, t = 0, restX = 0, gx = 0, restAngle = 0;
 
   const resize = () => {
-    dpr = Math.min(2, devicePixelRatio || 1);
-    canvas.width = innerWidth * dpr; canvas.height = innerHeight * dpr;
-    canvas.style.width = `${innerWidth}px`; canvas.style.height = `${innerHeight}px`;
     const r = trigger.getBoundingClientRect();
-    anchor.x = r.left + r.width / 2;
-    anchor.y = r.bottom + 6;
-    // 挂扣始终在头像正下方；卡片太靠右会出视口，就让它静止时往左偏一点（绳子斜挂）
-    restX = Math.min(anchor.x, innerWidth - (236 * CARD_SCALE) / 2 - 20);
-    const dx = restX - anchor.x, dy = Math.sqrt(Math.max(1, REST_LENGTH ** 2 - dx * dx));
-    gx = GRAVITY * dx / dy;
-    restAngle = Math.atan2(dy, dx) - Math.PI / 2;
+    // 不画挂绳了：支点藏在头像后面，卡片停在头像下方 12px，右边不出视口；甩动仍按单摆
+    restX = Math.min(r.left + r.width / 2, innerWidth - (236 * CARD_SCALE) / 2 - 20);
+    anchor.x = restX;
+    anchor.y = r.bottom + 12 - REST_LENGTH;
+    gx = 0; restAngle = 0;
   };
   const clamp = (p: { x: number; y: number }) => {
     p.x = Math.max(18, Math.min(innerWidth - 18, p.x));
@@ -172,35 +165,6 @@ export function createUserMenu(a: Account): HTMLElement {
     }
     for (let i = 1; i < points.length; i++) clamp(points[i]);
   };
-  const drawRope = () => {
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    ctx.clearRect(0, 0, innerWidth, innerHeight);
-    const path: { x: number; y: number; cx?: number; cy?: number }[] = [{ x: points[0].x, y: points[0].y }];
-    for (let i = 1; i < points.length - 1; i++) path.push({ x: points[i].x, y: points[i].y, cx: (points[i].x + points[i + 1].x) / 2, cy: (points[i].y + points[i + 1].y) / 2 });
-    path.push({ x: points[points.length - 1].x, y: points[points.length - 1].y });
-    const ribbon = (style: string, width: number) => {
-      ctx.beginPath(); ctx.moveTo(path[0].x, path[0].y);
-      for (let i = 1; i < path.length; i++) { const p = path[i]; if (p.cx !== undefined) ctx.quadraticCurveTo(p.x, p.y, p.cx, p.cy!); else ctx.lineTo(p.x, p.y); }
-      ctx.strokeStyle = style; ctx.lineWidth = width; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.stroke();
-    };
-    ctx.save(); ctx.translate(2, 4); ctx.globalAlpha = 0.3; ribbon('#000000', 16); ctx.restore();
-    ribbon('#1c1e23', 16); ribbon('rgba(0,0,0,0.35)', 16.5); ribbon('#1c1e23', 13.5); ribbon('rgba(255,255,255,0.07)', 3);
-    const mi = Math.floor(points.length * 0.3);
-    const m = points[mi], mp = points[mi - 1], mn = points[mi + 1];
-    ctx.save(); ctx.translate(m.x, m.y); ctx.rotate(Math.atan2(mn.y - mp.y, mn.x - mp.x) + Math.PI / 2);
-    ctx.strokeStyle = 'rgba(255,255,255,0.5)'; ctx.lineWidth = 1.3; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
-    ctx.beginPath(); ctx.moveTo(-4, 3.5); ctx.lineTo(0, -3.5); ctx.lineTo(4, 3.5); ctx.stroke(); ctx.restore();
-  };
-  const drawClip = () => {
-    ctx.save(); ctx.translate(anchor.x, anchor.y - 2);
-    const g = ctx.createLinearGradient(-11, -9, 11, 9);
-    g.addColorStop(0, '#e7e9ec'); g.addColorStop(0.35, '#aeb2b8'); g.addColorStop(0.65, '#7c8087'); g.addColorStop(1, '#4d5157');
-    ctx.fillStyle = g; ctx.beginPath(); ctx.roundRect(-11, -9, 22, 16, 4); ctx.fill();
-    ctx.strokeStyle = 'rgba(0,0,0,.25)'; ctx.lineWidth = 1; ctx.stroke();
-    ctx.strokeStyle = 'rgba(255,255,255,.55)'; ctx.beginPath(); ctx.moveTo(-8, -6); ctx.lineTo(8, -6); ctx.stroke();
-    ctx.fillStyle = '#3a3d42'; ctx.beginPath(); ctx.arc(0, 0, 2.2, 0, Math.PI * 2); ctx.fill();
-    ctx.restore();
-  };
   const positionCard = () => {
     const last = points[points.length - 1], prev = points[points.length - 2];
     // 减去静止时绳子的斜角，卡片静止时保持竖直，甩动时照常转
@@ -228,7 +192,7 @@ export function createUserMenu(a: Account): HTMLElement {
     flipper.style.transform = `rotateY(${flipCurrent + tiltCurrent.y}deg) rotateX(${tiltCurrent.x}deg)`;
   };
   const loop = () => {
-    updatePoints(); applyConstraints(); drawRope(); drawClip(); positionCard(); updateTilt();
+    updatePoints(); applyConstraints(); positionCard(); updateTilt();
     raf = requestAnimationFrame(loop);
   };
 
@@ -303,7 +267,7 @@ export function createUserMenu(a: Account): HTMLElement {
       const dx = restX - anchor.x, dy = Math.sqrt(Math.max(0, REST_LENGTH ** 2 - dx * dx));
       for (let i = 0; i < NUM_POINTS; i++) {
         const k = i / (NUM_POINTS - 1), x = anchor.x + dx * k, y = anchor.y + dy * k;
-        points.push({ x, y, oldx: x + k * 3, oldy: y, pinned: i === 0 });
+        points.push({ x, y, oldx: x + k * 1.5, oldy: y, pinned: i === 0 });
       }
     }
     flipped = false; flipTarget = 0; flipCurrent = 0;
