@@ -1367,10 +1367,10 @@ canvas.gf-sheet-art[data-ready] { opacity: 1; filter: none; }
 .idcl-brand { display: flex; align-items: flex-start; gap: 6px; }
 .idcl-brand-mark { font-size: 12px; color: var(--idcl-accent); line-height: 1; margin-top: 1px; }
 .idcl-brand-text { display: flex; flex-direction: column; }
-.idcl-brand-text b { font-family: var(--idcl-font-display); font-weight: 800; font-size: 12px; letter-spacing: .01em; line-height: 1.2; }
-.idcl-brand-text small { font-family: var(--idcl-font-mono); font-size: 7px; letter-spacing: .09em; text-transform: uppercase; color: var(--idcl-card-soft); }
+.idcl-brand-text b { font-family: var(--idcl-font-display); font-weight: 800; font-size: 13px; letter-spacing: .01em; line-height: 1.2; }
+.idcl-brand-text small { font-family: var(--idcl-font-mono); font-size: 10px; margin-top: 2px; letter-spacing: .09em; text-transform: uppercase; color: var(--idcl-card-soft); }
 .idcl-pillars { display: flex; flex-direction: column; align-items: flex-end; gap: 1px; }
-.idcl-pillars span { font-family: var(--idcl-font-mono); font-size: 8px; letter-spacing: .08em; text-transform: uppercase; color: var(--idcl-card-soft); }
+.idcl-pillars span { font-family: var(--idcl-font-mono); font-size: 10px; line-height: 1.4; font-variant-numeric: tabular-nums; letter-spacing: .08em; text-transform: uppercase; color: var(--idcl-card-soft); }
 .idcl-pillars i { width: 16px; height: 2px; background: var(--idcl-card-ink); margin-top: 3px; }
 .idcl-photo { position: relative; width: 100%; height: 112px; border-radius: 10px; background: #eae7de; overflow: visible; margin-bottom: 12px; flex-shrink: 0;
   box-shadow: inset 0 0 0 1px rgba(0,0,0,.08), inset 0 2px 6px rgba(0,0,0,.12); }
@@ -1379,15 +1379,23 @@ canvas.gf-sheet-art[data-ready] { opacity: 1; filter: none; }
 .idcl-verified { position: absolute; right: -6px; bottom: -6px; width: 22px; height: 22px; border-radius: 50%; background: linear-gradient(160deg, #fb7299, #e0507a);
   display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 6px rgba(0,0,0,.4), 0 0 0 3px var(--idcl-card); }
 .idcl-verified svg { width: 11px; height: 11px; }
-.idcl-name { margin: 0 0 2px; font-family: var(--idcl-font-display); font-weight: 800; font-size: 18px; letter-spacing: -.01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--idcl-card-ink); }
-.idcl-role { margin: 0 0 8px; font-size: 10px; color: var(--idcl-card-soft); font-weight: 600; letter-spacing: .08em; text-transform: uppercase; }
-.idcl-exp { height: 3px; border-radius: 3px; background: var(--idcl-card-line); overflow: hidden; margin-bottom: 10px; }
+.idcl-name { margin: 0 0 4px; font-family: var(--idcl-font-display); font-weight: 800; font-size: 20px; line-height: 1.2; letter-spacing: -.01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--idcl-card-ink); }
+.idcl-roleline { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 6px; }
+.idcl-role { margin: 0; font-size: 12px; color: var(--idcl-card-soft); font-weight: 600; letter-spacing: .04em; }
+.idcl-expnum { font-family: var(--idcl-font-mono); font-size: 10px; color: var(--idcl-card-soft); font-variant-numeric: tabular-nums; }
+.idcl-exp { height: 4px; border-radius: 4px; background: var(--idcl-card-line); overflow: hidden; margin-bottom: 12px; flex-shrink: 0; }
+.idcl-stats { display: grid; grid-template-columns: repeat(3, 1fr); border-block: 1px solid var(--idcl-card-line); margin-bottom: 12px; }
+.idcl-stats > * { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 8px 0; color: inherit; text-decoration: none; border-radius: 6px; transition: background-color 150ms var(--ease-out); }
+.idcl-stats > * + * { box-shadow: -1px 0 0 var(--idcl-card-line); border-radius: 0; }
+.idcl-stats a:hover { background: var(--idcl-card-line); }
+.idcl-stats b { font-family: var(--idcl-font-mono); font-size: 16px; font-weight: 700; color: var(--idcl-card-ink); font-variant-numeric: tabular-nums; line-height: 1.2; }
+.idcl-stats span { font-size: 10px; color: var(--idcl-card-soft); letter-spacing: .08em; }
 .idcl-exp i { display: block; height: 100%; background: var(--idcl-accent); }
 .idcl-divider { width: 100%; height: 1px; background: var(--idcl-card-line); margin-bottom: 10px; }
 .idcl-idrow { width: 100%; display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-bottom: 12px; }
-.idcl-idrow-labels { display: flex; flex-direction: column; gap: 5px; font-family: var(--idcl-font-mono); min-width: 0; }
+.idcl-idrow-labels { display: flex; flex-direction: column; gap: 6px; font-family: var(--idcl-font-mono); min-width: 0; }
 .idcl-idrow-labels > * { display: flex; gap: 8px; align-items: baseline; color: inherit; }
-.idcl-idrow-labels span { width: 56px; flex-shrink: 0; font-size: 8px; letter-spacing: .06em; text-transform: uppercase; color: var(--idcl-card-soft); }
+.idcl-idrow-labels span { width: 32px; flex-shrink: 0; font-size: 10px; letter-spacing: .06em; color: var(--idcl-card-soft); }
 .idcl-idrow-labels b { font-size: 10px; font-weight: 600; color: var(--idcl-card-ink); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .idcl-idrow-labels a:hover b { color: var(--idcl-accent); }
 .idcl-footer { width: 100%; margin-top: auto; padding-top: 10px; border-top: 1px solid var(--idcl-card-line); display: flex; align-items: center; }
@@ -1405,8 +1413,8 @@ canvas.gf-sheet-art[data-ready] { opacity: 1; filter: none; }
 .idcl-qr { width: 64px; height: 64px; background: #fff; padding: 4px; border-radius: 4px; flex-shrink: 0; box-shadow: 0 0 0 1px var(--idcl-card-line); box-sizing: border-box; }
 .idcl-qr svg { display: block; width: 100%; height: 100%; fill: #181a20; }
 .idcl-qr.idcl-small { width: 46px; height: 46px; padding: 3px; }
-.idcl-scan { font-family: var(--idcl-font-mono); font-size: 8.5px; color: var(--idcl-card-soft); line-height: 1.6; padding-top: 2px; word-break: break-all; }
-.idcl-scan b { color: var(--idcl-card-ink); display: block; font-size: 10px; margin-bottom: 2px; letter-spacing: .03em; font-family: var(--sans); }
+.idcl-scan { font-family: var(--idcl-font-mono); font-size: 10px; color: var(--idcl-card-soft); line-height: 1.6; padding-top: 2px; word-break: break-all; }
+.idcl-scan b { color: var(--idcl-card-ink); display: block; font-size: 12px; margin-bottom: 2px; letter-spacing: .03em; font-family: var(--sans); }
 .idcl-links { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
 .idcl-link { all: unset; box-sizing: border-box; display: flex; align-items: center; gap: 6px; height: 28px; padding: 0 8px; border-radius: 8px; font: 500 11px/1 var(--sans); color: var(--idcl-card-ink); border: 1px solid var(--idcl-card-line); cursor: pointer; transition: border-color .15s ease, color .15s ease, transform .15s ease; }
 .idcl-link svg { width: 13px; height: 13px; flex: none; color: var(--idcl-card-soft); fill: none; stroke: currentColor; stroke-width: 1.8; }
@@ -1417,7 +1425,7 @@ canvas.gf-sheet-art[data-ready] { opacity: 1; filter: none; }
 .idcl-link[aria-disabled] { opacity: .5; pointer-events: none; }
 .idcl-sig { margin-top: auto; }
 .idcl-script { font: italic 400 24px/1.1 var(--serif); color: var(--idcl-card-ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.idcl-sig small { display: block; font-family: var(--idcl-font-mono); font-size: 8px; letter-spacing: .08em; text-transform: uppercase; color: var(--idcl-card-soft); border-top: 1px solid var(--idcl-card-line); margin-top: 4px; padding-top: 4px; }
+.idcl-sig small { display: block; font-family: var(--idcl-font-mono); font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: var(--idcl-card-soft); border-top: 1px solid var(--idcl-card-line); margin-top: 4px; padding-top: 4px; }
 .idcl-hint { position: absolute; left: 50%; top: calc(100% + 12px); transform: translateX(-50%); padding: 6px 12px; border-radius: 999px; background: rgba(10,12,16,.72); color: #f3f0e9; font: 11px/1 var(--sans); letter-spacing: .04em; white-space: nowrap; pointer-events: none; transition: opacity .4s ease; }
 .idcl-hint.idcl-hint-hidden { opacity: 0; }
 @media (prefers-reduced-motion: reduce) { .idcl-holo { animation: none; } .idcl-face::after { transition: none; } }

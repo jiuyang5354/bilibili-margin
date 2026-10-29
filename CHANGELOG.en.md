@@ -2,6 +2,14 @@
 
 # Changelog
 
+## [v0.28.1](https://github.com/jiuyang5354/bilibili-margin/releases/tag/v0.28.1) · 2026-10-29
+
+ID card front re-laid out (after 21st ID Card Lanyard + Flip Card stats row).
+
+- Following / followers / coins as a three-column stat row; exp numbers share the line with the membership role.
+- Top-right shows level and UID; info rows show exp to next level, B-coins and a scan hint.
+- No text on the card below 10px, matching the site type scale.
+
 ## [v0.28.0](https://github.com/jiuyang5354/bilibili-margin/releases/tag/v0.28.0) · 2026-10-29
 
 Avatar ID card upgrade.

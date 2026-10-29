@@ -2,6 +2,14 @@
 
 # 更新日志
 
+## [v0.28.1](https://github.com/jiuyang5354/bilibili-margin/releases/tag/v0.28.1) · 2026-10-29
+
+工牌正面重新排版（参考 21st ID Card Lanyard 与 Flip Card 的数据栏）。
+
+- 关注 / 粉丝 / 硬币改为三栏大数字，经验值数字与会员身份同行。
+- 右上角改为等级与 UID，去掉重复的会员标签；信息行改为等级差值、B币和扫码提示。
+- 卡片上所有文字不小于 10px，符合站内字号规范。
+
 ## [v0.28.0](https://github.com/jiuyang5354/bilibili-margin/releases/tag/v0.28.0) · 2026-10-29
 
 头像工牌升级。
