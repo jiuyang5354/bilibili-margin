@@ -2,6 +2,15 @@
 
 # Changelog
 
+## [v0.33.0](https://github.com/jiuyang5354/bilibili-margin/releases/tag/v0.33.0) · 2026-10-29
+
+New background: Gateway (汇流).
+
+- Ported from 21st "Gateway Flow" (Neuform): 80 dotted Bézier paths converge from both edges, each carrying a particle inward; clicking sends out a shockwave that pushes particles away.
+- On the home page the paths converge on the search bar; elsewhere on the screen center. Dark uses white dotted lines on black, light uses dark ink on #eef1f6 paper, and line color crossfades with the theme.
+- Drawn with Canvas 2D at device pixels (capped at 1.5×) so the dotted lines stay crisp; pauses like other backgrounds when hidden, during the intro, or with reduced motion, and keeps the same flow speed when throttled to 30fps.
+- The settings thumbnail renders with the same code.
+
 ## [v0.32.1](https://github.com/jiuyang5354/bilibili-margin/releases/tag/v0.32.1) · 2026-10-29
 
 - Watch page "Up next" and recommendations: uploader name, play and danmaku counts used the faintest gray and were nearly invisible on dark backgrounds; they now use the secondary text color (≥4.5:1 in both themes), with matching icons.

@@ -132,6 +132,8 @@ export class MarginApp {
     // 首页主搜索：居中大胶囊（和搜索页同款），顶栏的小搜索框在首页隐藏，避免两个入口
     const heroS = createHeroSearch(() => this.app);
     const hero = heroS.el;
+    // 汇流背景的点线汇向首页搜索栏
+    this.bg.setFocus(hero);
     const bar = h('div', { class: 'bar' }, h('div', { class: 'eyebrow' }, h('span', {}, todayLabel()), h('span', { class: 'en' }, 'For You'), h('span', { class: 'no' }, issueNo())), h('div', { class: 'bar-row' }, tabs, refresh));
 
     this.grid = h('section', { class: 'grid', 'aria-live': 'polite' });

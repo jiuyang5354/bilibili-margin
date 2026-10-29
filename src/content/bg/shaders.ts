@@ -12,6 +12,9 @@ float fbm(vec2 p){ float v=0., a=.5; mat2 m=mat2(1.6,1.2,-1.2,1.6); for(int i=0;
 `;
 
 const BODIES: Partial<Record<ShaderId, string>> = {
+  // 汇流：点线和粒子由 gate.ts 的 Canvas 2D 叠在上面画（细点线需要整像素清晰），GL 这层只铺纸色底
+  gate: `
+void main(){ gl_FragColor=vec4(u_bg,1.); }`,
   // 流光：WebGPU 计算着色器的粒子流（flux/）画好后作为 u_tex 传进来；不支持 WebGPU 时画下面的近似流线
   flux: `
 uniform sampler2D u_tex; uniform float u_has;
@@ -103,10 +106,10 @@ void main(){
 }`,
 };
 
-export const SHADER_IDS: ShaderId[] = ['veil', 'smoke', 'neuro', 'flow', 'rays', 'blend', 'aurora', 'silk', 'mesh', 'grain', 'ice', 'flux'];
+export const SHADER_IDS: ShaderId[] = ['veil', 'smoke', 'neuro', 'flow', 'rays', 'blend', 'aurora', 'silk', 'mesh', 'grain', 'ice', 'flux', 'gate'];
 export const BUILDER_IDS = ['veil', 'smoke', 'neuro', 'flow', 'rays', 'blend'] as const;
 export const isBuilder = (id: ShaderId): id is typeof BUILDER_IDS[number] => (BUILDER_IDS as readonly string[]).includes(id);
-export const SHADER_NAMES: Record<ShaderId, string> = { aurora: '极光', silk: '丝绸', mesh: '网格渐变', grain: '颗粒', ice: '冰蓝', veil: '丝缎', smoke: '烟霞', neuro: '流萤', flow: '流沙', rays: '天光', blend: '弥散', flux: '流光' };
+export const SHADER_NAMES: Record<ShaderId, string> = { gate: '汇流', aurora: '极光', silk: '丝绸', mesh: '网格渐变', grain: '颗粒', ice: '冰蓝', veil: '丝缎', smoke: '烟霞', neuro: '流萤', flow: '流沙', rays: '天光', blend: '弥散', flux: '流光' };
 
 export function fragment(id: ShaderId): string {
   if (isBuilder(id)) return BUILDER_FRAG.replace('/*SHADE*/', BUILDER[id].shade);
@@ -125,6 +128,7 @@ export const PALETTES: Record<'light' | 'dark', Partial<Record<ShaderId, Pal>>> 
     mesh: { bg: hex('#101015'), c: [hex('#173b6b'), hex('#5b2a6e'), hex('#0e5a5a')] },
     grain: { bg: hex('#0e0e10'), c: [hex('#3a1f2b'), hex('#1c3350'), hex('#c06a3c')] },
     ice: { bg: hex('#0f1014'), c: [hex('#2b5fd9'), hex('#1b2f5e'), hex('#1a1d26')] },
+    gate: { bg: hex('#000000'), c: [hex('#ffffff'), hex('#ffffff'), hex('#ffffff')] },
     flux: { bg: hex('#0c0d11'), c: [hex('#3d7bff'), hex('#a35cff'), hex('#5ff0d0')] },
   },
   light: {
@@ -133,6 +137,7 @@ export const PALETTES: Record<'light' | 'dark', Partial<Record<ShaderId, Pal>>> 
     mesh: { bg: hex('#f5f4f1'), c: [hex('#bfe0ff'), hex('#ffd1e3'), hex('#c9f2e3')] },
     grain: { bg: hex('#f3f1ec'), c: [hex('#f7d9c4'), hex('#cfdcf2'), hex('#f2b48f')] },
     ice: { bg: hex('#f5f4f1'), c: [hex('#6f9cf2'), hex('#c3d6fb'), hex('#e9eef8')] },
+    gate: { bg: hex('#eef1f6'), c: [hex('#1a1f2a'), hex('#1a1f2a'), hex('#1a1f2a')] },
     flux: { bg: hex('#f4f3ef'), c: [hex('#7d9ff5'), hex('#e59bc4'), hex('#4fbfa8')] },
   },
 };

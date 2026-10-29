@@ -1,7 +1,7 @@
 export type Theme = 'auto' | 'light' | 'dark';
 /** 只保留经典配色（雾蓝 / 夜蓝已按用户要求移除） */
 export type Palette = 'classic';
-export type ShaderId = 'aurora' | 'silk' | 'mesh' | 'grain' | 'ice' | 'veil' | 'smoke' | 'neuro' | 'flow' | 'rays' | 'blend' | 'flux';
+export type ShaderId = 'aurora' | 'silk' | 'mesh' | 'grain' | 'ice' | 'veil' | 'smoke' | 'neuro' | 'flow' | 'rays' | 'blend' | 'flux' | 'gate';
 export type BgMode = 'random' | 'fixed' | 'image' | 'off';
 
 export interface Filters {
@@ -96,7 +96,7 @@ export function sanitizeSettings(raw: unknown): Settings | null {
   out.filters.minViews = num(f.minViews, 1e10) ?? DEFAULTS.filters.minViews;
   out.filters.minDuration = num(f.minDuration, 86400) ?? DEFAULTS.filters.minDuration;
   const b = (r.bg && typeof r.bg === 'object' ? r.bg : {}) as Record<string, unknown>;
-  const SHADERS: ShaderId[] = ['aurora', 'silk', 'mesh', 'grain', 'ice', 'veil', 'smoke', 'neuro', 'flow', 'rays', 'blend', 'flux'];
+  const SHADERS: ShaderId[] = ['aurora', 'silk', 'mesh', 'grain', 'ice', 'veil', 'smoke', 'neuro', 'flow', 'rays', 'blend', 'flux', 'gate'];
   out.bg = {
     mode: (['random', 'fixed', 'image', 'off'] as BgMode[]).includes(b.mode as BgMode) ? (b.mode as BgMode) : DEFAULTS.bg.mode,
     shader: SHADERS.includes(b.shader as ShaderId) ? (b.shader as ShaderId) : DEFAULTS.bg.shader,

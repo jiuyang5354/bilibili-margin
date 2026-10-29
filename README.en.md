@@ -28,6 +28,8 @@ v0.22.7 restores folder-opening transitions and reduces pointer/theme-switch wor
 
 ## Design references
 
+The "Gateway" background (v0.33.0) ports 21st "Gateway Flow" (Neuform) to Canvas 2D.
+
 Detail pages (v0.32.0) for single posts, opus articles, and columns port the two-column layout of 21st "Article With Author Sidebar" (olewandowski1).
 
 Interactions were independently implemented in native TypeScript and CSS after studying 21st.dev components including Sheet, Segmented Control, Chip Group, Minimal Slider, buttons, toggles, and Command Search.

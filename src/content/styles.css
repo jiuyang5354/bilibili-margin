@@ -153,6 +153,8 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
 .bg[data-mode="image"] canvas, .bg[data-mode="off"] { display: none; }
 .bg[data-composite] { opacity: 1; transition: none; }
 .bg[data-composite] .bg-scrim { display: none; }
+/* 汇流的 2D 点线层：合成模式下 GL 自己处理强度，叠层按强度单独变淡 */
+.bg[data-composite] canvas.gate { opacity: var(--bg-o, .6); }
 .bg-scrim { position: absolute; inset: 0; background: linear-gradient(180deg, transparent, color-mix(in srgb, var(--canvas) 55%, transparent) 55%, color-mix(in srgb, var(--canvas) 88%, transparent)); }
 .app:not([data-bg="off"]) .card .body { text-shadow: 0 0 18px var(--canvas); }
 

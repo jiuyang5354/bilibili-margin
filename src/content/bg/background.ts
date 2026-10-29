@@ -6,6 +6,7 @@ import type { FluxField } from './flux';
 import { setupQuad, ShaderProgram } from './program';
 import { h } from '../ui/dom';
 import { GlassLens } from './lens';
+import { GateFlow } from './gate';
 
 const LAST_KEY = 'margin:last-shader';
 
@@ -117,6 +118,7 @@ export class BackgroundLayer {
     }
     if (id === this.current && this.prog) return;
     if (this.prog) this.gl.deleteProgram(this.prog.prog);
+    if (id === 'gate') this.mountGate(); else this.unmountGate();
     if (this.flux && id !== 'flux') { this.flux.dispose(); this.flux = null; this.gl.deleteTexture(this.fluxTex); this.fluxTex = null; }
     this.prog = new ShaderProgram(this.gl, id);
     this.prog.bind();
@@ -132,7 +134,39 @@ export class BackgroundLayer {
     this.canvas.width = Math.max(1, Math.round(r.width * scale));
     this.canvas.height = Math.max(1, Math.round(r.height * scale));
     this.gl?.viewport(0, 0, this.canvas.width, this.canvas.height);
+    this.gate?.resize(r.width, r.height);
     this.draw(performance.now());
+  }
+
+  /** 汇流：Canvas 2D 叠层（整像素清晰的点线），GL 只铺底色 */
+  private gate: GateFlow | null = null;
+  private gateT = 0;
+  private focusEl: HTMLElement | null = null;
+  private onGateClick = (e: PointerEvent): void => { if (e.isPrimary && !this.reduced.matches) this.gate?.explode(e.clientX, e.clientY); };
+  /** 汇流款的汇聚点：元素中心（首页是搜索栏）；不设时是屏幕中心 */
+  setFocus(el: HTMLElement | null): void { this.focusEl = el; }
+  private mountGate(): void {
+    if (this.gate) return;
+    const g = new GateFlow();
+    g.focus = () => {
+      const el = this.focusEl;
+      if (!el || !el.isConnected) return null;
+      const r = el.getBoundingClientRect(), b = this.el.getBoundingClientRect();
+      if (!r.width) return null;
+      return { x: r.left + r.width / 2 - b.left, y: r.top + r.height / 2 - b.top };
+    };
+    this.gate = g;
+    this.gateT = 0;
+    this.el.insertBefore(g.canvas, this.img);
+    const r = this.el.getBoundingClientRect();
+    g.resize(r.width, r.height);
+    window.addEventListener('pointerdown', this.onGateClick, { passive: true });
+  }
+  private unmountGate(): void {
+    if (!this.gate) return;
+    this.gate.canvas.remove();
+    this.gate = null;
+    window.removeEventListener('pointerdown', this.onGateClick);
   }
 
   /** 上一帧画进纹理的着色器状态；滚动时着色器本身不动，只需要把纹理按新位置重新做一次透镜 */
@@ -167,6 +201,13 @@ export class BackgroundLayer {
     bindTarget?.();
     prog.bind();
     prog.draw(w, hh, t, k);
+    if (this.gate) {
+      // 原版按 60fps 每帧推进固定步长；这里按真实间隔折算，降到 30fps 时速度不变
+      const now = performance.now();
+      const step = this.gateT ? Math.min(4, (now - this.gateT) / (1000 / 60)) : 1;
+      this.gateT = now;
+      this.gate.render(this.reduced.matches ? 0 : step, k, !this.reduced.matches);
+    }
   }
 
   private flux: FluxField | null = null;

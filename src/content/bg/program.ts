@@ -1,6 +1,7 @@
 import type { ShaderId } from '../../shared/settings';
 import { BUILDER } from './builder';
 import { fragment, isBuilder, PALETTES } from './shaders';
+import { gateThumb } from './gate';
 
 const VERT = 'attribute vec2 p;void main(){gl_Position=vec4(p,0.,1.);}';
 const hex = (s: string) => [1, 3, 5].map((i) => parseInt(s.slice(i, i + 2), 16) / 255);
@@ -97,6 +98,7 @@ export function cachedThumb(id: ShaderId, theme: 'light' | 'dark'): string | nul
 export function shaderThumb(id: ShaderId, theme: 'light' | 'dark'): string | null {
   const key = `${id}:${theme}`;
   if (thumbCache.has(key)) return thumbCache.get(key)!;
+  if (id === 'gate') { const u = gateThumb(theme); thumbCache.set(key, u); return u; }
   if (!thumbGl) {
     thumbCanvas = document.createElement('canvas');
     thumbCanvas.width = 160; thumbCanvas.height = 120;
