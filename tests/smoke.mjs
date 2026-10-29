@@ -42,6 +42,17 @@ const PAGES = [
     // v0.31.1 回归：条目曾因和首页搜索的 .hs-row 同名被压成 54px 高、互相重叠
     for (let i = 1; i < rows.length; i++) if (rows[i].top < rows[i - 1].bottom - 1) { miss.push('.hi-row ' + i + ' overlaps previous'); break; }
     return miss; })()`],
+  ['opus', 'https://www.bilibili.com/opus/1005142803949289489', `(() => { const miss = []; const de = document.documentElement;
+    if (de.dataset.marginDetail !== 'opus') miss.push('html[data-margin-detail=opus]');
+    const a = document.getElementById('margin-aside'); const r = a?.shadowRoot; if (!r) return [...miss, '#margin-aside'];
+    if (a.hidden) miss.push('#margin-aside hidden at 1440');
+    if (!r.querySelector('.author .who b')?.textContent?.trim()) miss.push('.author name');
+    if (r.querySelectorAll('.toc a').length < 3) miss.push('.toc ×3');
+    if (r.querySelectorAll('.acts .act:not([hidden])').length < 5) miss.push('.acts ×5');
+    // 侧栏和正文不能重叠
+    const m = document.querySelector('.opus-detail')?.getBoundingClientRect(), s = a.getBoundingClientRect();
+    if (m && s.left < m.right + 40) miss.push('aside overlaps article');
+    return miss; })()`],
   ['feed', 'https://t.bilibili.com/', `(() => { const r = ${R}; if (!r) return ['#margin-root'];
     const miss = []; if (!r.querySelector('main.tk')) miss.push('main.tk'); return miss; })()`],
 ].filter(([n]) => !ONLY || ONLY.includes(n));

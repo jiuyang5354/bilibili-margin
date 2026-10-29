@@ -10,6 +10,7 @@ import { muteNative, setGuard, guardEnabled } from './native-guard';
 import type { SkinKind } from './ui/watch';
 import watchCss from './watch.css?inline';
 import pagesCss from './pages.css?inline';
+import detailCss from './detail.css?inline';
 
 type Pages = {
   home: typeof import('./pages/home');
@@ -18,6 +19,7 @@ type Pages = {
   message: typeof import('./pages/message');
   history: typeof import('./pages/history');
   feed: typeof import('./pages/feed');
+  detail: typeof import('./pages/detail');
 };
 /** 按需加载页面模块；content script 不能是 ES module，但可以动态 import 扩展里的 ES 模块 */
 const load = <K extends keyof Pages>(name: K): Promise<Pages[K]> => import(/* @vite-ignore */ chrome.runtime.getURL(`pages/${name}.js`));
@@ -44,6 +46,15 @@ const spaceMatch = () => location.hostname === 'space.bilibili.com' ? location.p
 const isMessage = () => location.hostname === 'message.bilibili.com' && window.top === window;
 const isHistory = () => location.hostname === 'www.bilibili.com' && /^\/(?:account\/)?history\/?$/.test(location.pathname) && window.top === window;
 const isFeed = () => location.hostname === 't.bilibili.com' && /^\/?$/.test(location.pathname) && window.top === window;
+/** 详情页：单条动态 / 图文 opus / 专栏 / 番剧播放（和 ui/detail.ts detailKind 保持一致） */
+type DetailKind = 'opus' | 'dyn' | 'read' | 'bangumi';
+function detailKind(): DetailKind | null {
+  const h = location.hostname, p = location.pathname;
+  if (h === 't.bilibili.com' && /^\/\d+\/?$/.test(p)) return 'dyn';
+  if (h !== 'www.bilibili.com') return null;
+  const m = p.match(new RegExp(`^/${LOC}(opus/\\d|read/cv\\d|bangumi/play/(?:ep|ss)\\d)`));
+  return m ? (m[1].startsWith('opus') ? 'opus' : m[1].startsWith('read') ? 'read' : 'bangumi') : null;
+}
 const offByUrl = () => new URLSearchParams(location.search).get('margin') === 'off';
 
 /**
@@ -56,12 +67,14 @@ function setSkinMirror(v: string): void { try { if (skinMirror() !== v) localSto
 function skinStyle(kind: SkinKind, theme: string): HTMLStyleElement {
   const de = document.documentElement;
   de.classList.add('margin-skin', `margin-${kind}`);
+  const dk = kind === 'page' ? detailKind() : null;
+  if (dk) { de.classList.add('margin-detail'); de.dataset.marginDetail = dk; }
   de.dataset.marginTheme = theme === 'auto' ? (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : theme;
   let st = document.getElementById('margin-watch-css') as HTMLStyleElement | null;
   if (!st) {
     st = document.createElement('style');
     st.id = 'margin-watch-css';
-    st.textContent = watchCss + '\n' + pagesCss;
+    st.textContent = watchCss + '\n' + pagesCss + '\n' + detailCss;
     de.append(st);
   }
   return st;
@@ -69,8 +82,9 @@ function skinStyle(kind: SkinKind, theme: string): HTMLStyleElement {
 function unskin(kind: SkinKind): void {
   const de = document.documentElement;
   document.getElementById('margin-watch-css')?.remove();
-  de.classList.remove('margin-skin', `margin-${kind}`, 'margin-has-bg');
+  de.classList.remove('margin-skin', `margin-${kind}`, 'margin-has-bg', 'margin-detail', 'margin-detail-narrow');
   delete de.dataset.marginTheme;
+  delete de.dataset.marginDetail;
 }
 
 async function startWatch(kind: SkinKind = 'watch'): Promise<void> {
@@ -87,6 +101,15 @@ async function startWatch(kind: SkinKind = 'watch'): Promise<void> {
   skinStyle(kind, settings.theme);
   const skin = await guarded('watch', () => mod.then((m) => new m.WatchSkin(settings, kind)), () => unskin(kind));
   if (!skin) return;
+  // 详情页：右侧作者栏 / 目录 / 操作区按需加载；出错只影响侧栏，换皮照常
+  const dk = kind === 'page' ? detailKind() : null;
+  if (dk) {
+    load('detail').then((m) => m.mountDetail(dk)).catch((e) => {
+      console.error('[MARGIN] 详情页侧栏加载失败：', e);
+      document.getElementById('margin-aside')?.remove();
+      document.documentElement.classList.add('margin-detail-narrow');
+    });
+  }
   onSettingsChange((next, prev) => {
     if (next.enabled !== prev.enabled || next.watch !== prev.watch) location.reload();
     else skin.update(next);

@@ -93,6 +93,7 @@ export function apiBody(u) {
   if (u.includes('user/cards')) return { code: 0, data: P.slice(0, 4).map((v) => ({ mid: v.mid, name: v.name, face: v.face })) };
   if (u.includes('fetch_session_msgs')) return { code: 0, data: { messages: [] } };
   if (u.includes('s.search.bilibili.com/main/suggest')) return { code: 0, result: { tag: [] } };
+  if (u.includes('/x/web-interface/card')) return { code: 0, data: { card: { mid: '1', name: '映间编辑部', face: P[0].face, sign: '把 B 站读成一本杂志。', fans: 1284000, Official: { title: '' } }, following: false } };
   if (u.includes('ipwho.is')) return { success: true, city: '上海', latitude: 31.23, longitude: 121.47 };
   if (u.includes('geocoding-api.open-meteo.com')) return { results: [{ name: '上海', latitude: 31.23, longitude: 121.47 }] };
   if (u.includes('api.open-meteo.com')) return weatherBody();
@@ -111,10 +112,29 @@ function placeholder(u) {
 /** 原版页面的最小骨架：映间会把它藏起来或在上面换皮 */
 function stubHtml(u) {
   const watch = /\/video\//.test(u);
+  if (/\/opus\/\d/.test(u)) return opusHtml();
   return `<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><title>哔哩哔哩 (゜-゜)つロ 干杯~-bilibili</title></head><body>
 <div id="app">${watch ? `<div class="video-container-v1"><div class="left-container"><div class="video-info-container"><h1 class="video-title">离线冒烟测试视频</h1></div>
 <div id="bilibili-player" style="width:100%;aspect-ratio:16/9;background:#000"></div><div id="commentapp"></div></div><div class="right-container"><div id="danmukuBox"></div><div class="recommend-list-v1"></div></div></div>`
     : '<div class="bili-header"></div><main class="native">原版页面</main>'}</div></body></html>`;
+}
+
+/** 图文详情页骨架：和真实 opus 页的 SSR 结构一致（.opus-detail / .opus-module-* / 原生侧边工具条），带两个小标题测目录 */
+function opusHtml() {
+  const para = (t) => `<p><span>${t}</span></p>`;
+  const body = ['一', '二', '三'].map((n, i) => `<h2>第${n}节 · 排版的节奏</h2>` + para('正文段落：留白、字距和行高决定了阅读的呼吸感。'.repeat(6)) + para('第二段落用来撑出滚动距离。'.repeat(8))).join('');
+  return `<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><title>离线冒烟测试图文 - 哔哩哔哩</title></head><body>
+<header id="bili-header-container" style="height:64px"><div class="z-top-container"></div></header>
+<div id="app"><div class="bgc"></div><div class="bg"></div><div class="opus-detail"><div class="bili-opus-view">
+<div class="opus-module-top"><div class="opus-module-top__album"><div class="opus-module-top__album__cover" style="height:228px"><div class="b-img"><img src="https://i0.hdslb.com/bfs/article/cover.jpg" style="width:100%;height:228px"></div></div></div></div>
+<div class="opus-module-title"><div class="opus-module-title__inner"><span class="opus-module-title__text">离线冒烟测试图文</span></div></div>
+<div class="opus-module-author"><div class="opus-module-author__left"><div class="opus-module-author__avatar"></div></div><div class="opus-module-author__center"><div class="opus-module-author__name-row"><div class="opus-module-author__name">映间编辑部</div></div><div class="opus-module-author__pub"><div class="opus-module-author__pub__text">2026年10月29日 21:00</div></div></div></div>
+<div class="opus-module-content opus-paragraph-children">${body}</div>
+</div><div class="bili-tabs opus-tabs"><div class="bili-tabs__header"><div class="bili-tabs__nav"><div class="bili-tabs__nav__item is-active">评论 12</div></div></div><div class="bili-tabs__content"><div class="comment-wrap" style="height:400px"></div></div></div>
+<div class="right-sidebar-wrap"><div class="side-toolbar" style="position:fixed;right:40px;top:180px"><div class="side-toolbar__box">
+${[['like', '3.3万'], ['coin', '2656'], ['favorite', '1.8万'], ['forward', '175'], ['comment', '12']].map(([k, n]) => `<div class="side-toolbar__action ${k}"><div class="side-toolbar__action__text">${n}</div></div>`).join('')}
+</div></div></div></div>
+<script>window.__INITIAL_STATE__={"detail":{"modules":[{"module_author":{"mid":1,"name":"映间编辑部"}}]}};(function(){})();</script></div></body></html>`;
 }
 
 /** 给 BrowserContext 装上离线路由 */

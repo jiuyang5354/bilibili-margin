@@ -2,6 +2,17 @@
 
 # Changelog
 
+## [v0.32.0](https://github.com/jiuyang5354/bilibili-margin/releases/tag/v0.32.0) · 2026-10-29
+
+Detail pages redesigned: single posts, opus articles, columns, and bangumi playback.
+
+- Opus / column / single-post pages use a two-column layout ported from 21st "Article With Author Sidebar" (olewandowski1): a 708px article card with a full-bleed cover, 28px serif title, 16/28 body text, serif subheadings, hairline quotes, and rounded images.
+- New sticky sidebar: author card (avatar, followers, bio, follow / visit space), reading progress and estimated time, an auto-generated table of contents that highlights the current section, the uploader's latest videos, and like / coin / favorite / forward / comment.
+- Sidebar actions forward to Bilibili's native toolbar, so counts, active states, and the native coin / favorite / forward dialogs stay intact. The native floating TOC and vertical toolbar are replaced on wide screens and restored when the window is too narrow.
+- Native comments are kept; tabs get serif labels and a thin underline, and the duplicate "评论" heading is hidden.
+- Bangumi playback: rounded player, serif title, episode and extras panels as cards, monospace episode chips with an inverted current episode.
+- Smoke tests now cover an offline opus page: sidebar, author, TOC, actions, and no overlap with the article.
+
 ## [v0.31.2](https://github.com/jiuyang5354/bilibili-margin/releases/tag/v0.31.2) · 2026-10-29
 
 More accurate footprint, better keyboard and screen-reader support, settings backup.

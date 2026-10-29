@@ -28,6 +28,8 @@ v0.22.7 restores folder-opening transitions and reduces pointer/theme-switch wor
 
 ## Design references
 
+Detail pages (v0.32.0) for single posts, opus articles, and columns port the two-column layout of 21st "Article With Author Sidebar" (olewandowski1).
+
 Interactions were independently implemented in native TypeScript and CSS after studying 21st.dev components including Sheet, Segmented Control, Chip Group, Minimal Slider, buttons, toggles, and Command Search.
 
 Adapted component references include:
@@ -42,7 +44,8 @@ Adapted component references include:
 - **Apple Liquid glass switcher** by Den Dionigi: layered inset highlights and `backdrop-filter` displacement. Maps are recalculated for each element using a squircle bevel and Snell refraction.
 - **Editorial Image Hero**, **Editorial service list**, **Activity Timeline**, **Notification Panel**, and **Conversation List** informed space and message layouts.
 
-The heatmap glass lens algorithm is adapted from movements.dev Refractive Glass (@movements/react-glass, MIT). Layered shadows and the 0.5px hairline ring follow Smooth Shadows; nested corner radii follow Perfect Corner Radius, also from movements.dev. The "Flux" background is a WebGPU compute shader built with [vgpu](https://vgpu.sh) (vercel-labs, MIT): 24,000 particles drifting through a curl-noise flow field, loaded only when that background is selected, with a WebGL fallback when WebGPU is unavailable.
+The heatmap glass lens algorithm is adapted from movements.dev Refractive Glass (@movements/react-glass, MIT). Layered shadows and the 0.5px hairline ring follow Smooth Shadows; nested corner radii follow Perfect Corner Radius, also from movements.dev.
+ The "Flux" background is a WebGPU compute shader built with [vgpu](https://vgpu.sh) (vercel-labs, MIT): 24,000 particles drifting through a curl-noise flow field, loaded only when that background is selected, with a WebGL fallback when WebGPU is unavailable.
 
 Additional shader references are Silk, Smoke, Neuro Noise, Grain Gradient, God Rays, and Mesh Gradient from 21st's Shader Builder series. Mesh Gradient derives from Paper Shaders under Apache-2.0. Settings thumbnails render the actual shaders.
 

@@ -29,6 +29,7 @@ const SKINS: Record<string, string> = {
 };
 
 const done = new WeakSet<ShadowRoot>();
+let extra: Record<string, string> = {};
 const sheets = new Map<string, CSSStyleSheet>();
 
 function skin(root: ParentNode, depth = 0): void {
@@ -37,7 +38,7 @@ function skin(root: ParentNode, depth = 0): void {
     const sr = el.shadowRoot;
     if (!sr) continue;
     const tag = el.tagName.toLowerCase();
-    const css = SKINS[tag];
+    const css = SKINS[tag] ? SKINS[tag] + (extra[tag] ?? '') : undefined;
     if (css && !done.has(sr)) {
       let s = sheets.get(tag);
       if (!s) { s = new CSSStyleSheet(); s.replaceSync(css); sheets.set(tag, s); }
@@ -49,7 +50,9 @@ function skin(root: ParentNode, depth = 0): void {
   }
 }
 
-export function skinComments(): void {
+/** extra：按页面追加到某个组件皮肤后面的样式（详情页隐藏评论区重复的大标题） */
+export function skinComments(more: Record<string, string> = {}): void {
+  extra = more;
   const run = () => { const bc = document.querySelector('bili-comments'); if (bc) skin(bc.parentElement ?? document); };
   // 前 90 秒每秒补一次（评论区是懒加载的 Web Components）；页面隐藏时暂停
   let n = 0;
