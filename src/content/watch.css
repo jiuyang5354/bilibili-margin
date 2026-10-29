@@ -177,8 +177,14 @@ html.margin-watch .video-page-card-small .title {
   font-size: 14px !important; line-height: 1.45 !important; font-weight: 500 !important; color: var(--m-ink) !important;
 }
 html.margin-watch .video-page-card-small .card-box:hover .title { color: var(--m-accent) !important; }
+/* 推荐卡的 UP 名 / 播放数：用 --m-muted（亮暗都 ≥4.5:1），--m-faint 在深色背景上看不清 */
 html.margin-watch .video-page-card-small .upname, html.margin-watch .video-page-card-small .playinfo,
-html.margin-watch .video-page-card-small .name { color: var(--m-faint) !important; font-size: 12px !important; }
+html.margin-watch .video-page-card-small .name, html.margin-watch .video-page-card-small .upname a {
+  color: var(--m-muted) !important; font-size: 12px !important; line-height: 18px !important; opacity: 1 !important;
+}
+html.margin-watch .video-page-card-small .upname .name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+html.margin-watch .video-page-card-small .upname svg, html.margin-watch .video-page-card-small .upname-icon,
+html.margin-watch .video-page-card-small .playinfo svg { color: var(--m-muted) !important; fill: currentColor !important; opacity: 1 !important; }
 html.margin-watch .video-page-card-small .playinfo { font-family: var(--m-mono); }
 html.margin-watch .next-play { border-bottom: 1px solid var(--m-line); padding-bottom: 10px; margin-bottom: 16px; }
 html.margin-watch .rec-footer {

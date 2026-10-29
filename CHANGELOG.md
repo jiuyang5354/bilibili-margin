@@ -2,6 +2,10 @@
 
 # 更新日志
 
+## [v0.32.1](https://github.com/jiuyang5354/bilibili-margin/releases/tag/v0.32.1) · 2026-10-29
+
+- 播放页「接下来播放」和推荐列表：UP 主名、播放数、弹幕数原来用最浅的灰，深色背景上几乎看不见；改用次级文字色（亮暗两套都 ≥4.5:1），UP / 播放 / 弹幕小图标同步加深。
+
 ## [v0.32.0](https://github.com/jiuyang5354/bilibili-margin/releases/tag/v0.32.0) · 2026-10-29
 
 详情页重新排版：单条动态、图文（opus）、专栏、番剧播放页。

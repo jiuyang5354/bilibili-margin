@@ -2,6 +2,10 @@
 
 # Changelog
 
+## [v0.32.1](https://github.com/jiuyang5354/bilibili-margin/releases/tag/v0.32.1) · 2026-10-29
+
+- Watch page "Up next" and recommendations: uploader name, play and danmaku counts used the faintest gray and were nearly invisible on dark backgrounds; they now use the secondary text color (≥4.5:1 in both themes), with matching icons.
+
 ## [v0.32.0](https://github.com/jiuyang5354/bilibili-margin/releases/tag/v0.32.0) · 2026-10-29
 
 Detail pages redesigned: single posts, opus articles, columns, and bangumi playback.
