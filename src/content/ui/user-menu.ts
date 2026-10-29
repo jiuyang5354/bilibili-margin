@@ -11,11 +11,11 @@ import { fmtCount, h, icon, ICONS } from './dom';
  */
 
 const NUM_POINTS = 13;
-const REST_LENGTH = 48;
+const REST_LENGTH = 70;
 const CARD_SCALE = 0.86;
 const SEGMENT_LENGTH = REST_LENGTH / (NUM_POINTS - 1);
 const GRAVITY = 0.55;
-const FRICTION = 0.95;
+const FRICTION = 0.97;
 const CONSTRAINT_ITERATIONS = 6;
 const TAP_THRESHOLD = 6;
 const MAX_TILT = 9;
@@ -112,10 +112,12 @@ export function createUserMenu(a: Account): HTMLElement {
   const flipper = h('div', { class: 'idcl-flipper' }, front, back);
   const card = h('div', { class: 'idcl-card', role: 'dialog', 'aria-label': `${a.name} 的账号卡片` }, flipper);
   const hint = h('div', { class: 'idcl-hint' }, h('span', {}, '拖动摇晃 · 点击翻面'));
-  const stage = h('div', { class: 'idcl-stage', hidden: '' }, card);
+  const canvas = h('canvas', { class: 'idcl-chain' }) as HTMLCanvasElement;
+  const stage = h('div', { class: 'idcl-stage', hidden: '' }, card, canvas);
   if (!localStorage.getItem(HINT_KEY)) card.append(hint);
 
   /* ── 物理（原组件逻辑） ─────────────────────────── */
+  const ctx = canvas.getContext('2d')!;
   const anchor = { x: 0, y: 0 };
   const points: Pt[] = [];
   let dragging = false, flipped = false, interacted = false;
@@ -124,15 +126,20 @@ export function createUserMenu(a: Account): HTMLElement {
   let flipTarget = 0, flipCurrent = 0;
   const tiltTarget = { x: 0, y: 0 }, tiltCurrent = { x: 0, y: 0 };
   let mouse = { x: -9999, y: -9999 };
-  let raf = 0, isOpen = false, t = 0, restX = 0, gx = 0, restAngle = 0;
+  let raf = 0, isOpen = false, dpr = 1, t = 0, restX = 0, gx = 0, restAngle = 0;
 
   const resize = () => {
     const r = trigger.getBoundingClientRect();
-    // 不画挂绳了：支点藏在头像后面，卡片停在头像下方 12px，右边不出视口；甩动仍按单摆
-    restX = Math.min(r.left + r.width / 2, innerWidth - (236 * CARD_SCALE) / 2 - 20);
-    anchor.x = restX;
-    anchor.y = r.bottom + 12 - REST_LENGTH;
-    gx = 0; restAngle = 0;
+    dpr = Math.min(2, devicePixelRatio || 1);
+    canvas.width = innerWidth * dpr; canvas.height = innerHeight * dpr;
+    canvas.style.width = `${innerWidth}px`; canvas.style.height = `${innerHeight}px`;
+    // 珠链从头像底部垂下，穿进工牌顶上的孔；卡片太靠右会出视口，就让链子静止时往左斜一点
+    anchor.x = r.left + r.width / 2;
+    anchor.y = r.bottom - 3;
+    restX = Math.min(anchor.x, innerWidth - (236 * CARD_SCALE) / 2 - 20);
+    const dx = restX - anchor.x, dy = Math.sqrt(Math.max(1, REST_LENGTH ** 2 - dx * dx));
+    gx = GRAVITY * dx / dy;
+    restAngle = Math.atan2(dy, dx) - Math.PI / 2;
   };
   const clamp = (p: { x: number; y: number }) => {
     p.x = Math.max(18, Math.min(innerWidth - 18, p.x));
@@ -165,12 +172,49 @@ export function createUserMenu(a: Account): HTMLElement {
     }
     for (let i = 1; i < points.length; i++) clamp(points[i]);
   };
+  // 珠链：沿绳子每 4.4px 一颗金属小珠，珠子之间一根细连杆
+  const BEAD_GAP = 4.4, BEAD_R = 1.9;
+  const drawChain = () => {
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, innerWidth, innerHeight);
+    const dark = stage.closest('.app')?.getAttribute('data-theme') === 'dark';
+    const beads: { x: number; y: number }[] = [];
+    let carry = 0;
+    for (let i = 0; i < points.length - 1; i++) {
+      const a = points[i], b = points[i + 1];
+      const len = Math.hypot(b.x - a.x, b.y - a.y);
+      let d = carry;
+      while (d <= len) { const k = d / len; beads.push({ x: a.x + (b.x - a.x) * k, y: a.y + (b.y - a.y) * k }); d += BEAD_GAP; }
+      carry = d - len;
+    }
+    const last = points[points.length - 1];
+    beads.push({ x: last.x, y: last.y });
+    // 连杆
+    ctx.beginPath(); ctx.moveTo(points[0].x, points[0].y);
+    for (let i = 1; i < points.length; i++) ctx.lineTo(points[i].x, points[i].y);
+    ctx.strokeStyle = dark ? 'rgba(200,204,210,.55)' : 'rgba(90,94,100,.6)'; ctx.lineWidth = 0.8; ctx.stroke();
+    // 珠子
+    for (const b of beads) {
+      ctx.beginPath(); ctx.arc(b.x + 0.6, b.y + 1.2, BEAD_R, 0, Math.PI * 2); ctx.fillStyle = 'rgba(0,0,0,.18)'; ctx.fill();
+      const g = ctx.createRadialGradient(b.x - 0.7, b.y - 0.8, 0.2, b.x, b.y, BEAD_R);
+      if (dark) { g.addColorStop(0, '#ffffff'); g.addColorStop(0.45, '#c9ccd2'); g.addColorStop(1, '#6d7178'); }
+      else { g.addColorStop(0, '#fafbfc'); g.addColorStop(0.45, '#a9adb4'); g.addColorStop(1, '#4f535a'); }
+      ctx.beginPath(); ctx.arc(b.x, b.y, BEAD_R, 0, Math.PI * 2); ctx.fillStyle = g; ctx.fill();
+    }
+    // 末端扣环：穿过工牌的孔
+    ctx.save(); ctx.translate(last.x, last.y);
+    const prev = points[points.length - 2]; ctx.rotate(Math.atan2(last.y - prev.y, last.x - prev.x) - Math.PI / 2);
+    ctx.beginPath(); ctx.ellipse(0, 1.5, 3.2, 4.6, 0, 0, Math.PI * 2);
+    ctx.strokeStyle = dark ? '#d5d8dd' : '#7c8087'; ctx.lineWidth = 1.4; ctx.stroke();
+    ctx.restore();
+  };
+  const HOLE_Y = 20.5; // 孔中心离卡片顶部的距离（未缩放）
   const positionCard = () => {
     const last = points[points.length - 1], prev = points[points.length - 2];
     // 减去静止时绳子的斜角，卡片静止时保持竖直，甩动时照常转
     const angle = Math.atan2(last.y - prev.y, last.x - prev.x) - Math.PI / 2 - restAngle;
     card.style.left = `${last.x - card.offsetWidth / 2}px`;
-    card.style.top = `${last.y}px`;
+    card.style.top = `${last.y - HOLE_Y}px`;
     card.style.transform = `rotate(${angle}rad) scale(${CARD_SCALE})`;
   };
   const updateTilt = () => {
@@ -192,7 +236,7 @@ export function createUserMenu(a: Account): HTMLElement {
     flipper.style.transform = `rotateY(${flipCurrent + tiltCurrent.y}deg) rotateX(${tiltCurrent.x}deg)`;
   };
   const loop = () => {
-    updatePoints(); applyConstraints(); positionCard(); updateTilt();
+    updatePoints(); applyConstraints(); positionCard(); drawChain(); updateTilt();
     raf = requestAnimationFrame(loop);
   };
 
