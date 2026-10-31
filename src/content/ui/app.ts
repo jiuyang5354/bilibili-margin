@@ -101,6 +101,7 @@ export class MarginApp {
       { id: 'top', title: '回到顶部', cat: '操作', icon: ICONS.top, run: () => this.app.scrollTo({ top: 0, behavior: 'smooth' }) },
       { id: 'later', title: '稍后再看', cat: '跳转', icon: ICONS.later, keys: ['watchlater'], run: () => later.open() },
       { id: 'moments', title: '动态', cat: '跳转', icon: ICONS.moments, run: () => window.open('https://t.bilibili.com/', '_blank', 'noopener') },
+      { id: 'live', title: '直播', cat: '跳转', icon: ICONS.live, keys: ['live', 'zhibo'], run: () => window.open('https://live.bilibili.com/', '_blank', 'noopener') },
       { id: 'message', title: '消息', cat: '跳转', icon: ICONS.message, run: () => window.open('https://message.bilibili.com/', '_blank', 'noopener') },
       { id: 'history', title: '观看历史', cat: '跳转', icon: ICONS.history, run: () => window.open('https://www.bilibili.com/history', '_blank', 'noopener') },
       { id: 'off', title: '本次回到 B 站原版', cat: '操作', icon: ICONS.exit, keys: ['原版', '关闭'], run: () => { sessionStorage.setItem('margin:off', '1'); location.reload(); } },
