@@ -12,6 +12,18 @@ import watchCss from './watch.css?inline';
 import pagesCss from './pages.css?inline';
 import detailCss from './detail.css?inline';
 
+// Firefox：内容脚本自带的 fetch 以扩展身份发请求，B 站接口收不到登录 cookie（一直显示未登录）。
+// Firefox 另给了页面身份的 content.fetch，B 站自家域名的请求改走它；其他域名（天气等）照旧。Chrome 没有 content，不受影响。
+const ffPage = (globalThis as { content?: { fetch?: typeof fetch } }).content;
+if (typeof ffPage?.fetch === 'function') {
+  const extFetch = globalThis.fetch.bind(globalThis);
+  const pageFetch = ffPage.fetch.bind(ffPage);
+  globalThis.fetch = (input: RequestInfo | URL, init?: RequestInit) => {
+    const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
+    return /^https:\/\/([\w-]+\.)*(bilibili\.com|hdslb\.com|biliapi\.net)\//.test(url) ? pageFetch(input, init) : extFetch(input, init);
+  };
+}
+
 type Pages = {
   home: typeof import('./pages/home');
   watch: typeof import('./pages/watch');

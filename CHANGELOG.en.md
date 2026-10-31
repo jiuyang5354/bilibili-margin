@@ -2,6 +2,15 @@
 
 # Changelog
 
+## [v0.36.0](https://github.com/jiuyang5354/bilibili-margin/releases/tag/v0.36.0) · 2026-10-31
+
+Firefox support.
+
+- New Firefox package `margin-firefox.zip` (Firefox 140+), attached to every release alongside `margin.zip`. The code is identical to the Chrome build; only the manifest differs: an event-page background for Firefox, a gecko extension ID, and a data-collection declaration (weather uses an IP-based city lookup).
+- Fixed always appearing logged out in Firefox: Firefox content-script requests are sent as the extension, so Bilibili APIs never saw the login. Requests to Bilibili domains now go out as the page; Chrome and Edge are unaffected.
+- Tested on Firefox 153 ESR across home, watch, search, space, feed, messages and history pages in light and dark themes.
+- Install via `about:debugging` → Load Temporary Add-on (removed on restart) until MARGIN is listed on Firefox Add-ons. The README now covers Firefox and other Chromium browsers.
+
 ## [v0.35.0](https://github.com/jiuyang5354/bilibili-margin/releases/tag/v0.35.0) · 2026-10-31
 
 - The Footprint heatmap and the weather card at the top of the home page can now be turned off separately: Settings → Home top. Both stay on by default.

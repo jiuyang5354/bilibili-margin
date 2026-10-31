@@ -10,7 +10,7 @@
 
 <p>
   <a href="https://github.com/jiuyang5354/bilibili-margin/releases/latest"><img src="https://img.shields.io/github/v/release/jiuyang5354/bilibili-margin?label=version&amp;color=00aeec" alt="最新版本" /></a>
-  <img src="https://img.shields.io/badge/browser-Edge%20%2F%20Chrome-535b66" alt="支持 Edge 和 Chrome" />
+  <img src="https://img.shields.io/badge/browser-Edge%20%2F%20Chrome%20%2F%20Firefox-535b66" alt="支持 Edge、Chrome 和 Firefox" />
   <img src="https://img.shields.io/badge/extension-Manifest%20V3-535b66" alt="Manifest V3" />
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-535b66" alt="MIT 许可" /></a>
 </p>
@@ -30,7 +30,7 @@
 
 > **English summary**
 >
-> MARGIN is an open-source Edge / Chrome extension that redesigns Bilibili's homepage, search, video and reading pages. It keeps the native player, danmaku and comments, while adding themes, recommendation filters, favorites shortcuts and a local activity heatmap. Settings and activity records stay on your device; weather uses third-party location and forecast services. Read the [full English README](README.en.md).
+> MARGIN is an open-source Edge / Chrome / Firefox extension that redesigns Bilibili's homepage, search, video and reading pages. It keeps the native player, danmaku and comments, while adding themes, recommendation filters, favorites shortcuts and a local activity heatmap. Settings and activity records stay on your device; weather uses third-party location and forecast services. Read the [full English README](README.en.md).
 
 ## 界面预览
 
@@ -61,6 +61,10 @@
 4. 打开或刷新 [B 站](https://www.bilibili.com/)。
 
 更新手动安装版时，将新版解压到原来的文件夹，在扩展管理页点击**重新加载**，再刷新 B 站。详细变化见[更新日志](CHANGELOG.md)。
+
+**Firefox（140 及以上）**：下载 `margin-firefox.zip`，打开 `about:debugging#/runtime/this-firefox`，点击**临时载入附加组件**，选择这个 zip。临时载入的扩展在重启 Firefox 后会被移除，上架 Firefox 附加组件商店后可以正常长期安装。
+
+其他 Chromium 内核浏览器（Brave、Opera、Vivaldi、Arc 等）可以按 Chrome 的步骤安装，但未逐一测试。Safari 暂不支持。
 
 ## 功能
 

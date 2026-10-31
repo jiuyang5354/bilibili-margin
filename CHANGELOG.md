@@ -2,6 +2,15 @@
 
 # 更新日志
 
+## [v0.36.0](https://github.com/jiuyang5354/bilibili-margin/releases/tag/v0.36.0) · 2026-10-31
+
+支持 Firefox。
+
+- 新增 Firefox 版安装包 `margin-firefox.zip`（Firefox 140 及以上），每次发布随 `margin.zip` 一起附在 Release 里。代码和 Chrome 版完全相同，只换了 manifest：后台改为 Firefox 的事件页写法，加上扩展 ID 和数据收集声明（天气会用 IP 粗定位城市）。
+- 修复 Firefox 下一直显示未登录：Firefox 内容脚本的请求以扩展身份发出，B 站接口收不到登录状态；B 站域名的请求改用页面身份发送，Chrome / Edge 不受影响。
+- 已在 Firefox 153 ESR 实测首页、播放页、搜索、空间、动态、消息、历史七类页面，亮色、暗色都正常。
+- 安装方式：`about:debugging` → 临时载入附加组件（重启后需重新载入），上架 Firefox 附加组件商店后可长期安装。README 补充了 Firefox 和其他 Chromium 浏览器的说明。
+
 ## [v0.35.0](https://github.com/jiuyang5354/bilibili-margin/releases/tag/v0.35.0) · 2026-10-31
 
 - 首页顶部的「B 站足迹」热力图和天气卡可以分别关掉：设置 → 首页顶部。默认都开。
