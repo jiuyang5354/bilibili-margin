@@ -2,6 +2,14 @@
 
 # Changelog
 
+## [v0.36.1](https://github.com/jiuyang5354/bilibili-margin/releases/tag/v0.36.1) · 2026-10-31
+
+Safe-DOM cleanup ahead of Firefox Add-ons review.
+
+- Removed all 17 uses of `innerHTML` / `insertAdjacentHTML`. Bundled icons and fixed markup are now parsed with `DOMParser` (an inert document, no script execution) and imported, via new `setMarkup` / `appendMarkup` helpers.
+- Search suggestions (home search box and command palette) no longer insert HTML returned by the Bilibili API: only the highlight tag is recognised and turned into text nodes plus `<mark>`; everything else is treated as plain text.
+- `web-ext lint` unsafe-assignment warnings went from 14 to 0. No visual or functional changes; regression-tested in Firefox 153 ESR and Chrome.
+
 ## [v0.36.0](https://github.com/jiuyang5354/bilibili-margin/releases/tag/v0.36.0) · 2026-10-31
 
 Firefox support.

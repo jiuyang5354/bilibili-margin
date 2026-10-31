@@ -1,4 +1,5 @@
-/**
+
+import { setMarkup } from './dom';/**
  * 映间自己的「三连」动画，盖掉 B 站原版的长按动效。
  * 长按点赞：点赞 → 投币 → 收藏三个胶囊的描边依次被强调色填满（松手就倒退回去）；
  * B 站确认三连后（投币、收藏变成 .on），三个胶囊依次弹起，向外散出一圈碎光，
@@ -64,7 +65,7 @@ function burst(els: HTMLElement[]): void {
   const r = els[0].getBoundingClientRect();
   const tag = document.createElement('div');
   tag.className = 'mt-tag';
-  tag.innerHTML = '<b>三连</b><span>TRIPLE</span>';
+  setMarkup(tag, '<b>三连</b><span>TRIPLE</span>');
   tag.style.left = `${r.left + r.width / 2}px`; tag.style.top = `${r.top}px`;
   document.body.append(tag);
   tag.animate([

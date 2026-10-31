@@ -7,6 +7,7 @@
  */
 import { introActive, onIntroEnd } from './intro/gate';
 import { BILI_TIGHT } from './intro/logo';
+import { setMarkup } from './dom';
 
 const VERT = `attribute vec2 a;void main(){gl_Position=vec4(a,0.,1.);}`;
 
@@ -86,7 +87,7 @@ export function liveTv(span: HTMLElement): void {
   gl.enable(gl.BLEND);
   gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
 
-  span.innerHTML = FRAME;
+  setMarkup(span, FRAME);
   span.append(canvas);
   span.classList.add('live');
 
@@ -176,5 +177,5 @@ export function liveTv(span: HTMLElement): void {
   };
   if (span.isConnected) hook(); else { let n = 0; requestAnimationFrame(function wait() { if (span.isConnected) hook(); else if (++n < 600) requestAnimationFrame(wait); }); }
 
-  canvas.addEventListener('webglcontextlost', (e) => { e.preventDefault(); lost = true; span.innerHTML = BILI_TIGHT; span.classList.remove('live'); });
+  canvas.addEventListener('webglcontextlost', (e) => { e.preventDefault(); lost = true; setMarkup(span, BILI_TIGHT); span.classList.remove('live'); });
 }

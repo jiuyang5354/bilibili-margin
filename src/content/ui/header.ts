@@ -1,6 +1,6 @@
 import { every } from '../sched';
 import { account, dynamicUpdates, resetDynamicBaseline, unreadTotal } from '../api/account';
-import { h, icon, ICONS } from './dom';
+import { h, icon, ICONS, setMarkup } from './dom';
 import { createExpandableTabs, type TabItem, type TabSpec } from './expandable-tabs';
 import { createUserMenu } from './user-menu';
 import { createSunMoon, type SunMoon } from './sun-moon';
@@ -9,7 +9,7 @@ import { BILI_TIGHT } from './intro/logo';
 import { liveTv } from './tv-eyes';
 
 /** 顶栏左上角的小电视：开场动画结束时图标就飞落到这里 */
-function tv(): HTMLElement { const s = h('span', { class: 'tv', 'aria-hidden': 'true' }); s.innerHTML = BILI_TIGHT; liveTv(s); return s; }
+function tv(): HTMLElement { const s = h('span', { class: 'tv', 'aria-hidden': 'true' }); setMarkup(s, BILI_TIGHT); liveTv(s); return s; }
 
 export interface Header { el: HTMLElement; input: HTMLInputElement; sunMoon: SunMoon; /** 液态玻璃块：搜索框、快捷入口胶囊、选中滑块 */ glass: HTMLElement[]; thumb: HTMLElement }
 

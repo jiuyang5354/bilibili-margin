@@ -9,7 +9,7 @@
  * - 首次进入视口时自己组装；指针移动带视差与光斑；尊重 prefers-reduced-motion
  */
 import { fanSlot, hashString, paint, recipeOf, rng, type ArtPreset } from './folder-art';
-import { h } from './dom';
+import { h, setMarkup } from './dom';
 
 export interface GFFile { name: string; meta?: string; image?: string; art?: ArtPreset; href?: string }
 export interface GFMenuItem { label: string; onSelect?: () => void; danger?: boolean }
@@ -88,7 +88,7 @@ export function glassFolder(o: GFOptions): GlassFolderApi {
 
   // 毛玻璃前板（底边铰链）
   const grad = document.createElementNS(NS, 'defs');
-  grad.innerHTML = `<linearGradient id="${uid}-rim" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".95"/><stop offset=".35" stop-color="#fff" stop-opacity=".35"/><stop offset="1" stop-color="#fff" stop-opacity=".12"/></linearGradient>`;
+  setMarkup(grad, `<linearGradient id="${uid}-rim" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".95"/><stop offset=".35" stop-color="#fff" stop-opacity=".35"/><stop offset="1" stop-color="#fff" stop-opacity=".12"/></linearGradient>`);
   const hit = h('button', { type: 'button', class: 'gf-hit', 'aria-expanded': 'false' }) as HTMLButtonElement;
   const metaEl = h('span', { class: 'gf-meta' });
   // 毛玻璃不用 backdrop-filter：Chromium 里它在缩放 / 变换 / 滚动容器中会只模糊一块矩形，
@@ -114,7 +114,7 @@ export function glassFolder(o: GFOptions): GlassFolderApi {
   glyph.setAttribute('class', 'gf-glyph gf-glyph--more');
   glyph.setAttribute('viewBox', '0 0 30 12');
   glyph.setAttribute('aria-hidden', 'true');
-  glyph.innerHTML = '<rect x="1" y="1.5" width="8" height="9" rx="3.4"/><rect x="11" y="1.5" width="8" height="9" rx="3.4"/><rect x="21" y="1.5" width="8" height="9" rx="3.4"/>';
+  setMarkup(glyph, '<rect x="1" y="1.5" width="8" height="9" rx="3.4"/><rect x="11" y="1.5" width="8" height="9" rx="3.4"/><rect x="21" y="1.5" width="8" height="9" rx="3.4"/>');
   key.append(glyph);
   const menu = h('div', { class: 'gf-menu', role: 'menu', id: `${uid}-menu`, 'aria-label': `${o.label} 选项` });
 

@@ -1,6 +1,6 @@
 import { every } from '../sched';
 import { introActive } from './intro/gate';
-import { h } from './dom';
+import { appendMarkup, h } from './dom';
 import { weather, geocode, setLoc, savedLoc, type Wx } from '../api/weather';
 import { WEATHER_SKIES, WEATHER_SKY_LAYERS, moonAge, weatherScene, glyphSvg, SKY_PITCH, FRAME } from './dotsky';
 
@@ -99,7 +99,7 @@ export function createWeather(): HTMLElement {
     const hours = h('ol', { class: 'wx-hours', 'aria-label': '未来几个时段' },
       ...w.hours.map((x) => {
         const li = h('li', { 'aria-label': `${x.label} ${deg(x.temp)}` }, h('span', { class: 'wx-hl' }, x.label));
-        li.insertAdjacentHTML('beforeend', glyphSvg(x.kind, x.hour));
+        appendMarkup(li, glyphSvg(x.kind, x.hour));
         li.append(h('b', {}, deg(x.temp)));
         return li;
       }));
@@ -121,9 +121,9 @@ export function createWeather(): HTMLElement {
     const week = h('ul', { class: 'wx-week', 'aria-label': '未来三天' },
       ...days.map((d, i) => {
         const li = h('li', { 'aria-label': `${d.name} ${deg(d.low)} 到 ${deg(d.high)}`, 'data-kind': d.kind }, h('span', { class: 'wx-dn' }, d.name));
-        li.insertAdjacentHTML('beforeend', glyphSvg(d.kind));
+        appendMarkup(li, glyphSvg(d.kind));
         li.append(h('span', { class: 'wx-lo' }, deg(d.low)));
-        li.insertAdjacentHTML('beforeend', bar(d.low, d.high, i === 0 ? w.temp : undefined));
+        appendMarkup(li, bar(d.low, d.high, i === 0 ? w.temp : undefined));
         li.append(h('span', { class: 'wx-hi' }, deg(d.high)));
         return li;
       }));

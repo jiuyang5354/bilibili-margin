@@ -1,5 +1,5 @@
 import { account, accountStat, dynamicUpdates, logout, resetDynamicBaseline, unreadTotal, type Account } from '../api/account';
-import { fmtCount, h, icon, ICONS } from './dom';
+import { fmtCount, h, icon, ICONS, setMarkup } from './dom';
 
 /**
  * 头像卡片：移植用户贴来的 21st「ID Card Lanyard」——
@@ -33,7 +33,7 @@ function qr(text: string, small = false): HTMLElement {
     const n = q.getModuleCount();
     let d = '';
     for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) if (q.isDark(r, c)) d += `M${c} ${r}h1v1h-1z`;
-    el.innerHTML = `<svg viewBox="0 0 ${n} ${n}" shape-rendering="crispEdges" aria-hidden="true"><path d="${d}"/></svg>`;
+    setMarkup(el, `<svg viewBox="0 0 ${n} ${n}" shape-rendering="crispEdges" aria-hidden="true"><path d="${d}"/></svg>`);
   }).catch(() => {});
   return el;
 }
@@ -402,7 +402,7 @@ export function createUserMenu(a: Account): HTMLElement {
 function svgCheck(): SVGElement {
   const s = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
   s.setAttribute('viewBox', '0 0 24 24');
-  s.innerHTML = '<path d="M4 12l5 5L20 6" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>';
+  setMarkup(s, '<path d="M4 12l5 5L20 6" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>');
   return s;
 }
 

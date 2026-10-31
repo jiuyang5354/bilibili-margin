@@ -1,5 +1,6 @@
 import barMap from '../assets/glass-bar.webp?inline';
 import thumbMap from '../assets/glass-thumb.webp?inline';
+import { setMarkup } from './dom';
 
 /**
  * 液态玻璃：21st「Apple Liquid glass switcher」（dennysdionigi / Den Dionigi）的原生移植。
@@ -116,7 +117,7 @@ export function glassFilters(): SVGSVGElement {
     f.id = id;
     f.setAttribute('primitiveUnits', 'objectBoundingBox');
     f.setAttribute('color-interpolation-filters', 'sRGB');
-    f.innerHTML = `<feImage result="map" width="100%" height="100%" x="0" y="0" preserveAspectRatio="none" href="${map}"/><feGaussianBlur in="SourceGraphic" stdDeviation="${sd}" result="blur"/><feDisplacementMap in="blur" in2="map" scale="0.5" xChannelSelector="R" yChannelSelector="G"/>`;
+    setMarkup(f, `<feImage result="map" width="100%" height="100%" x="0" y="0" preserveAspectRatio="none" href="${map}"/><feGaussianBlur in="SourceGraphic" stdDeviation="${sd}" result="blur"/><feDisplacementMap in="blur" in2="map" scale="0.5" xChannelSelector="R" yChannelSelector="G"/>`);
     svg.append(f);
   }
   return svg;

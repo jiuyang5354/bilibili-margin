@@ -2,6 +2,14 @@
 
 # 更新日志
 
+## [v0.36.1](https://github.com/jiuyang5354/bilibili-margin/releases/tag/v0.36.1) · 2026-10-31
+
+安全写法清理，为 Firefox 附加组件商店审核做准备。
+
+- 去掉全部 17 处 `innerHTML` / `insertAdjacentHTML`：扩展自带的图标和固定结构改由 `DOMParser` 解析后导入（惰性文档，不执行脚本），新增 `setMarkup` / `appendMarkup` 两个工具函数。
+- 搜索联想（首页搜索框、命令面板）不再把 B 站接口返回的 HTML 直接插入页面：只识别高亮标签，拆成文本节点和 `<mark>`，其余一律按纯文本处理。
+- `web-ext lint` 的不安全赋值警告从 14 条降到 0。界面和功能没有变化，Firefox 153 ESR 与 Chrome 回归测试通过。
+
 ## [v0.36.0](https://github.com/jiuyang5354/bilibili-margin/releases/tag/v0.36.0) · 2026-10-31
 
 支持 Firefox。

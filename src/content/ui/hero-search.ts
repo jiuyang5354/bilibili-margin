@@ -1,6 +1,6 @@
 import { every } from '../sched';
 import { forgetSearch, hotSearch, rememberSearch, searchHistory, searchUrl, suggest, type Hot } from '../api/search';
-import { h, icon, ICONS } from './dom';
+import { h, highlight, icon, ICONS } from './dom';
 
 /**
  * 首页主搜索 v0.23.0
@@ -127,7 +127,7 @@ export function createHeroSearch(app: () => HTMLElement, _onPalette?: () => void
       for (const s of sugg) {
         if (s.term === q) continue;
         const t = h('span', { class: 'hs-t' });
-        t.innerHTML = s.html.replace(/<em class="suggest_high_light">/g, '<mark>').replace(/<\/em>/g, '</mark>');
+        highlight(t, s.html);
         if (!t.textContent) t.textContent = strip(s.term);
         rows.append(stag(opt('hs-row-i', () => go(s.term), icon(ICONS.search), t, icon(ICONS.arrow))));
       }

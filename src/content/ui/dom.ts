@@ -12,10 +12,42 @@ export function h<K extends keyof HTMLElementTagNameMap>(tag: K, attrs: Attrs = 
   return el;
 }
 
+/**
+ * 把扩展自带的静态标记（图标 SVG、固定结构）解析成节点。用 DOMParser 而不是 innerHTML：
+ * 解析出的文档是惰性的（脚本不执行、资源不加载），再导入当前文档。不要把网络来的 HTML 传进来，
+ * B 站接口返回的高亮片段走 highlight()。
+ */
+const parser = new DOMParser();
+function nodes(markup: string, inSvg: boolean): Node[] {
+  const doc = parser.parseFromString(inSvg ? `<svg xmlns="http://www.w3.org/2000/svg">${markup}</svg>` : markup, 'text/html');
+  const host = inSvg ? doc.body.firstElementChild! : doc.body;
+  return [...host.childNodes].map((n) => document.importNode(n, true));
+}
+/** 用静态标记替换 el 的全部子节点；el 是 SVG 元素（defs / filter / svg）时按 SVG 解析 */
+export function setMarkup(el: Element, markup: string): void {
+  el.replaceChildren(...nodes(markup, el instanceof SVGElement));
+}
+/** 在 el 末尾追加静态标记 */
+export function appendMarkup(el: Element, markup: string): void {
+  el.append(...nodes(markup, el instanceof SVGElement));
+}
+/**
+ * B 站搜索联想返回带 <em class="suggest_high_light"> 的 HTML。只保留高亮，其余一律当纯文本：
+ * 拆成文本节点和 <mark>，不把接口内容当 HTML 插入。
+ */
+export function highlight(el: Element, html: string): void {
+  const text = (s: string) => parser.parseFromString(s.replace(/<[^>]*>/g, ''), 'text/html').body.textContent ?? '';
+  const out: Node[] = [];
+  html.split(/(<em class="suggest_high_light">[\s\S]*?<\/em>)/).forEach((part, i) => {
+    if (!part) return;
+    if (i % 2) { const m = document.createElement('mark'); m.textContent = text(part); out.push(m); }
+    else out.push(document.createTextNode(text(part)));
+  });
+  el.replaceChildren(...out);
+}
+
 export function svg(markup: string): Node {
-  const t = document.createElement('template');
-  t.innerHTML = markup.trim();
-  return t.content.firstChild as Node;
+  return nodes(markup.trim(), false)[0];
 }
 
 export const icon = (paths: string) => svg(`<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${paths}</svg>`);
