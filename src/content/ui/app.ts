@@ -38,6 +38,8 @@ export class MarginApp {
   private panel!: SettingsPanel;
   private fav!: Sheet;
   private foot!: HTMLElement;
+  private dash!: HTMLElement;
+  private wx: HTMLElement | null = null;
   private tab: Tab = 'rcmd';
   private round = 1;
   private page = 1;
@@ -66,6 +68,7 @@ export class MarginApp {
       this.keep = compileFilter(s.filters);
       this.repaint();
     }
+    if (prev.footprint !== s.footprint || prev.weather !== s.weather) this.syncDash();
     if (prev.theme !== s.theme || prev.palette !== s.palette || JSON.stringify(prev.bg) !== JSON.stringify(s.bg)) this.applyTheme();
     this.panel.sync(s);
   }
@@ -84,10 +87,26 @@ export class MarginApp {
     this.bg.apply(this.settings.bg, t, this.settings.palette).then(() => this.panel?.sync(this.settings));
   }
 
+  /** 首页顶部的足迹 / 天气：按设置显示；天气卡第一次打开时才创建（关着就不请求天气） */
+  private syncDash(): void {
+    const s = this.settings;
+    if (s.footprint) { if (!this.foot.isConnected) this.dash.prepend(this.foot); } else this.foot.remove();
+    if (s.weather) { this.wx ??= createWeather(); if (!this.wx.isConnected) this.dash.append(this.wx); } else this.wx?.remove();
+    this.dash.hidden = !s.footprint && !s.weather;
+  }
+
+  private showFoot(): void {
+    if (!this.settings.footprint) { toast(this.app, '足迹热力图已关闭', { label: '打开', run: () => saveSettings({ footprint: true }) }); return; }
+    this.app.scrollTo({ top: 0, behavior: 'smooth' });
+    this.foot.animate([{ boxShadow: '0 0 0 2px var(--accent)' }, { boxShadow: '0 0 0 0 transparent' }], { duration: 1200, easing: 'ease-out' });
+  }
+
   private render(): void {
     this.panel = createSettingsPanel(() => this.settings, () => this.bg.shader);
     this.fav = createFavorites((g) => attachPreview(g, () => this.settings.hoverPreview));
     this.foot = createFootprintCard();
+    this.dash = h('div', { class: 'dash' });
+    this.syncDash();
     // v0.20：足迹卡片改用 21st Glass Calendar 的 CSS 玻璃，不再走 GL 折射透镜
     const later = createLaterDrawer(() => this.app);
     const palette = createCommandPalette([
@@ -95,7 +114,7 @@ export class MarginApp {
       { id: 'rcmd', title: '看推荐', cat: '跳转', icon: ICONS.moments, keys: ['首页'], run: () => (this.app.querySelector('.tab[data-tab=rcmd]') as HTMLElement)?.click() },
       { id: 'popular', title: '看热门', cat: '跳转', icon: ICONS.heat, keys: ['popular', '排行'], run: () => (this.app.querySelector('.tab[data-tab=popular]') as HTMLElement)?.click() },
       { id: 'fav', title: '打开收藏夹', cat: '操作', icon: ICONS.fav, keys: ['收藏'], run: () => this.fav.open() },
-      { id: 'foot', title: '看足迹', desc: '一年的 B 站热力图', cat: '跳转', icon: ICONS.heat, keys: ['热力图', '足迹'], run: () => this.app.scrollTo({ top: 0, behavior: 'smooth' }) },
+      { id: 'foot', title: '看足迹', desc: '一年的 B 站热力图', cat: '跳转', icon: ICONS.heat, keys: ['热力图', '足迹'], run: () => this.showFoot() },
       { id: 'theme', title: '切换亮色 / 暗色', cat: '操作', icon: ICONS.moon, keys: ['主题', '夜间', 'dark', 'light'], run: () => this.toggleTheme() },
       { id: 'settings', title: '打开设置', cat: '操作', icon: ICONS.gear, keys: ['背景', '过滤', '屏蔽'], run: () => this.panel.sheet.open() },
       { id: 'top', title: '回到顶部', cat: '操作', icon: ICONS.top, run: () => this.app.scrollTo({ top: 0, behavior: 'smooth' }) },
@@ -112,7 +131,7 @@ export class MarginApp {
       'separator',
       { title: '收藏', icon: ICONS.fav, run: () => this.fav.open() },
       { title: '稍后', icon: ICONS.later, run: () => later.open() },
-      { title: '足迹', icon: ICONS.heat, run: () => { this.app.scrollTo({ top: 0, behavior: 'smooth' }); this.foot.animate([{ boxShadow: '0 0 0 2px var(--accent)' }, { boxShadow: '0 0 0 0 transparent' }], { duration: 1200, easing: 'ease-out' }); } },
+      { title: '足迹', icon: ICONS.heat, run: () => this.showFoot() },
       { title: '设置', icon: ICONS.gear, run: () => this.panel.sheet.open() },
     ] });
     this.sunMoon = head.sunMoon;
@@ -152,7 +171,7 @@ export class MarginApp {
       h('main', { class: 'main' },
         heroS.scrim,
         hero,
-        h('div', { class: 'dash' }, this.foot, createWeather()),
+        this.dash,
         barMark,
         bar,
         this.grid, this.status, this.sentinel,

@@ -1296,6 +1296,10 @@ canvas.gf-sheet-art[data-ready] { opacity: 1; filter: none; }
 /* 布局：足迹(1216px，尺寸不变) + 天气同一排；放不下时天气换到下一行（480px 宽，靠左） */
 .dash { display: grid; grid-template-columns: 1216px minmax(0, 1fr); gap: 16px; margin-top: 24px; align-items: stretch; }
 .dash > .fp-card { margin-top: 0; min-width: 0; }
+.dash[hidden] { display: none; }
+/* 只留天气（足迹关掉）：天气卡保持 480 × 240，靠左 */
+.dash:has(> .wx:only-child) { grid-template-columns: minmax(0, 480px); }
+.dash > .wx:only-child { height: 240px; }
 @media (max-width: 1859px) {
   .dash { grid-template-columns: minmax(0, 1fr); }
   .dash > .wx { width: min(100%, 480px); height: 240px; }

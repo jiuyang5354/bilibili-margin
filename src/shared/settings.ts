@@ -30,6 +30,10 @@ export interface Settings {
   watch: boolean;
   /** 首页开场动画（每次打开浏览器后首次进入首页播放一次） */
   intro: boolean;
+  /** 首页顶部「B 站足迹」热力图（关掉只是不显示，后台照样记录） */
+  footprint: boolean;
+  /** 首页顶部天气卡（关掉就不请求天气和定位） */
+  weather: boolean;
   filters: Filters;
   bg: Background;
 }
@@ -41,6 +45,8 @@ export const DEFAULTS: Settings = {
   hoverPreview: true,
   watch: true,
   intro: true,
+  footprint: true,
+  weather: true,
   filters: { keywords: [], ups: [], minViews: 0, minDuration: 0 },
   bg: { mode: 'random', shader: 'aurora', intensity: 0.6 },
 };
@@ -84,8 +90,8 @@ export function sanitizeSettings(raw: unknown): Settings | null {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null;
   const r = raw as Record<string, unknown>;
   const out: Partial<Settings> = {};
-  const bool = (k: 'enabled' | 'hoverPreview' | 'watch' | 'intro') => { if (typeof r[k] === 'boolean') out[k] = r[k] as boolean; };
-  bool('enabled'); bool('hoverPreview'); bool('watch'); bool('intro');
+  const bool = (k: 'enabled' | 'hoverPreview' | 'watch' | 'intro' | 'footprint' | 'weather') => { if (typeof r[k] === 'boolean') out[k] = r[k] as boolean; };
+  bool('enabled'); bool('hoverPreview'); bool('watch'); bool('intro'); bool('footprint'); bool('weather');
   if (r.theme === 'auto' || r.theme === 'light' || r.theme === 'dark') out.theme = r.theme;
   const strs = (v: unknown) => (Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string' && x.length <= 200).slice(0, 500) : undefined);
   const num = (v: unknown, max: number) => (typeof v === 'number' && Number.isFinite(v) && v >= 0 && v <= max ? v : undefined);
