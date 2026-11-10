@@ -77,7 +77,8 @@ function metaRow(v: Video, opts: CardOpts): HTMLElement {
     const views = fmtCount(v.views);
     parts.push(h('span', { class: 'stat', title: `${views} 播放`, 'aria-label': `${views} 播放` }, icon(ICONS.play), views));
   }
-  if (v.danmaku && !off('danmaku')) {
+  // 弹幕数为 0 也要显示（详情页同样带 0），只有接口没给这个值时才省略
+  if (Number.isFinite(v.danmaku) && !off('danmaku')) {
     const dm = fmtCount(v.danmaku);
     parts.push(h('span', { class: 'stat', title: `${dm} 弹幕`, 'aria-label': `${dm} 弹幕` }, icon(ICONS.comment), dm));
   }

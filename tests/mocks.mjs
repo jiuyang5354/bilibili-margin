@@ -11,7 +11,8 @@ const https = (u) => String(u).replace(/^http:/, 'https:');
 
 const arc = (v, i) => ({
   bvid: v.bvid, cid: 1000 + i, title: v.title, pic: https(v.pic), duration: v.dur, pubdate: v.pub,
-  owner: { name: v.name, mid: v.mid, face: v.face }, stat: { view: v.play, danmaku: 100 + i },
+  // 第 2 个样本刻意给 0 弹幕：验证「0 也要显示图标」不会退化（v0.60 卡片信息行）
+  owner: { name: v.name, mid: v.mid, face: v.face }, stat: { view: v.play, danmaku: i === 1 ? 0 : 100 + i },
 });
 
 function feedItem(i, kind) {
