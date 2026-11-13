@@ -54,6 +54,10 @@ jobs:
         run: node tests/issues-20261111-next.mjs
         env:
           SMOKE_OUT: smoke-artifacts/issues-20261111-next
+      - name: Flat surface keeps the upload accent button readable
+        run: node tests/issues-20261113.mjs
+        env:
+          SMOKE_OUT: smoke-artifacts/issues-20261113
       - name: Native charging-video filter, sorting and search
         run: node tests/space-charging.mjs
       - name: Application window navigation
