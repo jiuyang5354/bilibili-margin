@@ -4,6 +4,13 @@
 
 ## Unreleased
 
+## v0.6.55 · 2026-11-13
+
+- Integrate PR #178: retain readable upload-button accent colors in flat and reduced-transparency modes; disable backdrop filtering in the latter.
+- Match the All Updates windmill to the header icon, with a distinct clip-path ID and retained layout/selection behavior.
+- Cover both themes, three accents, reduced transparency and both feed layouts. Background image URLs shipped in 0.6.52.
+- Public builds do not include the local listening experiment.
+
 ## v0.6.52 · 2026-11-12
 
 - Support HTTPS image URLs for custom backgrounds. Preview before applying, persist the URL and synchronize open MARGIN pages.

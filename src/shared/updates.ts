@@ -1,6 +1,8 @@
 export const UPDATE_PENDING = 'margin:update-pending';
 export const UPDATE_SEEN = 'margin:update-seen';
 export const UPDATE_NOTES = [
+  "修复平面和减少透明度模式下投稿按钮的文字对比度。",
+  "动态页全部动态图标与顶栏风车保持一致。",
   "背景图片支持 HTTPS 直链，先预览再应用，保存后跨页面同步。",
   "天气优先读取本地缓存，断网后保留原采集时间，定位失败沿用最后城市。",
   "历史天气标明缓存日期，长时间提示支持换行，城市入口保持可见。",

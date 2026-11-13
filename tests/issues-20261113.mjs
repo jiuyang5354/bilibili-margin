@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { chromium } from 'playwright';
-import { mkdirSync, mkdtempSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { resolve, join } from 'node:path';
 import { installMocks } from './mocks.mjs';
@@ -75,9 +75,48 @@ try {
     assert.equal(et, 'rgb(255, 255, 255)');
   });
 
+  for (const theme of ['light', 'dark']) {
+    for (const accent of ['classic', 'blue', 'pink']) {
+      await check(`完整平面矩阵：${theme}/${accent}`, async () => {
+        const s = await load({accent, theme});
+        assert(contrast(s) >= 4.5, JSON.stringify(s));
+        assert.equal(await page.locator('#margin-root .upload').evaluate(el => getComputedStyle(el).backdropFilter), 'none');
+      });
+    }
+  }
+  const cdp = await ctx.newCDPSession(page);
+  await cdp.send('Emulation.setEmulatedMedia', {features: [{name:'prefers-reduced-transparency', value:'reduce'}]});
+  assert(await page.evaluate(() => matchMedia('(prefers-reduced-transparency: reduce)').matches));
+  for (const theme of ['light', 'dark']) {
+    for (const accent of ['classic', 'blue', 'pink']) {
+      await check(`减少透明度：${theme}/${accent}`, async () => {
+        const s = await load({accent, theme, glass:'liquid'});
+        assert(contrast(s) >= 4.5, JSON.stringify(s));
+        assert.equal(await page.locator('#margin-root .upload').evaluate(el => getComputedStyle(el).backdropFilter), 'none');
+      });
+    }
+  }
+  await cdp.send('Emulation.setEmulatedMedia', {features: []});
+  for (const theme of ['light', 'dark']) {
+    for (const feedLayout of ['classic', 'sidebar']) {
+      await check(`全部动态风车及选中交互：${theme}/${feedLayout}`, async () => {
+        await seed({theme,feedLayout});
+        await page.goto('https://t.bilibili.com/');
+        const all = page.locator('.fd-ups .fd-up[data-mid="0"]');
+        await all.waitFor();
+        assert.equal(await all.locator('[data-header-icon="moments"]').count(), 1);
+        const clips = await page.locator('#margin-root svg clipPath').evaluateAll(els=>els.map(el=>el.id));
+        assert.equal(new Set(clips).size, clips.length, 'feed/header clip path IDs must not collide');
+        await all.click();
+        assert.equal(await all.getAttribute('aria-pressed'), 'true');
+      });
+    }
+  }
+
   await page.screenshot({ path: join(out, 'flat-upload-accent.png') });
   assert.deepEqual(errors, []);
 } finally {
+  writeFileSync(join(out, 'report.json'), JSON.stringify({results,errors,scope:'Isolated Chromium extension with mocked Bilibili data; no account writes.'}, null, 2));
   const failed = results.filter(r => !r.passed);
   if (failed.length) process.exitCode = 1;
   await ctx.close();

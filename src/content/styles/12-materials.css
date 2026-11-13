@@ -18,6 +18,6 @@
 .app[data-glass="flat"] .top .upload[data-material] { background: var(--margin-primary, var(--surface)); color: var(--margin-primary-fg, var(--nav-ink)); backdrop-filter: none !important; }
 @media(prefers-reduced-transparency:reduce) {
   .app .top [data-material]:not(.upload) { background: var(--surface); backdrop-filter: none !important; }
-  .app .top .upload[data-material] { background: var(--margin-primary, var(--surface)); color: var(--margin-primary-fg, var(--nav-ink)); }
+  .app .top .upload[data-material] { background: var(--margin-primary, var(--surface)); color: var(--margin-primary-fg, var(--nav-ink)); backdrop-filter: none !important; }
   .gf-front-rim { filter: none !important; }
 }
