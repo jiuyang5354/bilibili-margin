@@ -40,6 +40,8 @@ jobs:
         run: |
           node tests/issues-20261110.mjs
           node tests/watch-edges.mjs
+          node tests/favorite-transfer.mjs
+          node tests/watch-native-overlays.mjs
       - name: Space drawer regressions
         run: npm run test:drawers
       - name: Space articles, audio and public favorites
@@ -225,7 +227,9 @@ jobs:
       - run: npx playwright install --with-deps chromium firefox
       - run: npm run build
       - name: Rich message draft editing in Chromium and Firefox
-        run: node tests/message-editor.mjs
+        run: |
+          node tests/message-editor.mjs
+          node tests/firefox-message-extension.mjs
         env:
           SMOKE_OUT: privacy-performance/message-editor
       - name: Native recommendation username rendering

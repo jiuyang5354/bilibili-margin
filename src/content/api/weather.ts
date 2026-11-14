@@ -31,7 +31,7 @@ function acceptLocation(next: WeatherLocation): void {
   location = next;
   if (previous && previous.revision !== next.revision) {
     locRevision++;
-    localStorage.removeItem(CACHE_KEY);
+    if (!previous.loc || !next.loc || previous.loc.lat !== next.loc.lat || previous.loc.lon !== next.loc.lon) localStorage.removeItem(CACHE_KEY);
     dispatchEvent(new Event('margin:wx-loc'));
   }
 }
@@ -235,10 +235,8 @@ export async function weather(): Promise<Wx> {
     try { localStorage.setItem(CACHE_KEY, JSON.stringify(wx)); } catch { /* Fresh weather remains usable when storage is full. */ }
     return wx;
   };
-  const pending = { revision: stateRevision, promise: getForecast() };
-  fetchingWeather = pending;
-  try { return await pending.promise; }
-  catch (error) {
+  // All consumers must share the recovered result, not the raw network promise.
+  const pending = { revision: stateRevision, promise: getForecast().catch(error => {
     if (revision !== locRevision || location!.revision !== stateRevision || error instanceof PrivacyBlocked) throw error;
     const fallback = readCache(loc) ?? (cached?.loc.lat === loc.lat && cached.loc.lon === loc.lon ? { ...cached, loc, cached: true, stale: true } : null);
     if (fallback) {
@@ -246,5 +244,8 @@ export async function weather(): Promise<Wx> {
       return fallback;
     }
     throw error;
-  } finally { if (fetchingWeather === pending) fetchingWeather = null; }
+  }) };
+  fetchingWeather = pending;
+  try { return await pending.promise; }
+  finally { if (fetchingWeather === pending) fetchingWeather = null; }
 }

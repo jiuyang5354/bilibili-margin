@@ -4,6 +4,14 @@
 
 ## Unreleased
 
+## v0.6.56 · 2026-11-14
+
+- Add native favorite move/copy actions using existing account permissions and CSRF. Update the source only after confirmation, retain failed drafts and prevent duplicate submissions.
+- Keep native music details and the scrolling mini player above the sidebar. Apply the configured radius to music details and restore normal column stacking when closed.
+- Share cached fallback results across concurrent weather refreshes. Retain cached weather and its original timestamp after same-city location updates or failed manual reloads.
+- Verify existing card metadata toggles and four-column home layouts. Add real Firefox temporary-addon keyboard coverage; issue #181 remains open because it was not reproduced.
+- Public builds exclude the local listening experiment. No new runtime dependencies or permissions.
+
 ## v0.6.55 · 2026-11-13
 
 - Integrate PR #178: retain readable upload-button accent colors in flat and reduced-transparency modes; disable backdrop filtering in the latter.

@@ -181,8 +181,8 @@ export function createWeather(onPrivacy?: () => void): HTMLElement {
         return;
       }
       console.warn('[margin] weather', err);
-      if (quiet && wx && wx.loc.lat === savedLoc()?.lat && wx.loc.lon === savedLoc()?.lon) {
-        refreshFailed = true; render(); return;
+      if (wx && wx.loc.lat === savedLoc()?.lat && wx.loc.lon === savedLoc()?.lon) {
+        wx = { ...wx, cached: true, stale: true }; refreshFailed = true; render(); return;
       }
       wx = null; run();
       closeCity?.();
