@@ -63,7 +63,7 @@ const thumb = (src: string, w: number, hh: number) => (src ? `${src}@${w}w_${hh}
 const img = (src: string, cls: string, w: number, hh = w) =>
   h('img', { class: cls, src: thumb(src, w, hh), alt: '', loading: 'lazy', referrerpolicy: 'no-referrer' });
 
-function row(r: PopRow, preview: (d: Dyn, button: HTMLButtonElement) => void, hover: (d: Dyn, button: HTMLButtonElement, entering: boolean) => void): HTMLElement {
+function row(r: PopRow, hover: (d: Dyn, trigger: HTMLElement, entering: boolean) => void): HTMLElement {
   const cover = r.cover !== undefined
     ? h('span', { class: 'dp-cover' }, r.cover ? img(r.cover, '', 128, 72) : '', r.progress !== undefined ? h('i', { class: 'dp-prog', style: `--p:${Math.max(0, Math.min(1, r.progress))}` }) : '')
     : null;
@@ -74,16 +74,15 @@ function row(r: PopRow, preview: (d: Dyn, button: HTMLButtonElement) => void, ho
       h('p', { class: 'dp-line' }, r.title)),
     r.count !== undefined ? h('em', { class: r.count ? 'dp-count' : 'dp-count zero' }, r.count > 99 ? '99+' : String(r.count)) : '',
     cover);
-  const detailLabel = r.dynamic?.video || r.dynamic?.orig?.video ? '视频摘要' : '动态详情';
-  const detail = r.dynamic ? h('button', {
-    type: 'button', class: 'dp-detail-btn', title: detailLabel, 'aria-label': detailLabel,
-    'aria-expanded': 'false', 'aria-haspopup': 'dialog',
-  }, icon('<rect x="3" y="4" width="18" height="16" rx="4"/><path d="M14.5 4v16M6.5 9h4.5M6.5 13h3"/>')) as HTMLButtonElement : null;
-  detail?.addEventListener('click', () => preview(r.dynamic!, detail));
-  detail?.addEventListener('pointerenter', (e) => { if (e.pointerType !== 'touch') hover(r.dynamic!, detail, true); });
-  detail?.addEventListener('pointerleave', (e) => { if (e.pointerType !== 'touch') hover(r.dynamic!, detail, false); });
-  return r.laterBvid || detail ? h('div', { class: 'dp-entry' + (detail ? ' dp-dynamic' : '') }, link,
-    r.laterBvid ? laterButton(r.laterBvid) : null, detail) : link;
+  const entry: HTMLElement = r.laterBvid ? h('div', { class: 'dp-entry' }, link, laterButton(r.laterBvid)) : link;
+  if (r.dynamic) {
+    entry.classList.add('dp-dynamic');
+    link.setAttribute('aria-expanded', 'false');
+    link.setAttribute('aria-haspopup', 'dialog');
+    entry.addEventListener('pointerenter', (e) => { if (e.pointerType !== 'touch') hover(r.dynamic!, link, true); });
+    entry.addEventListener('pointerleave', (e) => { if (e.pointerType !== 'touch') hover(r.dynamic!, link, false); });
+  }
+  return entry;
 }
 
 /**
@@ -116,7 +115,7 @@ export function attachHoverList(btn: HTMLElement, spec: PopSpec, filter?: Filter
   pop.append(detail);
   let detailGeneration = 0, previewT = 0, detailCloseT = 0;
   let detailRequest: AbortController | undefined;
-  let detailButton: HTMLButtonElement | undefined;
+  let detailTrigger: HTMLElement | undefined;
   const closeDetail = (restoreFocus = false) => {
     clearTimeout(previewT);
     clearTimeout(detailCloseT);
@@ -124,9 +123,9 @@ export function attachHoverList(btn: HTMLElement, spec: PopSpec, filter?: Filter
     detailRequest = undefined;
     detailGeneration++;
     detail.hidden = true;
-    detailButton?.setAttribute('aria-expanded', 'false');
-    if (restoreFocus) detailButton?.focus({ preventScroll: true });
-    detailButton = undefined;
+    detailTrigger?.setAttribute('aria-expanded', 'false');
+    if (restoreFocus) detailTrigger?.focus({ preventScroll: true });
+    detailTrigger = undefined;
   };
   const renderContent = (d: Dyn): HTMLElement => {
     const content = h('div', { class: 'dp-detail-content' },
@@ -147,19 +146,19 @@ export function attachHoverList(btn: HTMLElement, spec: PopSpec, filter?: Filter
     });
     return content;
   };
-  const preview = async (d: Dyn, button: HTMLButtonElement, fromHover = false) => {
+  const preview = async (d: Dyn, trigger: HTMLElement) => {
     clearTimeout(previewT);
     clearTimeout(detailCloseT);
-    if (detailButton === button) { if (!fromHover) closeDetail(true); return; }
+    if (detailTrigger === trigger) return;
     clearTimeout(closeT);
     closeDetail();
-    detailButton = button;
-    button.setAttribute('aria-expanded', 'true');
+    detailTrigger = trigger;
+    trigger.setAttribute('aria-expanded', 'true');
     const current = ++detailGeneration;
     const openLabel = d.video ? '打开视频' : '查看原动态';
     const source = h('a', { class: 'dp-detail-action', href: d.url, target: '_blank', rel: 'noopener', title: openLabel, 'aria-label': openLabel }, icon(ICONS.arrow));
     const close = h('button', { type: 'button', class: 'dp-detail-action', title: '关闭详情', 'aria-label': '关闭详情' }, icon(ICONS.close));
-    close.onclick = () => closeDetail(!fromHover);
+    close.onclick = () => closeDetail(true);
     const body = h('div', { class: 'dp-detail-scroll', 'aria-live': 'polite', 'aria-busy': 'true' }, h('p', {}, '正在获取详情…'));
     detail.replaceChildren(h('div', { class: 'dp-head' }, h('span', {}, d.video || d.orig?.video ? '视频摘要' : '动态详情'),
       h('div', { class: 'dp-detail-actions' }, source, close)), body);
@@ -167,7 +166,6 @@ export function attachHoverList(btn: HTMLElement, spec: PopSpec, filter?: Filter
     const bounds = pop.getBoundingClientRect();
     detail.classList.toggle('dp-detail-left', bounds.right + 392 > innerWidth && bounds.left >= 392);
     detail.classList.toggle('dp-detail-overlay', bounds.right + 392 > innerWidth && bounds.left < 392);
-    if (!fromHover) close.focus({ preventScroll: true });
     const loadDetail = async () => {
       body.setAttribute('aria-busy', 'true');
       body.replaceChildren(h('p', {}, '正在获取详情…'));
@@ -194,13 +192,13 @@ export function attachHoverList(btn: HTMLElement, spec: PopSpec, filter?: Filter
   };
   detail.addEventListener('pointerenter', () => { clearTimeout(detailCloseT); clearTimeout(closeT); });
   detail.addEventListener('pointerleave', delayCloseDetail);
-  const hoverPreview = (d: Dyn, button: HTMLButtonElement, entering: boolean) => {
+  const hoverPreview = (d: Dyn, trigger: HTMLElement, entering: boolean) => {
     clearTimeout(previewT);
     if (!entering) { delayCloseDetail(); return; }
     clearTimeout(detailCloseT);
-    previewT = window.setTimeout(() => { if (open && button.isConnected) void preview(d, button, true); }, 500);
+    previewT = window.setTimeout(() => { if (open && trigger.isConnected) void preview(d, trigger); }, 500);
   };
-  const renderRow = (r: PopRow) => row(r, preview, hoverPreview);
+  const renderRow = (r: PopRow) => row(r, hoverPreview);
   // 屏蔽词过滤：主列表和分页追加都走同一套判断
   const visible = (rows: PopRow[]) => filter && spec.filterRow
     ? rows.filter((r) => { const t = spec.filterRow!(r); return !t || filter.allows(t); })
