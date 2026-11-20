@@ -417,6 +417,13 @@ function applyFont(s: Settings): void {
   set('--margin-mono', on && !s.monoNum ? sans : null);
   // 视频 CDN 节点：页面主环境的 cdn.js 同步读 localStorage（v0.47.2）
   try { if (s.enabled && s.cdn) localStorage.setItem('margin:cdn', s.cdn); else localStorage.removeItem('margin:cdn'); } catch { /* 隐私模式 */ }
+  // 连播方式扩展：页面主环境的连播脚本只读这个开关，官方配置一次都不写（v0.61）
+  try {
+    const ext = s.enabled && s.autoplayExt === true ? '1' : '0';
+    localStorage.setItem('margin:autoplay-ext', ext);
+    de.setAttribute('data-margin-autoplay-ext', ext);
+    de.dispatchEvent(new CustomEvent('margin:autoplay-ext', { bubbles: true, detail: ext }));
+  } catch { /* 隐私模式 */ }
   set('--margin-zoom', on && s.zoom !== 100 ? String(s.zoom / 100) : null);
   set('--margin-rk', on && s.radius !== 100 ? String(s.radius / 100) : null);
   set('--margin-player-rk', on && !s.playerCorners ? '0' : null);

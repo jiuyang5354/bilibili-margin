@@ -20,6 +20,7 @@ const entries = [
   { name: 'content', entry: 'src/content/main.ts' },
   { name: 'popup', entry: 'src/popup/popup.ts' },
   { name: 'background', entry: 'src/background/sw.ts' },
+  { name: 'autoplayExt', entry: 'src/content/autoplay-ext.ts' },
 ];
 // 按路由动态 import 的页面模块（ES，共享代码自动拆成 pages/chunk-*.js）
 const PAGES = ['home', 'watch', 'space', 'message', 'history', 'feed', 'detail', 'space-hooks', 'danmaku-jump', 'danmaku-airborne', 'channel-carousel', 'search-exact'];
