@@ -6,6 +6,24 @@ New entries are grouped under Added, Changed, and Fixed, following [Keep a Chang
 
 ## Unreleased
 
+## [v0.6.91](https://github.com/jiuyang5354/bilibili-margin/releases/tag/v0.60.91) · 2026-11-22 · Scheduled update checks
+
+Display version 0.6.91, browser update version 0.60.91.
+
+### Added
+
+- Settings → Privacy & data → Automatic updates: pick how often the extension checks for updates (off / 1 hour / 6 hours / 12 hours / daily / 3 days / weekly). On each tick it looks for the latest stable release and marks the extension icon with 新 when a newer one exists.
+- A dedicated update page: current and latest version, download the release archive, choose the extension folder and write the files, with a note at every step. Browsers do not let an extension change its own install location, so the folder is picked by hand; downloading the archive asks for its own permission on GitHub and its object storage.
+- The extension popup shows the current check interval and offers an "Update now" button when a newer version is available.
+
+### Changed
+
+- The existing files are read into memory before the extension folder is written, so a full disk or an interrupted write is rolled back file by file instead of leaving the folder half new and half old. The manifest is still written last.
+- Release archives are unpacked with the browser's own decompression stream, no third-party library. Paths that would escape the extension folder are rejected.
+- Downloads are restricted to official GitHub URLs, and a redirect is only followed to GitHub's own object storage.
+
+Store installs are updated by the browser itself; this only concerns unpacked installs. The fallback for a rate-limited API is in [v0.6.90](https://github.com/jiuyang5354/bilibili-margin/releases/tag/v0.60.90).
+
 ## [v0.6.90](https://github.com/jiuyang5354/bilibili-margin/releases/tag/v0.60.90) · 2026-11-22 · Manual update checks
 
 Display version 0.6.90, browser update version 0.60.90.

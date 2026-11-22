@@ -30,6 +30,7 @@ const SERVICES = {
   sponsor: ['bsbsb.top', '/api/skipSegments/'],
   update: ['api.github.com', '/repos/jiuyang5354/bilibili-margin/releases/latest'],
   'release-page': ['github.com', '/jiuyang5354/bilibili-margin/releases/latest'],
+  'update-asset': ['github.com', '/jiuyang5354/bilibili-margin/releases/download/'],
 } as const;
 type Service = keyof typeof SERVICES;
 
@@ -42,7 +43,8 @@ export async function optionalFetch(service: Service, address: string, init: Req
   const [host, path] = SERVICES[service];
   const validPath = service === 'sponsor' ? /^\/api\/skipSegments\/[a-f0-9]{4}$/.test(url.pathname)
     : service === 'weather-cn' ? /^\/rest\/(?:province(?:\/A[A-Z]{2})?|weather)$/.test(url.pathname)
-    : url.pathname === path;
+      : service === 'update-asset' ? url.pathname.startsWith(path)
+        : url.pathname === path;
   if (url.protocol !== 'https:' || url.hostname !== host || url.port || url.username || url.password || !validPath || url.hash || (service === 'release-page' && url.search)) throw new Error('外部请求地址不受支持');
   // Firefox content-script Xrays may expose keys() without a usable Symbol.iterator.
   let badQuery = false;
@@ -73,7 +75,17 @@ export async function optionalFetch(service: Service, address: string, init: Req
   const timer = setTimeout(abort, 8000);
   pending.add(controller);
   try {
-    return await fetch(url.href, { ...init, headers, credentials: 'omit', referrerPolicy: 'no-referrer', redirect: service === 'release-page' ? 'follow' : 'error', signal: controller.signal });
+    const response = await fetch(url.href, { ...init, headers, credentials: 'omit', referrerPolicy: 'no-referrer', redirect: service === 'release-page' || service === 'update-asset' ? 'follow' : 'error', signal: controller.signal });
+    // 下载发布包会跳到 GitHub 的对象存储，跟随跳转后核对最终主机。
+    if (service === 'update-asset' && response.redirected) {
+      let finalHost = '';
+      try { finalHost = new URL(response.url).hostname; } catch { finalHost = ''; }
+      if (!['release-assets.githubusercontent.com', 'objects.githubusercontent.com'].includes(finalHost)) {
+        await response.body?.cancel();
+        throw new Error('外部请求地址不受支持');
+      }
+    }
+    return response;
   } finally {
     clearTimeout(timer);
     pending.delete(controller);

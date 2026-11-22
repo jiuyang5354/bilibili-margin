@@ -49,6 +49,15 @@ function paint(s: Settings): void {
   const manifest = chrome.runtime.getManifest();
   $('#ver').textContent = manifest.version_name || manifest.version;
   let s = await loadSettings();
+  const hours = s.updateInterval;
+  (document.getElementById('cycle') as HTMLElement).textContent = hours
+    ? `自动检查：${hours === 24 ? '每天' : hours === 168 ? '每周' : hours < 24 ? `每 ${hours} 小时` : `每 ${hours / 24} 天`}`
+    : '自动检查已关闭，可在设置里开启';
+  const updBtn = document.getElementById('updbtn') as HTMLButtonElement;
+  updBtn.addEventListener('click', () => {
+    updBtn.disabled = true;
+    void chrome.runtime.sendMessage({ margin: 'open-update' }).finally(() => { updBtn.disabled = false; });
+  });
   for (const page of REDESIGN_PAGES) {
     const row = document.createElement('div'); row.className = 'row';
     const label = document.createElement('span'); label.textContent = REDESIGN_LABELS[page];
@@ -99,5 +108,6 @@ void (async () => {
     a.href = info.url;
     document.getElementById('updv')!.textContent = info.name || 'v' + info.tag;
     a.classList.add('on');
+    (document.getElementById('updbtn') as HTMLButtonElement).hidden = false;
   }
 })();

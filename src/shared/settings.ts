@@ -24,6 +24,13 @@ export const HOME_SECTION_NAMES: Record<HomeSection, string> = {
   footer: '页脚',
 };
 
+/**
+ * 自动检查更新的周期（小时）：0 = 不自动检查。
+ * Chrome 的 alarms 最短 30 分钟，这里最小给到 1 小时，避免频繁打扰和触发 GitHub 限流。
+ */
+export const UPDATE_INTERVALS = [0, 1, 6, 12, 24, 72, 168] as const;
+export const UPDATE_INTERVAL_DEFAULT = 0;
+
 export interface Filters {
   /** 标题关键词；写成 /正则/ 时按正则匹配 */
   keywords: string[];
@@ -63,6 +70,8 @@ export interface Settings {
   weather: boolean;
   /** 可选的天气、社区跳过与更新查询需要主动允许。 */
   privacyExternal: boolean;
+  /** 自动检查更新的周期（小时）：0 = 不自动检查。 */
+  updateInterval: number;
   /** 最近搜索只保存在扩展存储，最多 8 条、保留 30 天。 */
   searchHistory: boolean;
   /** 点收藏夹直接展开全部视频（关掉时先扇形弹出最近 4 个） */
@@ -177,6 +186,7 @@ export const DEFAULTS: Settings = {
   footprint: true,
   weather: true,
   privacyExternal: false,
+  updateInterval: UPDATE_INTERVAL_DEFAULT,
   searchHistory: false,
   favDirect: true,
   favColumns: 3,
@@ -289,6 +299,7 @@ function merge(raw: Partial<Settings> | undefined): Settings {
     hideAds: r.hideAds !== false,
     sponsorSkip: r.sponsorSkip === true,
     privacyExternal: r.privacyExternal === true,
+    updateInterval: typeof r.updateInterval === 'number' && (UPDATE_INTERVALS as readonly number[]).includes(r.updateInterval) ? r.updateInterval : UPDATE_INTERVAL_DEFAULT,
     searchHistory: r.searchHistory === true,
     danmakuJump: r.danmakuJump === true,
     danmakuAirborne: r.danmakuAirborne === true,
@@ -336,6 +347,7 @@ export function sanitizeSettings(raw: unknown): Settings | null {
   const pageOff = r.pageOff;
   if (Array.isArray(pageOff)) out.pageOff = REDESIGN_PAGES.filter(p => pageOff.includes(p));
   if (typeof r.privacyExternal === 'boolean') out.privacyExternal = r.privacyExternal;
+  if ((UPDATE_INTERVALS as readonly number[]).includes(r.updateInterval as number)) out.updateInterval = r.updateInterval as number;
   if (typeof r.searchHistory === 'boolean') out.searchHistory = r.searchHistory;
   if (r.accent === 'classic' || r.accent === 'blue' || r.accent === 'pink') out.accent = r.accent;
   if (r.glass === 'soft' || r.glass === 'liquid' || r.glass === 'flat') out.glass = r.glass;

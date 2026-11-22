@@ -21,13 +21,22 @@
   .upd{display:none;margin:0 0 14px;padding:10px 12px;border-radius:10px;background:rgb(0 174 236 / .1);color:var(--ink);text-decoration:none;font-size:12px}
   .upd b{color:var(--accent);font:600 11px/1 ui-monospace,Menlo,monospace;margin-left:4px}
   .upd.on{display:block}
+  .updrow{display:flex;align-items:center;gap:8px;margin:0 0 10px}
+  .updrow .upd{flex:1;min-width:0;margin:0}
+  .updbtn{border:0;border-radius:9px;background:var(--accent);color:#fff;font:inherit;font-size:12px;padding:9px 12px;cursor:pointer;white-space:nowrap}
+  .updbtn:disabled{opacity:.5;cursor:default}
+  .cycle{margin:0 0 12px;font-size:11px;color:var(--muted)}
   .foot{margin-top:6px;font-size:11px;color:var(--muted)}
 </style>
 </head>
 <body>
   <h1>映间 MARGIN</h1>
   <div class="sub">MARGIN · v<span id="ver"></span></div>
-  <a class="upd" id="upd" target="_blank" rel="noopener">有新版本<b id="updv"></b> · 点此下载</a>
+  <div class="updrow">
+    <a class="upd" id="upd" target="_blank" rel="noopener">有新版本<b id="updv"></b> · 点此下载</a>
+    <button class="updbtn" id="updbtn" type="button" hidden>立即更新</button>
+  </div>
+  <p class="cycle" id="cycle"></p>
   <div class="row"><span>启用 MARGIN</span><button class="sw" id="enabled" role="switch" aria-checked="true" aria-label="启用 MARGIN"></button></div>
   <div class="row"><span>其他页面重设计</span><button class="sw" id="watch" role="switch" aria-checked="true" aria-label="其他页面重设计"></button></div>
   <details><summary>按页面重设计</summary><div id="pages"></div></details>
