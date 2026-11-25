@@ -274,7 +274,7 @@ function buildSettingsPanel(sheet: SettingsPage, get: () => Settings, currentSha
   // 推荐批次导航（v0.53）：占据分类栏原来的「换一批」位置；关闭后恢复原来的单级「上一批」
   const batchSizeIn = h('input', {
     type: 'number', class: 'city-in batch-size-in', min: '1', max: '100', step: '1',
-    value: String(s0.batchSize), 'aria-label': '每批视频数', inputmode: 'numeric',
+    value: String(s0.batchSize), disabled: s0.batchAutoSize, 'aria-label': '每批视频数', inputmode: 'numeric',
   }) as HTMLInputElement;
   const commitBatchSize = () => {
     const n = clampBatchSize(Number(batchSizeIn.value));
@@ -288,10 +288,12 @@ function buildSettingsPanel(sheet: SettingsPage, get: () => Settings, currentSha
     commitBatchSize();
     batchSizeIn.blur();
   });
+  const batchAutoSizeT = toggle(s0.batchAutoSize, '按窗口调整每批条数', (v) => save({ batchAutoSize: v }));
   const batchRefreshT = toggle(s0.batchRefresh, '批次条刷新按钮', (v) => save({ batchRefresh: v }));
   const batchPrefetchT = toggle(s0.batchPrefetch, '预载下一轮', (v) => save({ batchPrefetch: v }));
   const batchOpts = h('div', { class: 'batch-opts', hidden: !s0.batchNav },
-    row('每批视频数', '一次「换一批」约 24 条，按此切成多批；1–100 之间', batchSizeIn),
+    row('按窗口调整每批条数', '根据当前网格列数显示两行视频', batchAutoSizeT),
+    row('每批视频数', '关闭自动调整后手动设置，1–100 条', batchSizeIn),
     row('预载下一轮', '始终保留一轮预载：加载、换一批或翻到预载内容后自动补下一轮；关闭则到末批点右箭头才请求', batchPrefetchT),
     row('显示刷新按钮', '关闭后批次条只保留左右箭头；刷新键可在任意批次直接追加新内容', batchRefreshT));
   const batchNavT = toggle(s0.batchNav, '批次导航', (v) => { batchOpts.hidden = !v; void save({ batchNav: v }); });
@@ -808,6 +810,8 @@ function buildSettingsPanel(sheet: SettingsPage, get: () => Settings, currentSha
       batchNavT.setAttribute('aria-checked', String(s.batchNav));
       batchRefreshT.setAttribute('aria-checked', String(s.batchRefresh));
       batchPrefetchT.setAttribute('aria-checked', String(s.batchPrefetch));
+      batchAutoSizeT.setAttribute('aria-checked', String(s.batchAutoSize));
+      batchSizeIn.disabled = s.batchAutoSize;
       if (!batchSizeIn.matches(':focus')) batchSizeIn.value = String(s.batchSize);
       batchOpts.hidden = !s.batchNav;
       cardBits.set(shownCard(s.homeHide));

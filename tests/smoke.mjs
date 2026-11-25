@@ -134,7 +134,14 @@ for (const theme of THEMES) {
 
   // v0.47 新功能：设置种子都通过 service worker 写入 chrome.storage.local
   if (theme === THEMES[0] && sw) {
-    const HOME = 'https://www.bilibili.com/';
+    const newRecommendations = (url) => {
+  if (!url.includes('/index/top/feed/rcmd?')) return null;
+  const result = apiBody(url);
+  result.data.item.forEach((item, index) => { item.bvid = `BVrefresh_${index}`; });
+  return result;
+};
+
+const HOME = 'https://www.bilibili.com/';
     const WATCH = 'https://www.bilibili.com/video/BV1mdxN68E7F/';
     const SEARCH = 'https://search.bilibili.com/all?keyword=%E6%98%A0%E9%97%B4';
     const POPULAR = 'https://www.bilibili.com/v/popular/all';
@@ -920,6 +927,7 @@ for (const theme of THEMES) {
       });
       const before = await state();
       // 打开设置后，点当前分类标签应该等于换一批
+      mockOverride = newRecommendations;
       await page.evaluate(() => document.getElementById('margin-root').shadowRoot.querySelector('.tab[data-tab=rcmd]')?.click());
       await sleep(1800);
       const after = await state();
@@ -1066,7 +1074,7 @@ for (const theme of THEMES) {
       });
       if (before < 300) return [`page too short to scroll: ${before}`];
       const slowFeed = /\/index\/top\/feed\/rcmd\?/;
-      mockOverride = async (u) => { if (slowFeed.test(u)) { await sleep(1200); return apiBody(u); } };
+      mockOverride = async (u) => { if (slowFeed.test(u)) { await sleep(1200); return newRecommendations(u); } };
       // 点击之后连续采样：旧实现会先清空网格（卡片数归零）并把 scrollTop 摔到顶部，再慢慢补回来
       const sampled = await page.evaluate(() => new Promise((resolve) => {
         const r = document.getElementById('margin-root').shadowRoot;
@@ -1133,6 +1141,13 @@ for (const theme of THEMES) {
       await page.waitForFunction(() => (document.getElementById('margin-root')?.shadowRoot?.querySelectorAll('.grid .card:not(.sk)').length ?? 0) >= 8, null, { timeout: 15_000 });
       await page.evaluate(() => { const app = document.getElementById('margin-root').shadowRoot.querySelector('.app'); app.scrollTop = 0; });
       await sleep(300);
+      let requests = 0;
+      mockOverride = (url) => {
+        if (!url.includes('/index/top/feed/rcmd?')) return null;
+        return ++requests <= 2 ? apiBody(url) : newRecommendations(url);
+      };
+      const cards = page.locator('#margin-root .home-grid .card:not(.sk) a[href*="/video/"]');
+      const oldHref = await cards.first().getAttribute('href');
       const sampled = await page.evaluate(() => new Promise((resolve) => {
         const r = document.getElementById('margin-root').shadowRoot;
         const app = r.querySelector('.app');
@@ -1148,6 +1163,13 @@ for (const theme of THEMES) {
       const miss = [];
       if (sampled.minCards < 8) miss.push(`grid emptied during refresh: min ${sampled.minCards} cards`);
       if (sampled.maxTop > 8 || sampled.top > 8) miss.push(`jumped down from page top: top ${sampled.top}, max ${sampled.maxTop}`);
+      await page.waitForFunction(() => !document.getElementById('margin-root').shadowRoot.querySelector('.refresh[aria-busy="true"]'));
+      if (requests < 3 || await cards.first().getAttribute('href') === oldHref) miss.push('refresh did not skip repeated recommendations');
+      const currentCards = await cards.evaluateAll((links) => links.map((link) => link.href));
+      mockOverride = newRecommendations;
+      await page.locator('#margin-root .ghost.refresh:not(.back)').click();
+      await page.waitForFunction(() => document.getElementById('margin-root').shadowRoot.textContent.includes('暂时没有新的推荐视频'));
+      if (JSON.stringify(await cards.evaluateAll((links) => links.map((link) => link.href))) !== JSON.stringify(currentCards)) miss.push('duplicate-only refresh changed the current batch');
       return miss;
     });
 
@@ -1416,12 +1438,50 @@ for (const theme of THEMES) {
       return miss;
     });
 
+    await feature('following-skips-empty-pages', async () => {
+      await reset();
+      await seed({ filters: filterOff });
+      const offsets = [];
+      mockOverride = (url) => {
+        const params = new URL(url).searchParams;
+        if (!url.includes('/web-dynamic/v1/feed/all?') || params.get('type') !== 'video') return null;
+        const offset = params.get('offset');
+        offsets.push(offset);
+        if (offset !== '2') {
+          return { code: 0, data: { items: [], offset: offset ? '2' : '1', has_more: true } };
+        }
+        const body = apiBody(url);
+        body.data.items = body.data.items.filter((item) => item.type === 'av')
+          .map((item) => ({ ...item, type: 'DYNAMIC_TYPE_AV' }));
+        return body;
+      };
+      await page.goto(HOME, { waitUntil: 'domcontentloaded' });
+      await page.evaluate(() => {
+        const schedule = window.setTimeout;
+        // Hold the empty-page backoff so only immediate cursor advancement can pass.
+        window.setTimeout = (callback, delay, ...args) => schedule(callback, delay === 1500 ? 60_000 : delay, ...args);
+      });
+      await page.locator('#margin-root .tab[data-tab="following"]').click();
+      await page.locator('#margin-root .home-grid .card:not(.sk)').first().waitFor();
+      return JSON.stringify(offsets) === JSON.stringify(['', '1', '2'])
+        ? [] : [`unexpected following offsets: ${offsets.join(',')}`];
+    });
+
     await feature('refresh-other-tabs', async () => {
       await reset(); await seed({ filters: filterOff });
       await page.goto(HOME, { waitUntil: 'domcontentloaded' });
       await page.locator('#margin-root .home-grid .card:not(.sk)').first().waitFor();
+      const popularPages = [];
+      let refreshingPopular = false;
       const oldArc = (u) => {
         const body = apiBody(u);
+        if (u.includes('/x/web-interface/popular?')) {
+          const pn = Number(new URL(u).searchParams.get('pn'));
+          popularPages.push(pn);
+          const list = body.data.list;
+          body.data.list = [...list, ...list, ...list].map((v, i) => ({ ...v, bvid: `BVpopular${pn}_${i}` }));
+          body.data.no_more = refreshingPopular;
+        }
         if (u.includes('/arc/search')) {
           const mid = new URL(u).searchParams.get('mid');
           body.data.list.vlist = body.data.list.vlist.map((v, i) => ({ ...v, bvid: `BVclassic${mid}${i}`, created: 1600000000 }));
@@ -1434,6 +1494,10 @@ for (const theme of THEMES) {
         await page.locator(`#margin-root .tab[data-tab="${tab}"]`).click();
         await page.waitForFunction(() => document.getElementById('margin-root').shadowRoot.querySelectorAll('.home-grid .card:not(.sk)').length >= 8);
         await sleep(800);
+        const title = page.locator('#margin-root .home-grid .card:not(.sk) .title').first();
+        const before = await title.getAttribute('href');
+        const nextPage = popularPages.at(-1) + 1;
+        refreshingPopular = tab === 'popular';
         mockOverride = async (u) => { if (u.includes('/popular') || u.includes('/arc/search')) await sleep(1000); return oldArc(u); };
         const count = await page.evaluate(() => new Promise((resolve) => {
           const r = document.getElementById('margin-root').shadowRoot;
@@ -1444,6 +1508,9 @@ for (const theme of THEMES) {
         }));
         if (count < 1) miss.push(`${tab} emptied cards while refreshing`);
         await page.waitForFunction(() => !document.getElementById('margin-root').shadowRoot.querySelector('.refresh[aria-busy="true"]'));
+        if (tab === 'popular' && (!popularPages.includes(nextPage) || await title.getAttribute('href') === before)) {
+          miss.push('热门刷新没有显示下一页的新视频');
+        }
       }
       return miss;
     });
@@ -1454,6 +1521,7 @@ for (const theme of THEMES) {
       await page.locator('#margin-root .home-grid .card:not(.sk)').first().waitFor(); await sleep(600);
       await page.evaluate(() => { document.getElementById('margin-root').shadowRoot.querySelector('.app').scrollTop=700; });
       await sleep(600);
+      mockOverride = newRecommendations;
       // 用真实坐标点击，避免定位器给 CSS zoom 下的 sticky 控件自动滚动父容器。
       const hit=await page.locator('#margin-root .ghost.refresh:not(.back)').boundingBox();
       if(!hit)throw new Error('zoomed refresh control missing');
