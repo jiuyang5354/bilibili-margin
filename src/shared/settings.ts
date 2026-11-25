@@ -95,6 +95,8 @@ export interface Settings {
   batchNav: boolean;
   /** 每批视频数 */
   batchSize: number;
+  /** 按网格列数显示两行 */
+  batchAutoSize: boolean;
   /** 批次条中间的刷新按钮；关闭后只剩左右箭头 */
   batchRefresh: boolean;
   /** 每次加载或换一批后预载下一轮；关闭则到末批点右箭头才请求 */
@@ -203,6 +205,7 @@ export const DEFAULTS: Settings = {
   tabRefresh: false,
   batchNav: false,
   batchSize: BATCH_DEFAULT,
+  batchAutoSize: true,
   batchRefresh: true,
   batchPrefetch: false,
   homeHide: [],
@@ -289,6 +292,7 @@ function merge(raw: Partial<Settings> | undefined): Settings {
     tabRefresh: r.tabRefresh === true,
     batchNav: r.batchNav === true,
     batchSize: clampBatchSize(r.batchSize),
+    batchAutoSize: typeof r.batchAutoSize === 'boolean' ? r.batchAutoSize : clampBatchSize(r.batchSize) === BATCH_DEFAULT,
     batchRefresh: r.batchRefresh !== false,
     batchPrefetch: r.batchPrefetch === true,
     cmdK: r.cmdK !== false,
@@ -388,6 +392,7 @@ export function sanitizeSettings(raw: unknown): Settings | null {
   if (typeof r.batchNav === 'boolean') out.batchNav = r.batchNav;
   if (typeof r.batchRefresh === 'boolean') out.batchRefresh = r.batchRefresh;
   if (typeof r.batchPrefetch === 'boolean') out.batchPrefetch = r.batchPrefetch;
+  if (typeof r.batchAutoSize === 'boolean') out.batchAutoSize = r.batchAutoSize;
   if (typeof r.batchSize === 'number') out.batchSize = clampBatchSize(r.batchSize);
   if (Array.isArray(r.homeHide)) out.homeHide = HOME_BITS.filter((b) => (r.homeHide as unknown[]).includes(b));
   if (Array.isArray(r.homeOrder)) out.homeOrder = normalizeHomeOrder(r.homeOrder);
