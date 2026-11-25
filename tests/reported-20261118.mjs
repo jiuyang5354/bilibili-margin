@@ -38,7 +38,7 @@ for (const app of [true, false]) {
     const page = context.pages()[0] || await context.newPage();
     page.on('dialog', dialog => dialog.accept());
     if (!selected || selected === '199') {
-      for (const selector of ['.card-block', '.card-nope', '.card-later']) {
+      for (const selector of ['.card-block', '.card-nope', '.card-later', '.card-play']) {
         await page.goto('https://www.bilibili.com/');
         const card = page.locator('#margin-root .home-grid .card:not(.sk)').first();
         await card.waitFor(); await card.locator('.cover').hover();

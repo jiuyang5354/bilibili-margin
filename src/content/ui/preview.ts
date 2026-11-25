@@ -24,6 +24,7 @@ export function attachPreview(container: HTMLElement, enabled: () => boolean): (
   addEventListener('pagehide', stop);
 
   container.addEventListener('mouseover', (e) => {
+    if ((e.target as Element).closest?.('.card-top-right, .card-acts')) { stop(); return; }
     const cover = (e.target as Element).closest?.('.cover, .dy-vcover[data-bvid]') as HTMLElement | null;
     if (!cover || cover === hovered || !enabled() || document.hidden) return;
     const card = cover.closest('.card, .dy');
@@ -31,7 +32,6 @@ export function attachPreview(container: HTMLElement, enabled: () => boolean): (
     // 动态卡的视频封面没有 cardData，从链接里取 BV 号（#2）
     const bvid = v?.bvid ?? cover.getAttribute('data-bvid') ?? '';
     if (!bvid) return;
-    stop();
     hovered = cover;
     const current = generation;
     timer = window.setTimeout(async () => {
@@ -59,5 +59,6 @@ export function attachPreview(container: HTMLElement, enabled: () => boolean): (
     if (to && cover.contains(to)) return;
     if (cover === hovered) stop();
   });
+  document.addEventListener('margin:modal-open', stop);
   return stop;
 }

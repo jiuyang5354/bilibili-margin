@@ -18,6 +18,7 @@ import { uiReducedMotion as reducedMotion } from '../motion';
 import { toast } from './controls';
 import { ThemeWriter } from './theme-writer';
 import { createCommandPalette } from './command-palette';
+import { mountVideoModal } from './video-modal';
 import css from '../styles/index';
 import pagesCss from '../takeover.css?inline';
 
@@ -80,8 +81,16 @@ export class PageShell {
       this.panel.sheet.el, fav.el, later.el, hist.el, palette.el,
     );
     // 标记抽屉状态；大面板使用实底，可见背景保持动态。
-    this.app.addEventListener('margin:sheet', () => { const on = !!this.app.querySelector('.sheet-layer[data-open="true"]'); this.app.classList.toggle('sheeted', on); });
+    const syncSheet = () => {
+      const on = !!this.app.querySelector('.sheet-layer[data-open="true"], .vm-layer[data-state="open"]');
+      this.app.classList.toggle('sheeted', on);
+    };
+    this.app.addEventListener('margin:sheet', syncSheet);
     this.root.append(this.app);
+    mountVideoModal(this.root, this.app, (open) => {
+      this.bg.cap(open ? 24 : 0);
+      syncSheet();
+    });
     mountUpdateNotice(this.app);
     mountUpdateReminder(this.app);
     const lg = filtersIn(this.root);

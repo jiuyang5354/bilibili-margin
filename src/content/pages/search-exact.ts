@@ -129,9 +129,11 @@ export async function mountSearchExact(): Promise<void> {
   const observer = new MutationObserver((records) => {
     if (records.some(r => {
       const target = r.target instanceof Element ? r.target : r.target.parentElement;
+      const nodes = [...r.addedNodes, ...r.removedNodes];
+      if (nodes.length && nodes.every(n => n instanceof Element && n.classList.contains('margin-search-play'))) return false;
       return target && !target.closest('#margin-search-exact, #margin-search-exact-results') && (
       r.type === 'attributes' || target.closest('.bili-video-card__info--tit') ||
-      [...r.addedNodes, ...r.removedNodes].some(n => n instanceof Element &&
+      nodes.some(n => n instanceof Element &&
         (n.matches(`${SOURCE}, .video-list-item, .bili-video-card, .bili-video-card__info--tit`) || n.querySelector(`${SOURCE}, .bili-video-card__info--tit`)))
       );
     })) schedule();

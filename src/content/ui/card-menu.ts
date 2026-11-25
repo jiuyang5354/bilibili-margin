@@ -5,6 +5,7 @@ import type { ContextMenu, MenuEntry } from './context-menu';
 import { toast } from './controls';
 import { ICONS } from './dom';
 import { openBili } from '../navigation';
+import { openVideoModal } from './video-modal';
 
 /** 视频卡片右键菜单：新标签打开、稍后再看、复制链接 / BV 号、UP 主空间、屏蔽 UP */
 export function bindCardMenu(container: HTMLElement, cm: ContextMenu, toastRoot: () => HTMLElement, opts: { onBlock?: (v: Video) => void; onLater?: () => void; onDislike?: (v: Video, card: HTMLElement) => void } = {}): void {
@@ -18,6 +19,9 @@ export function bindCardMenu(container: HTMLElement, cm: ContextMenu, toastRoot:
     const url = `https://www.bilibili.com/video/${v.bvid}`;
     const copy = (text: string, msg: string) => navigator.clipboard.writeText(text).then(() => toast(toastRoot(), msg), () => toast(toastRoot(), '复制失败'));
     const items: MenuEntry[] = [
+      { label: '在当前窗口播放', icon: ICONS.play, run: () => {
+        if (!openVideoModal(v, card)) toast(toastRoot(), '无法在当前窗口打开视频');
+      } },
       { label: '新标签页打开', icon: ICONS.arrow, shortcut: '↵', run: async () => {
         try {
           const result = await chrome.runtime.sendMessage({ margin: 'open-video-tab', bvid: v.bvid });

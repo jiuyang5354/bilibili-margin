@@ -21,6 +21,7 @@ import { skinComments } from './comment-skin';
 import css from '../styles/index';
 import { mountUpdateNotice } from './update-notice';
 import { mountSearchControls } from './search-controls';
+import { mountSearchPlayButtons } from './search-play';
 import { attachNavigationGlass } from './navigation-glass';
 import { BackgroundLayer } from '../bg/background';
 import { startTriple } from './triple';
@@ -29,6 +30,7 @@ import { uiReducedMotion as reducedMotion } from '../motion';
 import { FilterRuntime } from '../filter-runtime';
 import { openBili } from '../navigation';
 import { ThemeWriter } from './theme-writer';
+import { mountVideoModal } from './video-modal';
 
 // IconMCP headphones, normalized from its 16-unit grid to the shared 24-unit wrapper.
 const LISTEN_ICON = '<g data-iconmcp="headphones" transform="scale(1.5)" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2.25 10 L2.25 8 A5.75 5.75 0 0 1 13.75 8 L13.75 10"/><rect x="2.25" y="9" width="3.25" height="4.75" rx="1"/><rect x="10.5" y="9" width="3.25" height="4.75" rx="1"/></g>';
@@ -54,6 +56,7 @@ export class WatchSkin {
   private wideDone = '';
   private media = matchMedia('(prefers-color-scheme: dark)');
   private themeWriter = new ThemeWriter();
+  private inModal = window.top !== window && new URLSearchParams(location.search).get('margin_modal') === '1';
   private music: Promise<{ open: () => void }> | null = null;
 
   constructor(private settings: Settings, private kind: SkinKind = 'watch') {
@@ -61,8 +64,10 @@ export class WatchSkin {
     const isWatch = kind === 'watch';
     if (isWatch && /^\/list\/watchlater\/?$/.test(location.pathname)) void resumeWatchLater();
     if (isWatch) this.bg.cap(30);
+    const inModal = this.inModal;
     // 全局换皮样式（watch.css + pages.css）由入口脚本在 document_start 挂上（见 main.ts skinStyle），这里只补类名
     de.classList.add('margin-skin', `margin-${kind}`);
+    if (inModal) de.classList.add('margin-modal-frame');
 
     // Shader 背景：独立宿主，fixed 铺满、z-index -1，在 B 站内容之下、画布底色之上
     const bgHost = h('div', { id: 'margin-bg' });
@@ -70,13 +75,12 @@ export class WatchSkin {
     bgRoot.append(h('style', {}, css));
     this.bgApp = h('div', { class: 'app bgwrap' }, this.bg.el);
     bgRoot.append(this.bgApp);
-    de.append(bgHost);
+    if (!inModal) de.append(bgHost);
 
     this.host = h('div', { id: 'margin-watch-top' });
     const root = this.host.attachShadow({ mode: 'open' });
     guardTyping(this.host);
     root.append(h('style', {}, css));
-
     this.filter = new FilterRuntime(settings);
     this.panel = createSettingsPanel(() => this.settings, () => this.bg.shader);
     this.fav = createFavorites((g) => attachPreview(g, () => this.settings.hoverPreview), () => this.settings.favDirect, this.filter);
@@ -130,19 +134,68 @@ export class WatchSkin {
     ]) : null;
     const backTop = kind === 'search' ? h('button', { type: 'button', class: 'page-back-top', hidden: true, 'aria-label': '返回顶部',
       onclick: () => window.scrollTo({ top: 0, behavior: reducedMotion() ? 'instant' : 'smooth' }) }, icon(ICONS.arrowUp)) : undefined;
-    this.app = h('div', { class: 'app wt', 'data-bg': 'off','data-glass':settings.glass,'data-kind':kind }, this.head.el, quick?.el ?? null, createScrollRuler(backTop), backTop ?? null, this.panel.sheet.el, this.fav.el, palette.el, later.el, cm.el);
+    this.app = h('div', { class: 'app wt', 'data-bg': 'off','data-glass':settings.glass,'data-kind':kind }, inModal ? null : this.head.el, inModal ? null : (quick?.el ?? null), createScrollRuler(backTop), backTop ?? null, this.panel.sheet.el, this.fav.el, palette.el, later.el, cm.el);
     // 标记抽屉状态；大面板使用实底，可见背景保持动态。
-    this.app.addEventListener('margin:sheet', () => { const on = !!this.app.querySelector('.sheet-layer[data-open="true"]'); this.app.classList.toggle('sheeted', on); });
+    const syncSheet = () => {
+      const on = !!this.app.querySelector('.sheet-layer[data-open="true"], .vm-layer[data-state="open"]');
+      this.app.classList.toggle('sheeted', on);
+    };
+    this.app.addEventListener('margin:sheet', syncSheet);
     root.append(this.app);
-    mountUpdateNotice(this.app);
-    if (kind === 'search') mountSearchControls();
+    if (!inModal) {
+      mountVideoModal(root, this.app, (open) => {
+        this.bg.cap(open ? 24 : 0);
+        syncSheet();
+      });
+      mountUpdateNotice(this.app);
+    }
+    if (kind === 'search') {
+      mountSearchControls();
+      mountSearchPlayButtons();
+    }
     if (isWatch) { skinComments(); alignAuthorCard(); }
     const lg = filtersIn(root);
-    attachNavigationGlass(this.head, lg);
+    if (!inModal) attachNavigationGlass(this.head, lg);
     const favGrid = this.fav.el.querySelector('.fav-grid') as HTMLElement | null;
     if (favGrid) bindCardMenu(favGrid, cm, () => this.app, { onLater: () => later.open() });
+    if (inModal) {
+      const postState = () => {
+        if (!window.top || window.top === window) return;
+        const title = document.querySelector('h1.video-title, .video-title')?.textContent?.trim() || '';
+        try {
+          window.top.postMessage({ marginModalState: { title, url: location.href } }, '*');
+        } catch { /* ignore */ }
+      };
+      postState();
+      const cancelPoll = every(1200, postState);
+      const onMessage = (e: MessageEvent) => {
+        if (e.source !== window.top || !/^https:\/\/[a-z0-9-]+\.bilibili\.com$/.test(e.origin)) return;
+        const cmd = (e.data as { marginModal?: string } | null)?.marginModal;
+        if (cmd === 'pause') {
+          for (const m of document.querySelectorAll<HTMLMediaElement>('video, audio, bwp-video')) {
+            if (!m.paused) m.pause();
+          }
+          const playBtn = document.querySelector<HTMLElement>('.bpx-player-ctrl-play');
+          if (playBtn && document.querySelector('.bpx-player-container')?.getAttribute('data-state') === 'playing') playBtn.click();
+        } else if (cmd === 'resume') {
+          for (const m of document.querySelectorAll<HTMLMediaElement>('video, audio, bwp-video')) {
+            if (m.paused) void m.play().catch(() => {});
+          }
+        }
+      };
+      addEventListener('message', onMessage);
+      addEventListener('pagehide', () => {
+        cancelPoll();
+        removeEventListener('message', onMessage);
+        for (const m of document.querySelectorAll<HTMLMediaElement>('video, audio, bwp-video')) {
+          m.pause();
+          m.removeAttribute('src');
+          m.load();
+        }
+      }, { once: true });
+    }
+    if (inModal) this.host.hidden = true;
     de.append(this.host);
-
     this.applyTheme(false);
     this.media.addEventListener('change', () => this.applyTheme(false));
     // 搜索页没有播放器；普通视频、番剧、列表等换皮页都运行播放器相关设置
@@ -233,7 +286,7 @@ export class WatchSkin {
       // 原生全屏可以独立于 data-screen 变化，退出时也需要恢复顶栏。
       if (!force && state === lastState) return;
       lastState = state;
-      const hide = screen === 'web' || screen === 'full' || full || liveWeb;
+      const hide = this.inModal || screen === 'web' || screen === 'full' || full || liveWeb;
       this.host.toggleAttribute('hidden', hide);
       webScroll(screen === 'web' && !full && this.settings.webScroll);
       this.bg.hold('screen', hide && (!document.documentElement.classList.contains('margin-listening-bg') || full));

@@ -22,6 +22,7 @@ import { publicFolders, publicFolder, folderPlayUrl, folderUrl, folderVideos, ty
 import { nav } from '../api/http';
 import { favoriteActions } from './favorite-actions';
 import { ensureFolderPocket, folderPocketLayers } from './folder-pocket';
+import { openVideoModal } from './video-modal';
 
 type Tab = 'video' | 'dynamic' | 'coin' | 'like' | 'collections' | 'article' | 'audio' | 'favorites';
 type Layout = 'grid' | 'list';
@@ -364,7 +365,16 @@ export class SpaceApp {
       h('a', { class: 'cover', href, ...ext, title: v.title },
         h('img', { src: v.cover ? `${v.cover}@320w_180h_1c.webp` : '', alt: '', loading: 'lazy', referrerpolicy: 'no-referrer' }),
         v.duration ? h('span', { class: 'dur' }, fmtDuration(v.duration)) : null,
-        v.badge ? h('span', { class: 'tag-charge', title: v.badge }, v.badge) : null),
+        v.badge ? h('span', { class: 'tag-charge', title: v.badge }, v.badge) : null,
+        h('div', { class: 'card-top-right' },
+          h('button', {
+            class: 'card-play', type: 'button', title: '在当前窗口播放', 'aria-label': `在当前窗口播放：${v.title}`,
+            onclick: (e: Event) => {
+              e.preventDefault(); e.stopPropagation();
+              openVideoModal(v, e.currentTarget as Node);
+            },
+          }, icon(ICONS.play)),
+        )),
       h('a', { class: 'vr-title', href, ...ext }, v.title),
       h('span', { class: 'vr-note' }, h('span', {}, `${fmtCount(v.views)} 播放`), h('span', {}, fmtAgo(v.pubdate))),
       h('a', { class: 'vr-go', href, ...ext, 'aria-label': '打开' }, icon(ICONS.arrow)));

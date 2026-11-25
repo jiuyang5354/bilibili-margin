@@ -1,3 +1,4 @@
+import { openVideoModal } from './video-modal';
 import type { Video } from '../api/feed';
 import { fmtCount, fmtDateTime, fmtDuration, h, icon, ICONS } from './dom';
 import { laterButton } from './later-btn';
@@ -21,7 +22,16 @@ export function videoCard(v: Video, index: number, opts: CardOpts = {}): HTMLEle
     v.coop ? h('span', { class: 'coop', title: '多位 UP 主联合投稿' }, '合作') : null,
     // v0.51：充电专属等角标（右上角，避开左上角的「合作」）
     v.badge ? h('span', { class: 'tag-charge', title: v.badge }, v.badge) : null,
-    laterButton(v.bvid, v.aid),
+    h('div', { class: 'card-top-right' },
+      h('button', {
+        class: 'card-play', type: 'button', title: '在当前窗口播放', 'aria-label': `在当前窗口播放：${v.title}`,
+        onclick: (e: Event) => {
+          e.preventDefault(); e.stopPropagation();
+          openVideoModal(v, e.currentTarget as Node);
+        },
+      }, icon(ICONS.play)),
+      laterButton(v.bvid, v.aid),
+    ),
   );
   const el = h('article', { class: `card${opts.compact ? ' compact' : ''}`, style: `--i:${index % 12}` },
     cover,

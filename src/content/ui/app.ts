@@ -35,6 +35,7 @@ import css from '../styles/index';
 import { mountUpdateNotice } from './update-notice';
 import { mountUpdateReminder } from './update-reminder';
 import { attachNavigationGlass } from './navigation-glass';
+import { mountVideoModal } from './video-modal';
 
 type Tab = Settings['homeDefaultTab'];
 type Snap = { tab: Tab; items: Video[]; page: number; appIdx: number; followOffset: string; done: boolean; batchStart: number };
@@ -344,10 +345,15 @@ export class MarginApp {
         else this.maybePreload();
       } else this.fillIfShort();
     };
-    this.app.addEventListener('margin:sheet', () => {
-      const on = !!this.app.querySelector('.sheet-layer[data-open="true"]');
+    const syncSheet = () => {
+      const on = !!this.app.querySelector('.sheet-layer[data-open="true"], .vm-layer[data-state="open"]');
       this.app.classList.toggle('sheeted', on);
       if (!on) resumeFeed();
+    };
+    this.app.addEventListener('margin:sheet', syncSheet);
+    mountVideoModal(this.root, this.app, (open) => {
+      this.bg.cap(open ? 24 : 0);
+      syncSheet();
     });
     document.addEventListener('visibilitychange', resumeFeed);
     this.root.append(this.app);

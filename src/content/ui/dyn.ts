@@ -7,6 +7,7 @@ import { decorateSendButton } from './send-button';
 import { observeDynamicGlass } from './dynamic-glass';
 import { commentTools } from './comment-tools';
 import { toast } from './controls';
+import { openVideoModal } from './video-modal';
 
 const img = (src: string, w: number, hgt?: number) => h('img', { src: src ? `${src}@${w}w${hgt ? `_${hgt}h_1c` : ''}.webp` : '', alt: '', loading: 'lazy', decoding: 'async', referrerpolicy: 'no-referrer' });
 const ext = { target: '_blank', rel: 'noopener' };
@@ -29,7 +30,19 @@ export function dynCard(d: Dyn, nested = false, withAuthor = false): HTMLElement
   const media: (Node | null)[] = [];
   if (d.video) {
     media.push(h('a', { class: 'dy-video', href: `https://www.bilibili.com/video/${d.video.bvid}`, ...ext },
-      h('span', { class: 'dy-vcover', 'data-bvid': d.video.bvid }, img(d.video.cover, 480, 270), d.video.dur ? h('span', { class: 'dur' }, d.video.dur) : null, laterButton(d.video.bvid)),
+      h('span', { class: 'dy-vcover', 'data-bvid': d.video.bvid },
+        img(d.video.cover, 480, 270),
+        d.video.dur ? h('span', { class: 'dur' }, d.video.dur) : null,
+        h('div', { class: 'card-top-right' },
+          h('button', {
+            class: 'card-play', type: 'button', title: '在当前窗口播放', 'aria-label': `在当前窗口播放：${d.video.title}`,
+            onclick: (e: Event) => {
+              e.preventDefault(); e.stopPropagation();
+              openVideoModal({ bvid: d.video!.bvid, title: d.video!.title, author: d.author, cover: d.video!.cover }, e.currentTarget as Node);
+            },
+          }, icon(ICONS.play)),
+          laterButton(d.video.bvid),
+        )),
       h('span', { class: 'dy-vbody' },
         h('span', { class: 'dy-vtitle' }, d.video.title),
         d.video.desc ? h('span', { class: 'dy-vdesc' }, d.video.desc) : null,

@@ -137,6 +137,7 @@ function detailKind(): DetailKind | null {
   return m ? (m[1].startsWith('opus') ? 'opus' : m[1].startsWith('read') ? 'read' : 'bangumi') : null;
 }
 const offByUrl = () => new URLSearchParams(location.search).get('margin') === 'off';
+const isModalFrame = () => window.top !== window && isWatch() && new URLSearchParams(location.search).get('margin_modal') === '1';
 
 function redesignPage(): RedesignPage | undefined {
   if (isHome()) return 'home';
@@ -151,6 +152,7 @@ const redesignOn = (s: Settings) => redesignEnabled(s, redesignPage());
  * 不等页面模块加载，避免先闪一下原版。
  */
 const SKIN_KEY = `margin:skin:${redesignPage() ?? 'other'}`;
+const modalFrame = isModalFrame();
 function skinMirror(): string | null { try { return localStorage.getItem(SKIN_KEY); } catch { return null; } }
 function setSkinMirror(v: string): void { try { if (skinMirror() !== v) localStorage.setItem(SKIN_KEY, v); } catch { /* 隐私模式 */ } }
 function skinStyle(kind: SkinKind | 'live-home', theme: string): HTMLStyleElement {
@@ -159,6 +161,7 @@ function skinStyle(kind: SkinKind | 'live-home', theme: string): HTMLStyleElemen
   de.classList.toggle('margin-vote', kind === 'page' && /^\/vote\/h5\/(?:index\/?)?$/.test(location.pathname));
   const dk = kind === 'page' ? detailKind() : null;
   if (dk) { de.classList.add('margin-detail'); de.dataset.marginDetail = dk; }
+  if (modalFrame) de.classList.add('margin-modal-frame');
   de.dataset.marginTheme = theme === 'auto' ? (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : theme;
   let st = document.getElementById('margin-watch-css') as HTMLStyleElement | null;
   if (!st) {
@@ -172,7 +175,7 @@ function skinStyle(kind: SkinKind | 'live-home', theme: string): HTMLStyleElemen
 function unskin(kind: SkinKind | 'live-home'): void {
   const de = document.documentElement;
   document.getElementById('margin-watch-css')?.remove();
-  de.classList.remove('margin-skin', `margin-${kind}`, 'margin-has-bg', 'margin-detail', 'margin-detail-narrow', 'margin-vote');
+  de.classList.remove('margin-skin', `margin-${kind}`, 'margin-has-bg', 'margin-detail', 'margin-detail-narrow', 'margin-vote', 'margin-modal-frame');
   delete de.dataset.marginTheme;
   delete de.dataset.marginDetail;
 }
@@ -290,13 +293,15 @@ function trackKeyboard(): void {
 }
 
 async function start(): Promise<void> {
+  if (window.top !== window && !modalFrame) return;
   mountGlobalCss();
   // hideAds 默认开启：先在 document_start 挂上，避免等异步设置时闪一下广告
   if (!offByUrl() && !sessionStorage.getItem('margin:off')) document.documentElement.classList.add('margin-ads-hide');
   injectFonts();
   trackKeyboard();
-  startTracking(); // 足迹在所有 B 站页面记录，不只首页
+  if (!modalFrame) startTracking(); // 足迹在所有 B 站页面记录，iframe 内不重复累计
   if (isWatch()) {
+    if (modalFrame) return startWatch();
     guardWatchSearchKeys();
     return startWatch();
   }
@@ -436,7 +441,7 @@ function applyFont(s: Settings): void {
   set('--margin-player-rk', on && !s.playerCorners ? '0' : null);
   set('--margin-cfs', on && s.commentSize !== 14 ? `${s.commentSize}px` : null);
 }
-if (!offByUrl() && !sessionStorage.getItem('margin:off')) {
+if (!offByUrl() && !sessionStorage.getItem('margin:off') && (window.top === window || modalFrame)) {
   startupSettings().then((s) => { applyFont(s); applyGlobalUi(s); }).catch(() => {});
   onSettingsChange((n, p) => {
     bootSettings = Promise.resolve(n);
@@ -448,7 +453,6 @@ if (!offByUrl() && !sessionStorage.getItem('margin:off')) {
     applyFont(n); applyGlobalUi(n);
   });
 }
-
 /**
  * 扩展冲突提示（v0.47，评论区：Edge 上只有搜索页生效）：BewlyBewly 之类的整站重做扩展也在 document_start 接管页面，
  * 两个一起开会互相盖掉 / 互相拦脚本。检测到就在页面顶端提示一次，可以关掉不再提示。

@@ -159,6 +159,25 @@ html.margin-search .media-card-image, html.margin-search .media-card img { borde
 html.margin-search .bili-video-card__stats { border-radius: 0 0 12px 12px !important; }
 html.margin-search .bili-video-card__wrap { transition: transform .35s cubic-bezier(.22, 1, .36, 1); }
 html.margin-search .bili-video-card:hover .bili-video-card__wrap { transform: translateY(-3px); }
+html.margin-search .margin-search-cover { position: relative !important; }
+html.margin-search .margin-search-play {
+  position: absolute; top: 8px; right: 8px; z-index: 4;
+  display: grid; place-items: center; width: 28px; height: 28px; padding: 0; border: 0; border-radius: 8px;
+  color: #fff; background: rgb(0 0 0 / .55); cursor: pointer;
+  opacity: 0; transform: translateY(-4px);
+  transition: opacity 150ms cubic-bezier(.23, 1, .32, 1), transform 150ms cubic-bezier(.23, 1, .32, 1), background-color 150ms cubic-bezier(.23, 1, .32, 1);
+}
+html.margin-search .margin-search-play svg { width: 16px; height: 16px; pointer-events: none; }
+html.margin-search :is(.bili-video-card, #margin-search-exact-results li):hover .margin-search-play,
+html.margin-search .margin-search-play:focus-visible {
+  opacity: 1; transform: none; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+}
+html.margin-search .margin-search-play:hover { background: color-mix(in srgb, var(--m-accent, #00aeec) 88%, rgb(0 0 0 / .35)); }
+html.margin-search .margin-search-play:active { transform: scale(.92); }
+html.margin-search .bili-video-card:has([class*="watch-later"], [class*="watchlater"], [title*="稍后再看"], [aria-label*="稍后再看"]) .margin-search-play {
+  top: 8px;
+  right: 46px;
+}
 html.margin-search .bili-video-card__info--tit, html.margin-search .bili-video-card__info--tit a { color: var(--m-ink) !important; font-size: 14px !important; line-height: 22px !important; font-weight: 500; }
 html.margin-search .bili-video-card__info--tit em, html.margin-search .keyword { color: var(--m-accent) !important; font-style: normal; }
 html.margin-search .bili-video-card__info--bottom, html.margin-search .bili-video-card__info--author,

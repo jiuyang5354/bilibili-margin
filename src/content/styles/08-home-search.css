@@ -447,13 +447,20 @@
 .fm-box:has(.fm-bar:focus-visible) { box-shadow: 0 0 0 2px var(--accent), var(--sh-sm); }
 
 /* 封面「稍后再看」（#2）：右上角，和屏蔽按钮错开（屏蔽改到左上） */
-.card-later { position: absolute; top: 8px; right: 8px; z-index: 3; display: grid; place-items: center; width: 28px; height: 28px; padding: 0; border: 0; border-radius: 8px; color: #fff; background: rgb(0 0 0 / .55); cursor: pointer; opacity: 0; transform: translateY(-4px); transition: opacity 150ms var(--ease-out), transform 150ms var(--ease-out), background 150ms var(--ease-out); }
-.card-later svg { width: 16px; height: 16px; }
-:is(.card, .dy-video):hover .card-later, .card-later:focus-visible, .card-later[data-state="ok"] { opacity: 1; transform: none; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
-.card-later:hover { background: rgb(0 0 0 / .75); }
-.card-later:active { transform: scale(.92); }
+.card-top-right { position: absolute; top: 8px; right: 8px; z-index: 3; display: flex; align-items: center; gap: 6px; pointer-events: none; }
+.card-top-right > button { pointer-events: auto; }
+.card-play, .card-later { position: relative; display: grid; place-items: center; width: 28px; height: 28px; padding: 0; border: 0; border-radius: 8px; color: #fff; background: rgb(0 0 0 / .55); cursor: pointer; opacity: 0; transform: translateY(-4px); transition: opacity 150ms var(--ease-out), transform 150ms var(--ease-out), background 150ms var(--ease-out); }
+.card-play svg, .card-later svg { width: 16px; height: 16px; }
+:is(.card, .dy-video):hover :is(.card-play, .card-later), .card-play:focus-visible, .card-later:focus-visible, .card-later[data-state="ok"] { opacity: 1; transform: none; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
+.card-play:hover, .card-later:hover { background: rgb(0 0 0 / .75); }
+.card-play:active, .card-later:active { transform: scale(.92); }
+.card-play:hover { background: color-mix(in srgb, var(--accent) 88%, rgb(0 0 0 / .35)); }
 .card-later[data-state="ok"] { background: var(--accent); }
 .card-later.err { background: rgb(220 50 60 / .85); }
+.dp-entry > button.card-later { position: absolute; top: 50%; right: 20px; z-index: 3; opacity: 1; transform: translateY(-50%); }
+.vlist .vrow .card-top-right { top: 6px; right: 6px; }
+.vlist .vrow .card-play { width: 24px; height: 24px; border-radius: 7px; }
+.vlist .vrow .card-play svg { width: 13px; height: 13px; }
 /* 卡片信息行：UP 主 · 播放 · 弹幕。数字不缩，UP 主名可省略 */
 .meta > * { flex: none; }
 .meta > .author { flex: 0 1 auto; min-width: 3em; overflow: hidden; text-overflow: ellipsis; }

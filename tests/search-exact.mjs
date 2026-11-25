@@ -52,7 +52,7 @@ try {
   check('native list is inert and hidden only while view is active', await page.locator('.video-list').evaluate(el => el.inert && el.getAttribute('aria-hidden') === 'true' && getComputedStyle(el).display === 'none'));
   check('native pagination remains visible', await page.locator('#native-next').isVisible());
   check('authors are visible in enhanced view', await page.locator('#margin-search-exact-results .mx-author').first().innerText() === '测试作者');
-  check('enhanced list has no nonfunctional native-action buttons', await page.locator('#margin-search-exact-results button').count() === 0);
+  check('enhanced list has no nonfunctional native-action buttons', await page.locator('#margin-search-exact-results button:not(.margin-search-play)').count() === 0);
   await page.locator('#margin-search-exact button').filter({ hasText: '恢复原版' }).click();
   check('restore returns original inert/aria state', await page.locator('.video-list').evaluate(el => !el.inert && !el.hasAttribute('aria-hidden') && !el.hasAttribute('data-margin-search-source')));
   check('restore retains keyboard focus on switch', await toggle.evaluate(el => document.activeElement === el));
