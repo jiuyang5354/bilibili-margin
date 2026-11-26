@@ -4,6 +4,12 @@
 
 新条目按「新增」「改进」「修复」归类，参考 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)。版本标题链接到对应的 GitHub Release。扩展的显示版本和包内更新版本分别记录，包内版本持续递增。
 
+## 未发布
+
+### 修复
+
+- 历史记录页删空某个日期分组后，继续翻页加载同一天的更早记录不再丢失，顶部条目计数也会同步扣减并在删空后显示空态。
+
 ## [v0.7](https://github.com/jiuyang5354/bilibili-margin/releases/tag/v0.70.0) · 2026-11-25 · 搜索导航与播放页兼容性
 
 ### 新增

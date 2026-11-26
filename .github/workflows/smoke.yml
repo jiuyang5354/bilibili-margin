@@ -94,6 +94,7 @@ jobs:
         run: |
           node tests/feed-preferences.mjs
           node tests/feed-follow-select.mjs
+          node tests/history-delete-pagination.mjs
       - name: Recommendation batch navigation
         run: node tests/feed-batches.mjs
         env:
