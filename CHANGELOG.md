@@ -4,6 +4,12 @@
 
 新条目按「新增」「改进」「修复」归类，参考 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)。版本标题链接到对应的 GitHub Release。扩展的显示版本和包内更新版本分别记录，包内版本持续递增。
 
+## 未发布
+
+### 修复
+
+- 播放页 UP 主悬停名片恢复底部留白，操作按钮不再紧贴下边框；同时修复暗色模式下「+ 关注」按钮加号仍为纯白导致与按钮底色对比不足的问题（#265）。
+
 ## [v0.7](https://github.com/jiuyang5354/bilibili-margin/releases/tag/v0.70.0) · 2026-11-25 · 搜索导航与播放页兼容性
 
 ### 新增

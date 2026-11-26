@@ -263,6 +263,7 @@ jobs:
           SMOKE_OUT=smoke-artifacts/watch-playlist node tests/watch-playlist.mjs
           SMOKE_OUT=smoke-artifacts/watch-scroll-padding node tests/watch-scroll-padding.mjs
           SMOKE_OUT=smoke-artifacts/watch-header-pointer-events node tests/watch-header-pointer-events.mjs
+          SMOKE_OUT=smoke-artifacts/watch-usercard node tests/watch-usercard.mjs
       - name: Reported theme, overlay, automatic mode and authorization regressions
         run: |
           SMOKE_OUT=smoke-artifacts/header-feedback node tests/header-feedback.mjs

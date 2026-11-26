@@ -4,6 +4,12 @@
 
 New entries are grouped under Added, Changed, and Fixed, following [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Version headings link to their GitHub releases. The display version and the browser update version are recorded separately so the latter can keep increasing for automatic updates.
 
+## Unreleased
+
+### Fixed
+
+- Restore bottom padding on the watch-page UP hover card so the Follow and Message buttons no longer sit flush against the bottom edge, and make the Follow button's plus icon inherit the button's text color instead of staying white on a light button in dark mode (#265).
+
 ## [v0.7](https://github.com/jiuyang5354/bilibili-margin/releases/tag/v0.70.0) · 2026-11-25 · Search navigation and player compatibility
 
 ### Added

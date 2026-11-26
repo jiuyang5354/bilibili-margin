@@ -495,7 +495,7 @@ html.margin-watch .usercard-wrap .user-card-m-exp {
 @keyframes m-ucard-in { from { opacity: 0; } }
 html.margin-watch .usercard-wrap .bg { height: 96px !important; border-radius: 0 !important; background-size: cover !important; background-position: center !important;
   -webkit-mask-image: linear-gradient(#000 40%, transparent); mask-image: linear-gradient(#000 40%, transparent); }
-html.margin-watch .usercard-wrap .user-info-wrapper { padding: 0 20px !important; margin-top: -36px !important; position: relative; }
+html.margin-watch .usercard-wrap .user-info-wrapper { padding: 0 20px 16px !important; margin-top: -36px !important; position: relative; }
 html.margin-watch .usercard-wrap .face { position: relative !important; left: auto !important; top: auto !important; display: block !important; width: 56px !important; height: 56px !important; margin-bottom: 12px; border-radius: 50%; box-shadow: 0 0 0 3px var(--m-surface); }
 html.margin-watch .usercard-wrap .face .bili-avatar { width: 56px !important; height: 56px !important; }
 html.margin-watch .usercard-wrap .info { margin-left: 0 !important; padding: 0 !important; width: auto !important; }
@@ -513,11 +513,11 @@ html.margin-watch .usercard-wrap .btn-box { display: flex !important; gap: 8px; 
 html.margin-watch .usercard-wrap .btn-box a { flex: 1; display: inline-flex !important; align-items: center; justify-content: center; gap: 4px; width: auto !important; height: 36px !important; margin: 0 !important; border-radius: 999px !important; font-size: 14px !important; font-weight: 500 !important; border: 0 !important; transition: transform 150ms cubic-bezier(.23, 1, .32, 1), opacity 150ms; }
 html.margin-watch .usercard-wrap .btn-box a:active { transform: scale(.97); }
 html.margin-watch .usercard-wrap .btn-box .like { background: var(--m-ink) !important; color: var(--m-surface) !important; }
-html.margin-watch .usercard-wrap .btn-box .like .plus i { color: inherit !important; }
+html.margin-watch .usercard-wrap .btn-box .like :is(.plus, .plus i) { color: inherit !important; }
 html.margin-watch .usercard-wrap .btn-box .like.is-followed, html.margin-watch .usercard-wrap .btn-box .liked { background: var(--m-chip) !important; color: var(--m-muted) !important; }
 html.margin-watch .usercard-wrap .btn-box .message { background: var(--m-chip) !important; color: var(--m-ink) !important; box-shadow: inset 0 0 0 1px var(--m-line) !important; }
 html.margin-watch .usercard-wrap .btn-box a:hover { opacity: .88; }
-html.margin-watch .usercard-wrap .latest-archives { margin: 16px 0 0 !important; padding: 16px 20px 20px !important; border-top: 1px solid var(--m-line) !important; width: auto !important; }
+html.margin-watch .usercard-wrap .latest-archives { margin: 0 !important; padding: 16px 20px 20px !important; border-top: 1px solid var(--m-line) !important; width: auto !important; }
 html.margin-watch .usercard-wrap .latest-archives__header { color: var(--m-ink) !important; font-size: 14px !important; font-weight: 600; }
 html.margin-watch .usercard-wrap .latest-archives__more { color: var(--m-muted) !important; font-size: 12px !important; }
 html.margin-watch .usercard-wrap .latest-archives__list { gap: 10px !important; }
