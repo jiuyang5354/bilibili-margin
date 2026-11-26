@@ -4,6 +4,12 @@
 
 新条目按「新增」「改进」「修复」归类，参考 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)。版本标题链接到对应的 GitHub Release。扩展的显示版本和包内更新版本分别记录，包内版本持续递增。
 
+## 未发布
+
+### 修复
+
+- 私信会话异步补全对方昵称后，输入框的 `data-placeholder` 同步更新为对方昵称；此前仍停留在 `发消息给 UID …`。
+
 ## [v0.7](https://github.com/jiuyang5354/bilibili-margin/releases/tag/v0.70.0) · 2026-11-25 · 搜索导航与播放页兼容性
 
 ### 新增

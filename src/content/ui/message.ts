@@ -418,8 +418,12 @@ export class MessageApp {
         }
         if (!row.hasAttribute('data-selected')) continue;
         const title = chat.querySelector('.wh-head a'); if (title) title.textContent = p.name;
-        const input = chat.querySelector<HTMLTextAreaElement>('.wh-input');
-        if (input) { input.placeholder = `发消息给 ${p.name}`; input.setAttribute('aria-label', input.placeholder); }
+        const input = chat.querySelector<HTMLElement>('.wh-input');
+        if (input) {
+          const placeholder = `发消息给 ${p.name}`;
+          input.dataset.placeholder = placeholder;
+          input.setAttribute('aria-label', placeholder);
+        }
         chat.querySelectorAll<HTMLAnchorElement>('.wh-mface').forEach(face => {
           face.setAttribute('aria-label', `${p.name} 的个人空间`);
           if (p.face && !face.classList.contains('ghost') && !face.querySelector('img')) face.append(h('img', { src: `${p.face}@80w_80h_1c.webp`, alt: '', referrerpolicy: 'no-referrer' }));
