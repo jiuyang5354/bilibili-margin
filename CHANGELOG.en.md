@@ -4,6 +4,12 @@
 
 New entries are grouped under Added, Changed, and Fixed, following [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Version headings link to their GitHub releases. The display version and the browser update version are recorded separately so the latter can keep increasing for automatic updates.
 
+## Unreleased
+
+### Fixed
+
+- Switching to the Video, Bangumi, or Article tabs on the activity feed while filtering by a single creator now filters that creator's dynamics by type and offers a continue-searching button when a page has no matching entries; previously those tabs showed all dynamics from the creator.
+
 ## [v0.7](https://github.com/jiuyang5354/bilibili-margin/releases/tag/v0.70.0) · 2026-11-25 · Search navigation and player compatibility
 
 ### Added

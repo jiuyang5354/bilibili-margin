@@ -3,7 +3,7 @@ import type { Settings } from '../../shared/settings';
 import { nav } from '../api/http';
 import { followings } from '../api/dyn';
 import { account, accountStat } from '../api/account';
-import { followFeed, followingLive, portal, searchFollowing, type FeedType, type LiveUp, type Up } from '../api/dyn';
+import { followFeed, followingLive, portal, searchFollowing, type Dyn, type FeedType, type LiveUp, type Up } from '../api/dyn';
 import { hotSearch } from '../api/search';
 import { dynCard } from './dyn';
 import { compileDynFilter } from '../filter';
@@ -17,6 +17,14 @@ import { createDynamicComposer } from './dynamic-composer';
 
 type FeedTab = FeedType | 'posts';
 const TYPES: [FeedTab, string][] = [['all', '全部'], ['posts', '图文'], ['video', '视频投稿'], ['pgc', '追番追剧'], ['article', '专栏']];
+const TAB_LABEL = Object.fromEntries(TYPES) as Record<FeedTab, string>;
+function matchesTab(d: Dyn, tab: FeedTab): boolean {
+  if (tab === 'all') return true;
+  if (tab === 'posts') return ['DYNAMIC_TYPE_WORD', 'DYNAMIC_TYPE_DRAW', 'DYNAMIC_TYPE_ARTICLE'].includes(d.type);
+  if (tab === 'video') return d.type === 'DYNAMIC_TYPE_AV';
+  if (tab === 'pgc') return d.type.startsWith('DYNAMIC_TYPE_PGC') || d.type === 'DYNAMIC_TYPE_BANGUMI';
+  return d.type === 'DYNAMIC_TYPE_ARTICLE';
+}
 const ext = { target: '_blank', rel: 'noopener' };
 const face = (src: string, cls: string, w = 96) => h('img', { class: cls, src: src ? `${src}@${w}w_${w}h_1c.webp` : '', alt: '', loading: 'lazy', decoding: 'async', referrerpolicy: 'no-referrer' });
 
@@ -314,12 +322,12 @@ export class FeedApp {
     const sk = Array.from({ length: this.offset ? 1 : 3 }, () => h('article', { class: 'dy sk' }, h('div', { class: 'line short' }), h('div', { class: 'line' }), h('div', { class: 'line' })));
     this.list.append(...sk);
     try {
-      const r = await followFeed(this.host || this.type === 'posts' ? 'all' : this.type, this.offset, this.host);
+      const clientFilter = this.type === 'posts' || (!!this.host && this.type !== 'all');
+      const requestType: FeedType = this.host || this.type === 'posts' ? 'all' : this.type;
+      const r = await followFeed(requestType, this.offset, this.host);
       if (gen !== this.gen) return;
       // 动态里转发的视频也按标签过滤：先预热标签，再编译保留条件
-      const items = this.type === 'posts'
-        ? r.list.filter(d => ['DYNAMIC_TYPE_WORD', 'DYNAMIC_TYPE_DRAW', 'DYNAMIC_TYPE_ARTICLE'].includes(d.type))
-        : r.list;
+      const items = clientFilter ? r.list.filter(d => matchesTab(d, this.type)) : r.list;
       await this.shell.filter.prepare(items.map((d) => d.video?.bvid));
       if (gen !== this.gen) return;
       sk.forEach((n) => n.remove());
@@ -332,8 +340,8 @@ export class FeedApp {
       });
       this.done = !r.more || !r.offset || r.offset === this.offset;
       this.offset = r.offset;
-      if (this.type === 'posts' && !shown.length && !this.done) {
-        this.status.replaceChildren(h('button', { type: 'button', class: 'ghost', onclick: () => { this.status.replaceChildren(); void this.load(); } }, '继续查找图文'));
+      if (clientFilter && !shown.length && !this.done) {
+        this.status.replaceChildren(h('button', { type: 'button', class: 'ghost', onclick: () => { this.status.replaceChildren(); void this.load(); } }, `继续查找${TAB_LABEL[this.type]}`));
         return;
       }
       if (this.done && !this.list.children.length) this.list.append(h('div', { class: 'ms-empty' }, h('p', {}, '这里还空着')));
