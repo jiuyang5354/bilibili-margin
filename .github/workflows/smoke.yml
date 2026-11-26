@@ -166,7 +166,9 @@ jobs:
         env:
           SMOKE_OUT: smoke-artifacts/message-loading
       - name: Cross-tab message unread synchronization
-        run: node tests/message-sync.mjs
+        run: |
+          node tests/message-sync.mjs
+          SMOKE_OUT=smoke-artifacts/message-refresh node tests/message-refresh.mjs
         env:
           SMOKE_OUT: smoke-artifacts/message-sync
       - name: Transparent header over high-contrast backgrounds

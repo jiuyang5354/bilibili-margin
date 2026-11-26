@@ -60,6 +60,8 @@ export class MessageApp {
   private gen = 0;
   /** 上次刷新当前视图的时间：标签页切回来太久没刷就自动重拉（点赞/回复不刷新的反馈） */
   private shownAt = 0;
+  /** 当前通知流已加载页数（>1 表示用户点了「加载更多」在翻旧消息，被动刷新不清空列表） */
+  private feedPage = 1;
   /** 已推过已读游标的视图：15 秒轮询会反复走 feed()，游标只推一次 */
   private marked = new Set<View>();
 
@@ -103,20 +105,33 @@ export class MessageApp {
     let hiddenAt = 0;
     document.addEventListener('visibilitychange', () => {
       if (document.hidden) { hiddenAt = Date.now(); return; }
-      if (hiddenAt && Date.now() - hiddenAt > 10_000) { hiddenAt = 0; this.hardRefresh('切回标签页'); }
+      if (hiddenAt && Date.now() - hiddenAt > 10_000) { hiddenAt = 0; void this.hardRefresh('return'); }
     });
-    addEventListener('pageshow', (e) => { if ((e as PageTransitionEvent).persisted) this.hardRefresh('bfcache 恢复'); });
-    addEventListener('focus', () => this.hardRefresh('窗口焦点'));
-    setInterval(() => { if (!document.hidden) this.hardRefresh('轮询'); }, 15_000);
+    addEventListener('pageshow', (e) => { if ((e as PageTransitionEvent).persisted) void this.hardRefresh('manual'); });
+    addEventListener('focus', () => { void this.hardRefresh('poll'); });
+    setInterval(() => { if (!document.hidden) void this.hardRefresh('poll'); }, 15_000);
   }
 
-  /** 强制重拉当前视图（广义的「进入页面」都会走到这里）；10 秒内不重复，私信视图不刷（护住输入中的草稿） */
-  private hardRefresh(why: string): void {
-    if (this.view === 'whisper' || Date.now() - this.shownAt < 10_000) return;
-    const y = scrollY;
-    this.refreshUnread();
-    this.show();
-    scrollTo({ top: y });
+  /** 重拉当前视图：私信豁免（护草稿）；被动轮询 / 焦点回归在已翻页或已往下滚时只更新未读角标，不清空列表打断阅读。 */
+  private async hardRefresh(mode: 'poll' | 'return' | 'manual'): Promise<void> {
+    if (this.view === 'whisper') return;
+    if (mode !== 'manual' && Date.now() - this.shownAt < 10_000) return;
+    if (mode === 'manual') {
+      void this.refreshUnread();
+      this.show();
+      return;
+    }
+    const view = this.view, gen = this.gen;
+    this.shownAt = Date.now();
+    const u = await this.refreshUnread();
+    if (gen !== this.gen || this.view !== view) return;
+    const top = this.shell.app.scrollTop;
+    if (this.feedPage > 1 || top > 40) return;
+    if (mode === 'poll') {
+      const count = u ? { whisper: u.chat, reply: u.reply, at: u.at, like: u.like, system: u.system }[view] : 0;
+      if (!count) return;
+    }
+    this.show(top);
   }
 
   /** 只标记私信里的分享卡片，不动聊天文字、通知行和时间 */
@@ -164,7 +179,7 @@ export class MessageApp {
       const m = location.hash.match(/^#\/?(\w+)/);
       const v = HASH[m?.[1] ?? ''];
       if (v && v !== this.view) { this.view = v; this.show(); }
-      else if (!v && this.shownAt) this.hardRefresh('顶栏重新进入');
+      else if (!v && this.shownAt) void this.hardRefresh('manual');
     });
     nav().then((n) => {
       if (!n?.isLogin) { this.pane.replaceChildren(this.empty('登录后查看消息', h('a', { class: 'sp-follow', href: 'https://passport.bilibili.com/login', target: '_blank', rel: 'noopener' }, '去登录'))); return; }
@@ -216,7 +231,7 @@ export class MessageApp {
   private go(v: View): void {
     if (v === this.view) {
       // 重选当前分类 = 手动要求刷新（原先直接忽略，用户只能切走再切回来）
-      if (!location.hash.includes('/mid')) this.hardRefresh('重选当前分类');
+      if (!location.hash.includes('/mid')) void this.hardRefresh('manual');
       return;
     }
     this.view = v;
@@ -225,10 +240,11 @@ export class MessageApp {
     this.show();
   }
 
-  private show(): void {
+  private show(restoreTop = 0): void {
     this.chatDispose?.(); this.chatDispose = undefined;
     this.gen++;
     this.shownAt = Date.now();
+    this.feedPage = 1;
     this.nav.querySelectorAll<HTMLElement>('.ms-item').forEach((b) => b.toggleAttribute('data-selected', b.dataset.view === this.view));
     const [, label, eb] = VIEWS.find((x) => x[0] === this.view)!;
     // 刷新按钮：列表更新偶尔慢半拍，手动一下立刻重拉
@@ -236,7 +252,7 @@ export class MessageApp {
       h('div', { class: 'eyebrow' }, h('span', { class: 'en' }, eb)), h('h2', {}, label),
       this.view !== 'whisper' ? h('button', { class: 'ghost small ms-refresh', type: 'button', title: '重新拉取最新消息', onclick: () => this.show() }, '刷新') : null));
     if (this.view === 'whisper') this.whisper();
-    else this.feed();
+    else this.feed(restoreTop);
   }
 
   private empty(text: string, extra?: Node): HTMLElement {
@@ -244,7 +260,7 @@ export class MessageApp {
   }
 
   // ---- 通知流 ----
-  private feed(): void {
+  private feed(restoreTop = 0): void {
     const gen = this.gen;
     const list = h('div', { class: 'ms-list' });
     const more = h('button', { class: 'ghost small ms-more', type: 'button' }, '加载更多');
@@ -253,6 +269,7 @@ export class MessageApp {
     let bucket = '';
     const fetcher = (c: Page['cursor']) => this.view === 'reply' ? replies(c) : this.view === 'at' ? ats(c) : this.view === 'like' ? likes(c) : system(csrf(), c);
     const load = async () => {
+      if (cursor) this.feedPage++;
       more.disabled = true;
       list.append(...Array.from({ length: cursor ? 2 : 5 }, () => h('div', { class: 'ms-row sk' }, h('div', { class: 'ms-face' }), h('div', {}, h('div', { class: 'line' }), h('div', { class: 'line short' })))));
       try {
@@ -265,6 +282,7 @@ export class MessageApp {
           if (b !== bucket) { bucket = b; list.append(h('div', { class: 'ms-day' }, h('span', {}, b))); }
           list.append(this.row(n));
         });
+        if (first && restoreTop > 0) this.shell.app.scrollTop = restoreTop;
         if (!cursor) {
           // 第一页拉到就算看过了：B 站在拉列表时已经记了已读，系统通知还要把游标推到最新
           const v = this.view;
