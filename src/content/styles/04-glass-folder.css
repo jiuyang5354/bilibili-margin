@@ -334,7 +334,7 @@ canvas.gf-sheet-art[data-ready] { opacity: 1; filter: none; }
   display: grid;
   place-items: center;
   cursor: pointer;
-  transition: transform .35s var(--ease-out) var(--gf-spring), box-shadow .35s var(--gf-ease), background .35s var(--gf-ease);
+  transition: transform .35s var(--gf-spring), box-shadow .35s var(--gf-ease), background .35s var(--gf-ease);
 }
 .gf-key:hover { transform: translateY(-2px); }
 .gf-key:active { transform: translateY(0) scale(.93); transition-duration: .12s; }
@@ -392,7 +392,7 @@ canvas.gf-sheet-art[data-ready] { opacity: 1; filter: none; }
   opacity: 0;
   visibility: hidden;
   transform: translateY(6px) scale(.94);
-  transition: opacity .2s var(--gf-ease), transform .3s var(--ease-out) var(--gf-spring), visibility 0s var(--ease-out) .3s;
+  transition: opacity .2s var(--gf-ease), transform .3s var(--gf-spring), visibility 0s var(--ease-out) .3s;
 }
 .gf-menu[data-open] { opacity: 1; visibility: visible; transform: none; transition-delay: 0s; }
 .app[data-theme="dark"] .gf-root .gf-menu { background: rgba(30, 30, 34, .72); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .1), 0 0 0 .5px rgba(255, 255, 255, .1), 0 24px 48px -16px rgba(0, 0, 0, .8); }
@@ -422,7 +422,7 @@ canvas.gf-sheet-art[data-ready] { opacity: 1; filter: none; }
 .gf-back, .gf-back-rim { transition: translate 1s var(--gf-ease), opacity .9s var(--gf-ease); }
 .gf-root[data-entered] .gf-sheet { transition-delay: calc(var(--gf-depth) * 40ms), 0s, calc(.18s + var(--gf-depth) * 90ms), calc(.18s + var(--gf-depth) * 90ms); }
 .gf-root[data-entered] .gf-front { transition-delay: 0s, .42s, .42s; }
-.gf-key { transition: transform .35s var(--ease-out) var(--gf-spring), box-shadow .35s var(--gf-ease), opacity .6s var(--gf-ease) .7s, scale .7s var(--ease-out) var(--gf-spring) .7s; }
+.gf-key { transition: transform .35s var(--gf-spring), box-shadow .35s var(--gf-ease), opacity .6s var(--gf-ease) .7s, scale .7s var(--gf-spring) .7s; }
 
 @media (prefers-reduced-motion: reduce) {
   .gf-root *, .gf-root *::before, .gf-root *::after {
