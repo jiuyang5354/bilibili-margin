@@ -300,6 +300,8 @@ jobs:
           SMOKE_OUT=smoke-artifacts/footprint-recovery-and-search node tests/footprint-recovery-and-search.mjs
           SMOKE_OUT=smoke-artifacts/message-refresh node tests/message-refresh.mjs
           SMOKE_OUT=smoke-artifacts/history-delete-pagination node tests/history-delete-pagination.mjs
+          SMOKE_OUT=smoke-artifacts/classic-throwback-sources node tests/classic-throwback-sources.mjs
+          SMOKE_OUT=smoke-artifacts/space-native-header-layout node tests/space-native-header-layout.mjs
       - if: always()
         uses: actions/upload-artifact@v4
         with:

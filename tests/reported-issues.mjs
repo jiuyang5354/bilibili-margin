@@ -543,14 +543,14 @@ try {
     await page.waitForFunction(() => document.getElementById('margin-root').shadowRoot.querySelectorAll('.grid .card:not(.sk)').length === 3);
     assert.deepEqual(requests.filter(r => r.kind === 'season').map(r => r.page), [1, 2, 2, 3]);
     assert.equal(await page.locator('#margin-root .grid .card .cover').first().getAttribute('href'), 'https://www.bilibili.com/video/BVcollectionseason1');
-    await page.locator('#margin-root .sp-collection-head button').click();
+    await page.locator('#margin-root .sp-collection-head > button').click();
     await page.locator('#margin-root .sp-collection[data-kind="series"] .cover').click();
     await page.waitForFunction(() => document.getElementById('margin-root').shadowRoot.querySelectorAll('.grid .card:not(.sk)').length === 2);
     assert.deepEqual(requests.filter(r => r.kind === 'series').map(r => r.page), [1, 2]);
     await page.locator('#margin-root .sp-layout button').filter({ hasText: '列表' }).click();
     await page.locator('#margin-root .vrow:not(.sk)').first().waitFor();
     await page.screenshot({ path: join(out, 'series.png') });
-    await page.locator('#margin-root .sp-collection-head button').click();
+    await page.locator('#margin-root .sp-collection-head > button').click();
     delay = true;
     await page.locator('#margin-root .sp-collection[data-kind="season"] .cover').first().click();
     await page.locator('#margin-root .tab[data-tab="dynamic"]').click();
@@ -820,7 +820,7 @@ try {
     await more.waitFor();
     for (let i = 0; i < 3; i++) {
       await more.click();
-      await page.locator('#margin-root .main > :is(.grid,.vlist) > .sk').waitFor({ state: 'detached' });
+      await page.waitForFunction(() => !document.getElementById('margin-root')?.shadowRoot?.querySelector('.main > :is(.grid,.vlist) > .sk'));
       if (i < 2) await more.waitFor();
     }
     await more.waitFor({ state: 'detached' });

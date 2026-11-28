@@ -615,6 +615,11 @@
 .pool-chip:hover { color: var(--ink); }
 /* 上一批（v0.48） */
 .bar-acts { display: flex; align-items: center; gap: 8px; }
+.bar:not([data-tab="classic"]) .classic-sources { display: none; }
+.classic-sources { display: inline-flex; align-items: center; flex-shrink: 0; gap: 4px; height: 36px; padding: 3px; border: 1px solid var(--line); border-radius: 999px; }
+.classic-sources button { height: 100%; padding: 0 8px; border-radius: 999px; color: var(--muted); font: 500 12px/1 var(--sans); white-space: nowrap; }
+.classic-sources button:hover, .classic-sources button[aria-pressed="true"] { color: var(--ink); }
+.classic-sources button[aria-pressed="true"] { background: var(--chip); }
 .bar .refresh.back[hidden] { display: none; }
 /* 换一批进行中：按钮转圈，旧列表留在原位直到新一批就绪（减少动画时保持静止） */
 .bar .refresh[aria-busy="true"] { pointer-events: none; opacity: .7; }

@@ -4,7 +4,7 @@ import { appDislike, appRecommended } from '../api/appfeed';
 import { noteNegative, rerank, resetRank } from '../rank';
 import { followClassics, resetClassics } from '../api/space';
 import { followedVideos } from '../api/dyn';
-import { loadSettings, normalizeHomeOrder, saveSettings, type HomeSection, type Settings } from '../../shared/settings';
+import { CLASSIC_SOURCES, loadSettings, normalizeHomeOrder, saveSettings, type ClassicSource, type HomeSection, type Settings } from '../../shared/settings';
 import { BATCH_QUEUE_MAX, batchCount, batchIndexOf, batchStartOf, newContentStart, trimmedStart } from '../../shared/batch';
 import { BackgroundLayer } from '../bg/background';
 import { FilterRuntime } from '../filter-runtime';
@@ -57,6 +57,7 @@ export class MarginApp {
   private dash!: HTMLElement;
   private wx: HTMLElement | null = null;
   private tab: Tab;
+  private classicSources!: HTMLElement;
   private recommendations = new RecommendationFeed();
   private recommendationRequest = new AbortController();
   private recommendationScene: RecommendScene = 'scroll';
@@ -117,6 +118,14 @@ export class MarginApp {
     this.settings = s;
     if (this.filter.update(s)) this.repaint();
     if ((prev.appFeed !== s.appFeed || prev.rerank !== s.rerank) && this.tab === 'rcmd') this.reload();
+    if (prev.classicSources.join() !== s.classicSources.join()) {
+      this.classicSources.querySelectorAll<HTMLButtonElement>('[data-src]').forEach(button => {
+        button.setAttribute('aria-pressed', String(s.classicSources.includes(button.dataset.src as ClassicSource)));
+      });
+      this.tabMem.delete('classic');
+      if (this.tab === 'classic') this.reload();
+      else resetClassics();
+    }
     if (prev.footprint !== s.footprint || prev.weather !== s.weather) this.syncDash();
     this.app.dataset.cols = String(s.cols || "auto");
     this.app.dataset.homeWidth = s.homeWidth;
@@ -262,7 +271,7 @@ export class MarginApp {
     const palette = createCommandPalette([
       { id: 'refresh', title: '换一批推荐', cat: '操作', icon: ICONS.refresh, keys: ['刷新', 'refresh'], run: () => this.reload(true) },
       { id: 'rcmd', title: '看推荐', cat: '跳转', icon: ICONS.moments, keys: ['首页'], run: () => (this.app.querySelector('.tab[data-tab=rcmd]') as HTMLElement)?.click() },
-      { id: 'classic', title: '看关注的 UP 的老视频', cat: '跳转', icon: ICONS.history, keys: ['老片', 'classic'], run: () => (this.app.querySelector('.tab[data-tab=classic]') as HTMLElement)?.click() },
+      { id: 'classic', title: '老片回顾', cat: '跳转', icon: ICONS.history, keys: ['老片', 'classic'], run: () => (this.app.querySelector('.tab[data-tab=classic]') as HTMLElement)?.click() },
       { id: 'popular', title: '看热门', cat: '跳转', icon: ICONS.heat, keys: ['popular', '排行'], run: () => (this.app.querySelector('.tab[data-tab=popular]') as HTMLElement)?.click() },
       { id: 'following', title: '看关注的 UP 的最新投稿', cat: '跳转', icon: ICONS.user, keys: ['关注', 'follow'], run: () => (this.app.querySelector('.tab[data-tab=following]') as HTMLElement)?.click() },
       { id: 'fav', title: '打开收藏夹', cat: '操作', icon: ICONS.fav, keys: ['收藏'], run: () => this.fav.open() },
@@ -295,7 +304,18 @@ export class MarginApp {
       b.dataset.tab = id;
       return b;
     };
-    tabs.append(mkTab('rcmd', '推荐'), mkTab('popular', '热门'), mkTab('following', '关注'), mkTab('classic', '关注老片'));
+    tabs.append(mkTab('rcmd', '推荐'), mkTab('popular', '热门'), mkTab('following', '关注'), mkTab('classic', '老片回顾'));
+    const sourceLabels: Record<ClassicSource, string> = { follow: '关注', like: '点赞', coin: '投币', fav: '收藏' };
+    const classicSources = this.classicSources = h('div', { class: 'classic-sources', role: 'group', 'aria-label': '老片回顾来源' },
+      ...CLASSIC_SOURCES.map(source => h('button', {
+        type: 'button', 'data-src': source, 'aria-pressed': String(this.settings.classicSources.includes(source)),
+        onclick: () => {
+          const current = this.settings.classicSources;
+          const next = current.includes(source) ? current.filter(item => item !== source) : [...current, source];
+          if (!next.length) { toast(this.app, '至少保留一种回顾来源'); return; }
+          void saveSettings({ classicSources: next }).catch(() => toast(this.app, '回顾来源保存失败，请重试'));
+        },
+      }, sourceLabels[source])));
     const rank = h('a', { class: 'ghost rank-link', href: 'https://www.bilibili.com/v/popular/rank/all', target: '_blank', rel: 'noopener', 'aria-label': '打开 B 站排行榜' },
       icon(ICONS.heat), h('span', {}, '排行榜'));
     const refresh = h('button', { class: 'ghost refresh', type: 'button', title: '换一批', onclick: () => this.reload(true) }, icon(ICONS.refresh), h('span', {}, '换一批'));
@@ -317,7 +337,7 @@ export class MarginApp {
     const heroS = createHeroSearch(() => this.app);
     const hero = heroS.el;
     this.headEl = head.el; this.heroEl = hero;
-    const bar = h('div', { class: 'bar', 'data-tab': this.tab }, h('div', { class: 'eyebrow' }, h('span', {}, todayLabel()), h('span', { class: 'en' }, 'For You'), h('span', { class: 'no' }, issueNo())), h('div', { class: 'bar-row' }, tabs, h('div', { class: 'bar-acts' }, rank, this.backBtn, refresh, this.batchBar)));
+    const bar = h('div', { class: 'bar', 'data-tab': this.tab }, h('div', { class: 'eyebrow' }, h('span', {}, todayLabel()), h('span', { class: 'en' }, 'For You'), h('span', { class: 'no' }, issueNo())), h('div', { class: 'bar-row' }, tabs, h('div', { class: 'bar-acts' }, classicSources, rank, this.backBtn, refresh, this.batchBar)));
     this.barEl = bar;
 
     this.grid = h('section', { class: 'grid home-grid', 'aria-live': 'polite' });
@@ -396,6 +416,7 @@ export class MarginApp {
     const lg = filtersIn(this.root);
     attachNavigationGlass(head, lg);
     attachGlass(tabs, lg); attachGlass(refresh, lg); attachGlass(this.backBtn, lg); attachGlass(rank, lg); attachGlass(this.batchBar, lg);
+    attachGlass(classicSources, lg);
     bindCardMenu(this.grid, cm, () => this.app, { onBlock: (x) => this.blockUp(x), onLater: () => later.open(), onDislike: (x, el) => this.nope(x, el) });
     const favGrid = this.fav.el.querySelector('.fav-grid') as HTMLElement | null;
     if (favGrid) bindCardMenu(favGrid, cm, () => this.app, { onLater: () => later.open() });
@@ -537,7 +558,7 @@ export class MarginApp {
     if (!keep) this.appIdx = 0;
     this.followOffset = '';
     resetRank();
-    resetClassics();
+    if (this.tab === 'classic') resetClassics();
     if (!keep) {
       this.refreshBusy(false);
       clearTimeout(this.anchorTimer);
@@ -810,7 +831,6 @@ export class MarginApp {
     this.loading = false;
     this.page = 1; this.appIdx = 0; this.done = false;
     resetRank();
-    resetClassics();
     this.grid.querySelectorAll('.card.sk').forEach((n) => n.remove());
     this.grid.replaceChildren();
     this.status.replaceChildren();
@@ -1006,7 +1026,7 @@ export class MarginApp {
       this.followOffset = r.offset;
       this.done = !r.more;
     } else if (this.tab === 'classic') {
-      const r = await followClassics(this.recommendationRequest.signal);
+      const r = await followClassics(this.recommendationRequest.signal, this.settings.classicSources);
       if (gen !== this.gen) return [];
       list = r.list;
       this.done = r.done;

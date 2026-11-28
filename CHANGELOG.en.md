@@ -4,6 +4,18 @@
 
 New entries are grouped under Added, Changed, and Fixed, following [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Version headings link to their GitHub releases. The display version and the browser update version are recorded separately so the latter can keep increasing for automatic updates.
 
+## [v0.7.4](https://github.com/jiuyang5354/bilibili-margin/releases/tag/v0.70.4) · 2026-11-28 · Multi-source random throwback feed and native Space header fix
+
+### Added
+
+- Expanded the homepage Classics tab into a multi-source random throwback feed（「老片回顾」）, mixing high-view older uploads from followed creators with your liked, coined, and randomly sampled favorited videos (deduplicated with concise source badges), so favorite past videos remain discoverable even if you later unfollowed the creator.
+- Added synchronized source toggles (`关注` / `点赞` / `投币` / `收藏`) directly in the Classics toolbar and under Settings → Homepage → Throwback Sources (all enabled by default, keeping at least one active).
+
+### Fixed
+
+- Fixed top layout overlap on native Space Followers / Following pages (`/relation/fans`, `/relation/follow`): removed `#app`'s negative top margin so the Space banner starts cleanly below the 72px header, docked the sticky Space navbar at `72px` (and sticky sidebars at `136px`), and added a click-through frosted backdrop behind the fixed header.
+- Fixed footprint worker timeout handling in non-DOM environments so unanswered worker timeouts are not misclassified as an invalidated extension context.
+
 ## [v0.7.3](https://github.com/jiuyang5354/bilibili-margin/releases/tag/v0.70.3) · 2026-11-28 · RTX playback compatibility, SDR-to-HDR, favorites search and UI fixes
 
 ### Added

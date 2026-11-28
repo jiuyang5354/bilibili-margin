@@ -1,5 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import { CLASSIC_SOURCES, normalizeClassicSources, type ClassicSource } from '../../shared/settings';
 import { account } from './account';
+import { mediaVideo } from './fav';
 import { getJSON, getWbi } from './http';
 import type { Video } from './feed';
 
@@ -196,9 +198,10 @@ export async function spaceVideos(mid: number, pn: number, order: VideoOrder, ke
 
 /** 最近投币 / 最近点赞的视频（v0.47，评论区：主页下方没有最近投币和点赞了）。对方没公开时 B 站返回 53013，这里返回 null，界面就不显示那个标签 */
 export type Recent = 'coin' | 'like';
-export async function spaceRecent(mid: number, kind: Recent): Promise<Video[] | null> {
-  const r = await fetch(`https://api.bilibili.com/x/space/${kind}/video?vmid=${mid}`, { credentials: 'include' });
+export async function spaceRecent(mid: number, kind: Recent, signal?: AbortSignal): Promise<Video[] | null> {
+  const r = await fetch(`https://api.bilibili.com/x/space/${kind}/video?vmid=${mid}`, { credentials: 'include', signal });
   const j = await r.json().catch(() => null);
+  signal?.throwIfAborted();
   if (!j || j.code !== 0) return null;
   const arr: any[] = Array.isArray(j.data) ? j.data : (j.data?.list ?? []);
   return arr.filter((v) => v && (v.bvid || v.aid)).map((v) => ({
@@ -243,41 +246,122 @@ export async function block(mid: number, on: boolean, csrf: string): Promise<boo
   return ((await r.json().catch(() => ({}))) as any).code === 0;
 }
 
-/**
- * 「关注老片」（v0.47.2，评论区 wsxszzz：想看关注的 UP 以前的高播放视频）：
- * 每批随机挑 4 位关注的 UP，取各自「最多播放」第一页里发布超过 90 天的前 3 条，按发布时间返回。
- * 关注列表只拉一次（最多 250 人），用完一轮就结束。
- */
-let followPool: number[] | null = null;
-export async function followClassics(signal: AbortSignal): Promise<{ list: Video[]; done: boolean }> {
-  if (!followPool) {
-    const me = (await account())?.mid;
-    signal.throwIfAborted();
-    if (!me) throw new Error('登录后才能看关注的 UP 主');
-    const mids: number[] = [];
-    for (let pn = 1; pn <= 5; pn++) {
-      const d = await getJSON<any>('/x/relation/followings', { vmid: me, pn, ps: 50, order: 'desc' }, signal).catch(() => null);
-      signal.throwIfAborted();
-      const l: any[] = d?.list ?? [];
-      mids.push(...l.map((x) => Number(x.mid)).filter(Boolean));
-      if (l.length < 50) break;
-    }
-    if (!mids.length) throw new Error('还没有关注的 UP 主，或关注列表不公开');
-    followPool = mids.sort(() => Math.random() - 0.5);
+type FavPage = { id: number; page: number };
+type ClassicRound = {
+  key: string;
+  me?: number;
+  follow: number[] | null;
+  like: Video[] | null;
+  coin: Video[] | null;
+  favPages: FavPage[] | null;
+  favBuffer: Video[];
+  seen: Set<string>;
+};
+let classicRound: ClassicRound | null = null;
+
+function shuffle<T>(items: T[]): T[] {
+  for (let i = items.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [items[i], items[j]] = [items[j], items[i]];
   }
-  const pool = followPool;
-  const pick = pool.slice(0, 4);
+  return items;
+}
+
+async function classicFollowings(me: number, signal: AbortSignal): Promise<number[]> {
+  const mids = new Set<number>();
+  for (let pn = 1; pn <= 5; pn++) {
+    const d = await getJSON<{ list?: { mid: number }[] }>('/x/relation/followings', { vmid: me, pn, ps: 50, order: 'desc' }, signal).catch(() => null);
+    signal.throwIfAborted();
+    const list = Array.isArray(d?.list) ? d.list : [];
+    for (const item of list) if (Number(item?.mid)) mids.add(Number(item.mid));
+    if (list.length < 50) break;
+  }
+  return shuffle([...mids]);
+}
+
+async function followBatch(me: number, pool: number[] | null, limit: number, signal: AbortSignal) {
+  const mids = pool ?? await classicFollowings(me, signal);
   const old = Date.now() / 1000 - 90 * 86400;
-  const lists = await Promise.all(pick.map(async (mid, index) => {
-    // 错开发送，避免四个空间请求同时打到接口。
+  const lists = await Promise.all(mids.slice(0, limit).map(async (mid, index) => {
     if (index) await new Promise((resolve) => setTimeout(resolve, index * 100));
     signal.throwIfAborted();
     const result = await spaceVideos(mid, 1, 'click', '', signal).catch(() => null);
-    return result?.list.filter((video) => video.pubdate && video.pubdate < old).slice(0, 3) ?? [];
+    return result?.list.filter(video => video.pubdate && video.pubdate < old).slice(0, 3)
+      .map(video => ({ ...video, reason: '关注老片' })) ?? [];
   }));
-  signal.throwIfAborted();
-  pool.splice(0, pick.length);
-  const list = lists.flat().sort((a, b) => b.pubdate - a.pubdate);
-  return { list, done: pool.length === 0 };
+  return { list: lists.flat(), pool: mids.slice(limit), noFollowings: !pool && !mids.length };
 }
-export const resetClassics = () => { followPool = null; };
+
+async function recentBatch(me: number, kind: Recent, pool: Video[] | null, limit: number, signal: AbortSignal) {
+  const videos = pool ?? shuffle(await spaceRecent(me, kind, signal).catch(() => null) ?? []);
+  const reason = kind === 'like' ? '赞过' : '投币过';
+  return { list: videos.slice(0, limit).map(video => ({ ...video, reason })), pool: videos.slice(limit) };
+}
+
+async function classicFavPages(me: number, signal: AbortSignal): Promise<FavPage[]> {
+  type Folders = { list?: { id: number; media_count: number }[] };
+  const first = await getJSON<Folders>('/x/v3/fav/folder/created/list', { up_mid: me, pn: 1, ps: 50 }, signal).catch(() => null);
+  signal.throwIfAborted();
+  const all = Array.isArray(first?.list) && first.list.length ? first
+    : await getJSON<Folders>('/x/v3/fav/folder/created/list-all', { up_mid: me }, signal).catch(() => null);
+  const folders = Array.isArray(all?.list) ? all.list : [];
+  return shuffle(folders.filter(folder => folder?.id && folder.media_count > 0).flatMap(folder =>
+    Array.from({ length: Math.min(Math.ceil(folder.media_count / 20), 10) }, (_, i) => ({ id: folder.id, page: i + 1 })),
+  )).slice(0, 60);
+}
+
+async function favBatch(me: number, round: ClassicRound, limit: number, signal: AbortSignal) {
+  const pages = round.favPages ?? await classicFavPages(me, signal);
+  signal.throwIfAborted();
+  const pick = round.favBuffer.length >= limit ? [] : pages.slice(0, round.favBuffer.length ? 1 : 2);
+  const lists = await Promise.all(pick.map(async ({ id, page }) => {
+    const data = await getJSON<{ medias: any[] | null }>('/x/v3/fav/resource/list', { media_id: id, pn: page, ps: 20, platform: 'web' }, signal).catch(() => null);
+    const medias = Array.isArray(data?.medias) ? data.medias : [];
+    return medias.filter(m => m?.type === 2 && m.bvid && m.attr === 0).map(m => ({
+      ...mediaVideo(m), pubdate: m.pubtime || m.ctime || m.fav_time || 0, reason: '收藏过',
+    }));
+  }));
+  const videos = [...round.favBuffer, ...shuffle(lists.flat())];
+  return { list: videos.slice(0, limit), pages: pages.slice(pick.length), buffer: videos.slice(limit) };
+}
+
+/** 并行读取来源，整批结束后才推进本轮的队列和去重记录。 */
+export async function followClassics(signal: AbortSignal, sources: readonly ClassicSource[] = CLASSIC_SOURCES): Promise<{ list: Video[]; done: boolean }> {
+  signal.throwIfAborted();
+  const active = normalizeClassicSources(sources);
+  const key = active.join();
+  if (classicRound?.key !== key) {
+    classicRound = { key, follow: null, like: null, coin: null, favPages: null, favBuffer: [], seen: new Set() };
+  }
+  const round = classicRound;
+  const me = round.me ?? (await account())?.mid;
+  signal.throwIfAborted();
+  if (!me) throw new Error('登录后才能看老片回顾');
+  const single = active.length === 1;
+  const limit = single ? 12 : 4;
+  const [follow, like, coin, fav] = await Promise.all([
+    active.includes('follow') ? followBatch(me, round.follow, single ? 4 : 2, signal) : null,
+    active.includes('like') ? recentBatch(me, 'like', round.like, limit, signal) : null,
+    active.includes('coin') ? recentBatch(me, 'coin', round.coin, limit, signal) : null,
+    active.includes('fav') ? favBatch(me, round, limit, signal) : null,
+  ]);
+  signal.throwIfAborted();
+  if (classicRound !== round) throw new DOMException('回顾轮次已更换', 'AbortError');
+  const seen = new Set(round.seen);
+  const list = [follow, like, coin, fav].flatMap(batch => batch?.list ?? []).filter(video => {
+    if (!video.bvid || seen.has(video.bvid)) return false;
+    seen.add(video.bvid);
+    return true;
+  });
+  const done = !follow?.pool.length && !like?.pool.length && !coin?.pool.length && !fav?.pages.length && !fav?.buffer.length;
+  if (done && !seen.size) {
+    resetClassics();
+    throw new Error(single && follow?.noFollowings ? '还没有关注的 UP 主，或关注列表不公开' : '所选来源暂时没有可回顾的视频');
+  }
+  classicRound = {
+    key, me, seen, follow: follow?.pool ?? null, like: like?.pool ?? null, coin: coin?.pool ?? null,
+    favPages: fav?.pages ?? null, favBuffer: fav?.buffer ?? [],
+  };
+  return { list: shuffle(list), done };
+}
+export const resetClassics = () => { classicRound = null; };

@@ -343,7 +343,19 @@ html.margin-skin[data-margin-theme="dark"] .vui_sidebar-item:not(.vui_sidebar-it
 html.margin-skin[data-margin-theme="dark"] .vui_sidebar-item:not(.vui_sidebar-item--active):focus-visible { background: rgb(255 255 255 / .08) !important; }
 
 /* v0.50.1（GitHub #30）：空间里映间没接管的原生子页（收藏夹、追番、关注、设置）——B 站蓝统一换成映间的墨色，和映间空间页一致 */
-html.margin-space-native { --brand_blue: var(--m-ink); --brand_blue_thin: color-mix(in srgb, var(--m-ink) 10%, transparent); --Ba0: var(--m-ink); }
+html.margin-space-native { --brand_blue: var(--m-ink); --brand_blue_thin: color-mix(in srgb, var(--m-ink) 10%, transparent); --Ba0: var(--m-ink); scroll-padding-top: 136px; }
+html.margin-space-native #app { margin-top: 0 !important; }
+html.margin-space-native :is(.space-navbar, .nav-bar.space-navbar, .n-fix) { top: 72px !important; }
+html.margin-space-native :is(.follow-sidenav, .relation-sidenav, .vui_sidebar) { top: 136px !important; }
+html.margin-space-native body::before {
+  content: ""; position: fixed; top: 0; left: 0; right: 0; height: 72px; box-sizing: border-box;
+  z-index: 100; pointer-events: none; background: color-mix(in srgb, var(--m-canvas) 82%, transparent);
+  backdrop-filter: blur(18px) saturate(1.35); border-bottom: 1px solid var(--m-line);
+}
+html.margin-space-native[data-margin-glass="flat"] body::before { background: var(--m-canvas); backdrop-filter: none; }
+@media (prefers-reduced-transparency: reduce) {
+  html.margin-space-native body::before { background: var(--m-canvas); backdrop-filter: none; }
+}
 html.margin-space-native .nav-tab__item, html.margin-space-native .nav-tab__item-icon, html.margin-space-native .nav-tab__item-num { color: var(--m-muted) !important; }
 html.margin-space-native .nav-tab__item--active .nav-tab__item-text, html.margin-space-native .nav-tab__item--active .nav-tab__item-icon,
 html.margin-space-native .nav-tab__item--active .nav-tab__item-num, html.margin-space-native .nav-tab__item:hover .nav-tab__item-text { color: var(--m-ink) !important; }

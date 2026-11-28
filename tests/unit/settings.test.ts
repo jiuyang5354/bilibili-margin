@@ -89,6 +89,24 @@ describe('settings 迁移（merge / loadSettings）', () => {
     expect(s).toEqual(DEFAULTS);
   });
 
+  it.each([
+    [undefined, ['follow', 'like', 'coin', 'fav']],
+    [['fav', 'like'], ['like', 'fav']],
+    [['coin', false, 'unknown', 'coin', 'follow'], ['follow', 'coin']],
+    [[], ['follow', 'like', 'coin', 'fav']],
+    [['unknown'], ['follow', 'like', 'coin', 'fav']],
+    ['like', ['follow', 'like', 'coin', 'fav']],
+  ])('老片回顾来源 %j 从存储和导入统一校验', async (classicSources, expected) => {
+    store.set('margin:settings', { classicSources });
+    expect((await loadSettings()).classicSources).toEqual(expected);
+    expect(sanitizeSettings({ classicSources })?.classicSources).toEqual(expected);
+  });
+
+  it('保存部分回顾来源后按标准顺序重新载入', async () => {
+    await saveSettings({ classicSources: ['fav', 'like'] });
+    expect((await loadSettings()).classicSources).toEqual(['like', 'fav']);
+  });
+
   it('控件动效独立保存，旧设置默认开启，平面质感可导入', async () => {
     expect((await loadSettings()).uiEffects).toBe(true);
     expect(sanitizeSettings({ uiEffects: 'false' })?.uiEffects).toBe(true);

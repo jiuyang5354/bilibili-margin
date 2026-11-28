@@ -54,7 +54,7 @@ export async function collectedFolders(page = 1, refreshLogin = false): Promise<
 
 export const folderUrl = (f: Folder) => `https://space.bilibili.com/${f.mid}/favlist?fid=${f.id}${f.kind ? `&ftype=collect&ctype=${f.kind === 'season' ? 21 : 11}` : ''}`;
 const https = (url: unknown) => String(url || '').replace(/^http:/, 'https:').replace(/^\/\//, 'https://');
-const mediaVideo = (m: any, upper = m.upper): Video => ({
+export const mediaVideo = (m: any, upper = m.upper): Video => ({
   bvid: m.bvid, aid: Number(m.id) || undefined, cid: m.ugc?.first_cid ?? 0, title: m.title,
   cover: https(m.cover), duration: m.duration ?? 0,
   author: upper?.name ?? '', mid: upper?.mid ?? 0, face: upper?.face ?? '',

@@ -21,6 +21,7 @@ const ctx = await chromium.launchPersistentContext(mkdtempSync(join(tmpdir(), 'm
 
 try {
   const favRequests = [];
+  let recommendationRequests = 0;
   const chargingFeedItems = [
     {
       id_str: '990001', type: 'DYNAMIC_TYPE_NONE',
@@ -50,6 +51,12 @@ try {
   ];
   await installMocks(ctx, (url) => {
     const u = new URL(url);
+    if (u.pathname.endsWith('/index/top/feed/rcmd')) {
+      const base = apiBody(url);
+      const n = ++recommendationRequests;
+      base.data.item.forEach((item, i) => { item.bvid = `BVqf_refresh_${n}_${i}`; });
+      return base;
+    }
     if (u.pathname.includes('/fav/resource/list')) {
       favRequests.push({ mediaId: u.searchParams.get('media_id'), keyword: u.searchParams.get('keyword') ?? '', type: u.searchParams.get('type') ?? '0' });
       const base = apiBody(url);

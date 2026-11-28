@@ -1,4 +1,4 @@
-import type { BgMode, HomeBit, HomeSection, Settings, ShaderId, Theme } from '../../shared/settings';
+import type { BgMode, ClassicSource, HomeBit, HomeSection, Settings, ShaderId, Theme } from '../../shared/settings';
 import { BG_IMAGE_KEY, clampPaletteSpeed, cleanFont, DEFAULTS, HOME_BITS, HOME_SECTION_NAMES, REDESIGN_PAGES, REDESIGN_LABELS, normalizeHomeOrder, replaceSettings, sanitizeSettings, saveSettings } from '../../shared/settings';
 import { ACTIVITY_KEY, sanitizeActivity } from '../../shared/activity';
 import { importActivity } from '../footprint/store';
@@ -162,7 +162,14 @@ function buildSettingsPanel(sheet: SettingsPage, get: () => Settings, currentSha
   void loadLoc().then(paintCity, () => say('天气位置读取失败，请重试'));
   const cityBox = cityPicker.el;
   const cols = segmented<string>([['0', '自动'], ['4', '4 个'], ['5', '5 个'], ['6', '6 个']], String(s0.cols), (v) => save({ cols: Number(v) as 0 | 4 | 5 | 6 }));
-  const homeDefaultTab = segmented<Settings['homeDefaultTab']>([['rcmd', '推荐'], ['popular', '热门'], ['following', '关注'], ['classic', '关注老片']], s0.homeDefaultTab, (v) => save({ homeDefaultTab: v }));
+  const homeDefaultTab = segmented<Settings['homeDefaultTab']>([['rcmd', '推荐'], ['popular', '热门'], ['following', '关注'], ['classic', '老片回顾']], s0.homeDefaultTab, (v) => save({ homeDefaultTab: v }));
+  const classicSources = pillToggles<ClassicSource>([['follow', '关注的 UP'], ['like', '点赞过'], ['coin', '投币过'], ['fav', '收藏夹']], s0.classicSources, next => {
+    if (!next.length) { classicSources.set(get().classicSources); return; }
+    void save({ classicSources: next }).catch(() => {
+      classicSources.set(get().classicSources);
+      say('回顾来源保存失败，请重试');
+    });
+  });
   const homeWidth = segmented<Settings['homeWidth']>([['current', '当前宽度'], ['compact', '居中收窄'], ['fluid', '自适应铺开']], s0.homeWidth, (v) => save({ homeWidth: v }));
   const fontS = segmented<'serif' | 'sans'>([['serif', '衬线'], ['sans', '无衬线']], s0.titleFont, (v) => save({ titleFont: v }));
   const monoT = toggle(s0.monoNum, '数字用等宽字体', (v) => save({ monoNum: v }));
@@ -699,6 +706,7 @@ function buildSettingsPanel(sheet: SettingsPage, get: () => Settings, currentSha
       block('卡片信息', '首页视频卡片下面显示哪些，点一下开关', cardBits)),
     block('每行视频', '自动按窗口宽度排 6–8 个；也可以固定 4 / 5 / 6 个，卡片更大', cols),
     block('首页默认分区', '下次打开首页时显示', homeDefaultTab),
+    block('老片回顾来源', '随机回顾里包含的视频来源，至少保留一项', classicSources),
     block('内容宽度', '当前保持 2024px 上限；收窄到 1600px 居中；自适应利用大屏宽度。小窗口沿用原布局', homeWidth),
     block('版块顺序', '上移 / 下移调整首页版块；修改后立即生效', orderBox),
     row('批次导航', '每次「换一批」只加载一页，底部左右箭头切换批次；开启后推荐页不再随滚动自动补页', batchNavT),
@@ -848,6 +856,7 @@ function buildSettingsPanel(sheet: SettingsPage, get: () => Settings, currentSha
       adsT.setAttribute('aria-checked', String(s.hideAds));
       cols.set(String(s.cols));
       homeDefaultTab.set(s.homeDefaultTab);
+      classicSources.set(s.classicSources);
       homeWidth.set(s.homeWidth);
       fontS.set(s.titleFont);
       monoT.setAttribute('aria-checked', String(s.monoNum));

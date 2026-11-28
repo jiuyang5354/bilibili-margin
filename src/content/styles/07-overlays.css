@@ -1,7 +1,7 @@
 /* ── 吸顶分类栏：液态玻璃胶囊（与顶栏同一套） ── */
 .bar-mark { height: 6px; margin-bottom: -6px; pointer-events: none; }
 .bar .eyebrow { max-height: 20px; overflow: hidden; transition: opacity .2s var(--ease-out); }
-.bar .tabs, .bar .refresh, .bar .rank-link, .bar .batch-bar { backdrop-filter: none; }
+.bar .tabs, .bar .refresh, .bar .rank-link, .bar .batch-bar, .bar .classic-sources { backdrop-filter: none; }
 .bar.stuck, .app:not([data-bg="off"]) .bar.stuck {
   padding-top: 12px; padding-bottom: 0; background: none; backdrop-filter: none; border-bottom-color: transparent; pointer-events: none;
 }
@@ -9,7 +9,7 @@
 .bar.stuck .bar-row > * { pointer-events: auto; }
 .bar .tabs { border-radius: 99em; }
 .bar .tab { transition: color .2s var(--ease-out), background-color .2s var(--ease-out); border-radius: 99em; white-space: nowrap; }
-.bar.stuck .tabs, .bar.stuck .refresh, .bar.stuck .rank-link, .bar.stuck .batch-bar {
+.bar.stuck .tabs, .bar.stuck .refresh, .bar.stuck .rank-link, .bar.stuck .batch-bar, .bar.stuck .classic-sources {
   background-color: color-mix(in srgb, var(--c-glass) 12%, color-mix(in srgb, var(--canvas) 50%, transparent));
   box-shadow:
     inset 0 0 0 1px color-mix(in srgb, var(--c-light) calc(var(--reflex-light) * 10%), transparent),
@@ -23,14 +23,18 @@
     0 6px 16px 0 color-mix(in srgb, var(--c-dark) calc(var(--reflex-dark) * 8%), transparent);
   border-color: transparent;
 }
-.bar:not(.stuck) .tabs, .bar:not(.stuck) .refresh, .bar:not(.stuck) .rank-link, .bar:not(.stuck) .batch-bar { backdrop-filter: none !important; }
+.bar:not(.stuck) .tabs, .bar:not(.stuck) .refresh, .bar:not(.stuck) .rank-link, .bar:not(.stuck) .batch-bar, .bar:not(.stuck) .classic-sources { backdrop-filter: none !important; }
 .bar.stuck .tabs { gap: 2px; padding: 4px; }
 .bar.stuck .tab { font-size: 16px; padding: 8px 20px; color: color-mix(in srgb, var(--ink) 62%, transparent); }
 .bar.stuck .tab[aria-selected="true"] { color: var(--ink); background-color: color-mix(in srgb, var(--ink) 9%, transparent); }
 .bar.stuck .tab[aria-selected="true"]::after { opacity: 0; }
 .bar.stuck .refresh, .bar.stuck .rank-link { height: 40px; color: color-mix(in srgb, var(--ink) 72%, transparent); }
+.bar.stuck .classic-sources { height: 40px; }
 .bar:not([data-tab="popular"]) .rank-link { display: none; }
 .bar .rank-link { white-space: nowrap; }
+@media (max-width: 760px) {
+  .bar[data-tab="classic"] .bar-row { gap: 8px; flex-wrap: wrap; }
+}
 @media (max-width: 680px) {
   .bar-row { gap: 8px; flex-wrap: wrap; }
   .bar .tabs { gap: 13px; }
@@ -38,9 +42,11 @@
   .bar .tab { font-size: 16px; }
   .bar.stuck .tab { padding: 6px 9px; }
   .bar .bar-acts > .ghost { padding-inline: 9px; }
+  .bar[data-tab="classic"] .bar-acts { max-width: 100%; flex-wrap: wrap; gap: 6px; }
+  .bar .classic-sources button { padding-inline: 6px; }
 }
 @media (prefers-reduced-transparency: reduce) {
-  .bar.stuck .tabs, .bar.stuck .refresh, .bar.stuck .rank-link, .bar.stuck .batch-bar { backdrop-filter: none !important; background-color: var(--surface); }
+  .bar.stuck .tabs, .bar.stuck .refresh, .bar.stuck .rank-link, .bar.stuck .batch-bar, .bar.stuck .classic-sources { backdrop-filter: none !important; background-color: var(--surface); }
 }
 
 /* ── 命令面板（21st Command Palette 移植） ── */
