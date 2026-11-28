@@ -4,7 +4,6 @@ import { appDislike, appRecommended } from '../api/appfeed';
 import { noteNegative, rerank, resetRank } from '../rank';
 import { followClassics, resetClassics } from '../api/space';
 import { followedVideos } from '../api/dyn';
-import { account } from '../api/account';
 import { loadSettings, normalizeHomeOrder, saveSettings, type HomeSection, type Settings } from '../../shared/settings';
 import { BATCH_QUEUE_MAX, batchCount, batchIndexOf, batchStartOf, newContentStart, trimmedStart } from '../../shared/batch';
 import { BackgroundLayer } from '../bg/background';
@@ -61,7 +60,7 @@ export class MarginApp {
   private recommendations = new RecommendationFeed();
   private recommendationRequest = new AbortController();
   private recommendationScene: RecommendScene = 'scroll';
-  /** App 推荐流的翻页游标（上一批最后一张卡的 idx），换一批时归零 */
+  /** App 推荐流的翻页游标（上一批最后一张卡的 idx） */
   private appIdx = 0;
   private followOffset = '';
   private appHinted = false;
@@ -79,6 +78,7 @@ export class MarginApp {
   private seen = new Set<string>();
   /** 批次窗口起点（items 下标）；只有推荐标签的批次导航使用 */
   private batchStart = 0;
+  private renderedBatchSize = 0;
   /** 批次模式下本次会话隐藏的视频：不裁队列，避免窗口下标错位 */
   private gone = new Set<string>();
   private batchBar!: HTMLElement;
@@ -207,6 +207,7 @@ export class MarginApp {
   }
   private headEl!: HTMLElement;
   private heroEl!: HTMLElement;
+  private heroAway = false;
   private mainEl!: HTMLElement;
   private sectionNodes = new Map<HomeSection, Node[]>();
   private orderKey = '';
@@ -217,6 +218,20 @@ export class MarginApp {
     const noHero = hide.includes('search');
     this.headEl.classList.toggle('no-search', !noHero);
     this.bg.setFocus(noHero ? null : this.heroEl);
+    this.syncHeroAway();
+  }
+
+  private syncHeroAway(): void {
+    let away = false;
+    if (this.app.isConnected && !this.settings.homeHide.includes('search') && !this.app.classList.contains('hs-open')) {
+      const headRect = this.headEl.getBoundingClientRect();
+      const heroRect = this.heroEl.getBoundingClientRect();
+      const headerBottom = headRect.bottom || 72;
+      away = this.heroAway ? heroRect.top < headerBottom + 8 : heroRect.top <= headerBottom;
+    }
+    this.heroAway = away;
+    this.headEl.classList.toggle('hs-away', away);
+    this.app.classList.toggle('hs-away', away);
   }
 
   /** 按设置顺序移动同一批节点；不重建 DOM，吸顶/无限滚动/预览/事件都保留 */
@@ -228,6 +243,7 @@ export class MarginApp {
       const nodes = this.sectionNodes.get(id);
       if (nodes) this.mainEl.append(...nodes);
     }
+    this.syncHeroAway();
   }
 
   private showFoot(): void {
@@ -366,6 +382,7 @@ export class MarginApp {
     }
     let scrollT = 0;
     this.app.addEventListener('scroll', () => {
+      this.syncHeroAway();
       this.bg.redraw();
       if (!scrollT) this.app.classList.add('scrolling');
       clearTimeout(scrollT);
@@ -378,7 +395,7 @@ export class MarginApp {
     }, { passive: true });
     const lg = filtersIn(this.root);
     attachNavigationGlass(head, lg);
-    attachGlass(tabs, lg); attachGlass(refresh, lg); attachGlass(this.batchBar, lg);
+    attachGlass(tabs, lg); attachGlass(refresh, lg); attachGlass(this.backBtn, lg); attachGlass(rank, lg); attachGlass(this.batchBar, lg);
     bindCardMenu(this.grid, cm, () => this.app, { onBlock: (x) => this.blockUp(x), onLater: () => later.open(), onDislike: (x, el) => this.nope(x, el) });
     const favGrid = this.fav.el.querySelector('.fav-grid') as HTMLElement | null;
     if (favGrid) bindCardMenu(favGrid, cm, () => this.app, { onLater: () => later.open() });
@@ -389,18 +406,29 @@ export class MarginApp {
       if (e.boundingClientRect.bottom <= top) bar.classList.add('stuck');
       else if (e.boundingClientRect.top >= top) bar.classList.remove('stuck');
     }, { root: this.app, rootMargin: '-72px 0px 0px 0px', threshold: [0, 1] }).observe(barMark);
-    // 大搜索框滚出视野后，顶栏的小搜索框淡入（v0.47，评论区：往下滑时搜索栏能跟着走）
-    new IntersectionObserver(([e]) => {
-      head.el.classList.toggle('hs-away', !e.isIntersecting && e.boundingClientRect.top < 80);
-    }, { root: this.app, rootMargin: '-72px 0px 0px 0px', threshold: 0 }).observe(hero);
+    // 大搜索框进入顶栏前交接，避免透过透明顶栏看到两个搜索框。
+    new IntersectionObserver(() => this.syncHeroAway(), {
+      root: this.app, rootMargin: '-72px 0px 0px 0px', threshold: [0, 0.25, 0.5, 0.75, 1],
+    }).observe(hero);
+    hero.addEventListener('focusout', () => requestAnimationFrame(() => this.syncHeroAway()));
+    this.syncHeroAway();
 
     new IntersectionObserver((es) => { if (!this.batchOn() && es.some((e) => e.isIntersecting)) this.load(); }, { root: this.app, rootMargin: '900px 0px' }).observe(this.sentinel);
-    // 从个人空间等页面的入口跳回首页时直接打开对应面板：bilibili.com/#fav、#later
+    new ResizeObserver(() => {
+      if (!this.batchOn() || !this.items.length) return;
+      const size = this.batchSize;
+      if (size === this.renderedBatchSize) return;
+      this.batchStart = batchStartOf(this.batchStart, size);
+      this.renderWindow();
+      this.maybePreload();
+    }).observe(this.grid);
+    // 从个人空间等页面的入口跳回首页时直接打开对应面板：bilibili.com/#fav、#bangumi、#cinema、#later
     const hashOpen = () => {
       const k = location.hash.slice(1);
-      if (k !== 'fav' && k !== 'later') return;
+      if (k !== 'fav' && k !== 'bangumi' && k !== 'cinema' && k !== 'later') return;
       history.replaceState(null, '', location.pathname + location.search);
-      if (k === 'fav') this.fav.open(); else later.open();
+      if (k === 'later') later.open();
+      else dispatchEvent(new CustomEvent('margin:open-fav', { cancelable: true, detail: k === 'fav' ? undefined : { tab: k } }));
     };
     hashOpen();
     addEventListener('hashchange', hashOpen);
@@ -505,8 +533,8 @@ export class MarginApp {
     this.status.replaceChildren();
     this.done = false;
     this.loading = false;
-    this.page = 1;
-    this.appIdx = 0;
+    if (!keep || this.tab !== 'popular' || prev.done) this.page = 1;
+    if (!keep) this.appIdx = 0;
     this.followOffset = '';
     resetRank();
     resetClassics();
@@ -531,6 +559,7 @@ export class MarginApp {
   private async swapFeed(gen: number, prev: { snap: Snap | null; page: number; appIdx: number; followOffset: string; done: boolean }): Promise<void> {
     const fresh = { items: [] as Video[], seen: new Set<string>() };
     const frag = document.createDocumentFragment();
+    const previousVideos = this.tab === 'rcmd' || this.tab === 'popular' ? this.seen : null;
     const target = this.videoTop();
     // 已经停在视频区顶部以上（含页面最顶部）就不动，只有往下翻过才拉回来
     const stay = this.app.scrollTop <= target;
@@ -542,9 +571,10 @@ export class MarginApp {
     this.refreshBusy(true);
     try {
       for (let batches = 0; batches < 4; batches++) {
-        if (batches && (this.done || got >= need)) break;
-        const list = await this.fetchBatchRetry(fresh, gen, batches === 0 ? 'refresh' : 'scroll');
+        if (batches && (this.done || (got > 0 && got >= need))) break;
+        let list = await this.fetchBatchRetry(fresh, gen, batches === 0 ? 'refresh' : 'scroll');
         if (!list || gen !== this.gen) return;
+        if (previousVideos) list = list.filter((v) => !previousVideos.has(v.bvid) && !this.gone.has(v.bvid));
         await this.filter.prepare(list.map((v) => v.bvid));
         if (gen !== this.gen) return;
         const added = this.appendCards(list, fresh, frag);
@@ -553,6 +583,7 @@ export class MarginApp {
         if (!added && got) break;
       }
       if (gen !== this.gen) return;
+      if (previousVideos && !got) throw new Error(this.tab === 'popular' ? '暂时没有新的热门视频' : '暂时没有新的推荐视频');
       this.items = fresh.items;
       this.seen = fresh.seen;
       // 换列表时关掉滚动锚定：否则吸顶栏展开/收起、骨架进出会让浏览器反复补偿 scrollTop，页面来回滑
@@ -665,7 +696,11 @@ export class MarginApp {
 
   /** 批次导航只在推荐标签生效；开启期间由悬浮条接管翻页，不再随滚动补页 */
   private batchOn(): boolean { return this.tab === 'rcmd' && this.settings.batchNav; }
-  private get batchSize(): number { return this.settings.batchSize; }
+  private get batchSize(): number {
+    if (!this.settings.batchAutoSize) return this.settings.batchSize;
+    const columns = Number(getComputedStyle(this.app).getPropertyValue('--cols')) || 6;
+    return columns * 2;
+  }
   private get batchTotal(): number { return batchCount(this.items.length, this.batchSize); }
   private get batchAt(): number { return batchIndexOf(this.batchStart, this.batchSize); }
 
@@ -718,7 +753,8 @@ export class MarginApp {
   private renderWindow(top?: number): void {
     const token = ++this.batchRender;
     const start = this.batchStart;
-    const win = this.items.slice(start, start + this.batchSize);
+    this.renderedBatchSize = this.batchSize;
+    const win = this.items.slice(start, start + this.renderedBatchSize);
     this.syncBatchBar();
     void this.filter.prepare(win.map((v) => v.bvid)).then(() => {
       if (token !== this.batchRender || !this.batchOn()) return;
@@ -913,6 +949,7 @@ export class MarginApp {
   /** 设置里改动批次导航：开关重建队列，条数则围绕当前位置重新切窗 */
   private applyBatchSettings(prev: Settings): void {
     const s = this.settings;
+    const sizeChanged = prev.batchSize !== s.batchSize || prev.batchAutoSize !== s.batchAutoSize;
     if (prev.batchNav !== s.batchNav) {
       if (this.tab === 'rcmd') {
         this.recommendationRequest.abort();
@@ -930,12 +967,12 @@ export class MarginApp {
         this.repaint();
         this.fillIfShort();
       }
-    } else if (prev.batchSize !== s.batchSize && this.batchOn()) {
+    } else if (sizeChanged && this.batchOn()) {
       this.batchStart = batchStartOf(this.batchStart, this.batchSize);
       this.renderWindow();
     }
     // 打开预载、刚启用批次导航或每批条数变大时，立即补足前方内容
-    if (s.batchPrefetch && this.batchOn() && (prev.batchNav !== s.batchNav || prev.batchPrefetch !== s.batchPrefetch || prev.batchSize !== s.batchSize)) this.maybePreload();
+    if (s.batchPrefetch && this.batchOn() && (prev.batchNav !== s.batchNav || prev.batchPrefetch !== s.batchPrefetch || sizeChanged)) this.maybePreload();
     this.syncBatchBar();
   }
 
@@ -969,16 +1006,14 @@ export class MarginApp {
       this.followOffset = r.offset;
       this.done = !r.more;
     } else if (this.tab === 'classic') {
-      const me = (await account())?.mid;
-      if (gen !== this.gen) return [];
-      if (!me) throw new Error('登录后才能看关注的 UP 主');
-      const r = await followClassics(me);
+      const r = await followClassics(this.recommendationRequest.signal);
       if (gen !== this.gen) return [];
       list = r.list;
       this.done = r.done;
     } else {
-      const r = await popular(this.page++);
+      const r = await popular(this.page, this.recommendationRequest.signal);
       if (gen !== this.gen) return [];
+      this.page++;
       list = r.list;
       this.done = r.done;
     }
@@ -1015,7 +1050,7 @@ export class MarginApp {
     return added;
   }
 
-  private async load(attempt = 0): Promise<void> {
+  private async load(attempt = 0, emptyPages = 0): Promise<void> {
     if (!this.feedActive()) return;
     if (this.batchOn()) return this.loadFirstBatch(attempt);
     if (this.loading || this.done || this.fillRetry) return;
@@ -1042,16 +1077,21 @@ export class MarginApp {
       if (gen !== this.gen) return;
       skNodes.forEach((n) => (n as Element).remove());
       // 推荐接口偶发风控 / 超时：先静默重试两次，再给出重试按钮
-      if (attempt < 2) { this.loading = false; window.setTimeout(() => { if (gen === this.gen) this.load(attempt + 1); }, 800 * (attempt + 1)); return; }
+      if (attempt < 2) { this.loading = false; window.setTimeout(() => { if (gen === this.gen) this.load(attempt + 1, emptyPages); }, 800 * (attempt + 1)); return; }
       this.grid.style.minHeight = '';
       this.status.replaceChildren(h('span', {}, `加载失败：${(err as Error).message}`), h('button', { class: 'ghost small', type: 'button', onclick: () => this.load() }, '重试'));
       return;
     } finally {
       if (gen === this.gen) this.loading = false;
     }
-    // 有新条目但被过滤掉太多时继续补；重复批次交给下方的间隔重试。
-    if (gen === this.gen && newItems > 0 && added < 6 && attempt < 4) this.load(attempt + 1);
-    else if (gen === this.gen) {
+    if (gen !== this.gen || this.done) return;
+    // 关注动态有有效的下一页游标时，连续跳过最多三个空页。
+    const emptyFollowing = this.tab === 'following' && added === 0;
+    if (emptyFollowing && emptyPages < 3) {
+      void this.load(0, emptyPages + 1);
+    } else if (!emptyFollowing && newItems > 0 && added < 6 && attempt < 4) {
+      void this.load(attempt + 1, added > 0 ? 0 : emptyPages);
+    } else {
       // 连续几批都被过滤或重复：稍等再补，不让列表停在底部
       if (added === 0) this.fillRetry = window.setTimeout(() => {
         if (gen !== this.gen) return;

@@ -8,22 +8,29 @@
 .app[data-theme="dark"] .top :where([data-material]) { box-shadow: inset 0 1px 1px #ffffff42, inset 0 -1px 1px #0005, 0 3px 12px #0003; }
 /* Light catches the upper lip, not the whole capsule. The cool lower seam stays
    between a white keyline and a black cutout; neither edge changes the lens. */
-.app[data-theme="dark"] .top :where(.search,.et,.ts-c) {
+.app[data-theme="dark"] .top :where(.search,.et,.ts-c,.hd-settings) {
   outline: none;
   box-shadow: inset 0 1px 0 rgb(255 255 255 / .34), inset 0 -1px 0 rgb(120 137 151 / .20), 0 3px 8px -4px rgb(5 9 19 / .4);
 }
-.top .et-btn, .top .search input::placeholder, .top .search :is(.search-ph,kbd) { color: var(--nav-muted); }
+.top .et-btn, .top .hd-settings[data-material], .top .search:not(.has-hot) input::placeholder, .top .search :is(.search-ph,kbd) { color: var(--nav-muted); }
+.top .hd-settings[data-material] {
+  border: 0;
+  transition: color .2s var(--ease-out), background-color .4s cubic-bezier(1, 0, .4, 1), box-shadow .4s cubic-bezier(1, 0, .4, 1);
+}
+.top .hd-settings[data-material]:is(:hover, :focus-visible) { color: var(--nav-ink); background: color-mix(in srgb, var(--nav-ink) 8%, var(--nav-glass)); }
+.top .hd-settings[data-material]:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .top .et-btn:is(:hover,:focus-visible,[data-selected]), .top .search, .top .search input { color: var(--nav-ink); }
 .top .et-thumb { backdrop-filter: none !important; }
 .top .upload[data-material] { border-radius: 999px; background: var(--margin-primary, var(--nav-glass)); color: var(--margin-primary-fg, var(--nav-ink)); }
 .top .upload[data-material]:hover { transform: translateY(-1px); }
 .top .upload[data-material]:active { transform: scale(.97); }
 .app[data-glass="flat"] .top [data-material]:not(.upload) { background: var(--surface); backdrop-filter: none !important; }
+.app[data-glass="flat"] .top .hd-settings[data-material]:is(:hover, :focus-visible) { background: color-mix(in srgb, var(--ink) 8%, var(--surface)); }
 /* 投稿是强调色主操作：平面模式下也要保留强调底色。否则 --surface 底 + --margin-primary-fg(#fff)
    会白字白底，选哔哩蓝/粉时图标和文字都看不见（GitHub #176） */
 .app[data-glass="flat"] .top .upload[data-material] { background: var(--margin-primary, var(--surface)); color: var(--margin-primary-fg, var(--nav-ink)); backdrop-filter: none !important; }
 @media (prefers-contrast: more), (forced-colors: active) {
-  .app .top :is(.search,.et,.ts-c) { background: var(--surface); backdrop-filter: none !important; box-shadow: none; outline: 1px solid currentColor; }
+  .app .top :is(.search,.et,.ts-c,.hd-settings) { background: var(--surface); backdrop-filter: none !important; box-shadow: none; outline: 1px solid currentColor; }
   .top .et-btn:is(:focus-visible,:hover,[data-selected]) { outline: 2px solid currentColor; outline-offset: -2px; }
 }
 @media(prefers-reduced-transparency:reduce) {

@@ -1,7 +1,8 @@
-import { loadSettings, onSettingsChange } from '../../shared/settings';
+import { loadSettings, onSettingsChange, saveSettings } from '../../shared/settings';
 import { openBili } from '../navigation';
 import { uiReducedMotion as reducedMotion } from '../motion';
 import { forgetSearch, hotSearch, rememberSearch, searchHistory, searchUrl, suggest } from '../api/search';
+import { isSearchHistoryEnabled } from '../api/search-history';
 import { h, highlight, icon, ICONS } from './dom';
 import { acceptTextDrop } from './text-drop';
 import { WATCH_SEARCH_KEY } from '../watch-search-keys';
@@ -61,6 +62,7 @@ export function createCommandPalette(commands: Command[]): Palette {
   let csel = 0;
   let sugg: Row[] = [];
   let hot: Row[] = [];
+  let hideHot = false, hotPrefsReady = false, loadingHot = false;
   let ctrl: AbortController | null = null;
   let timer = 0;
   let lastFocus: Element | null = null;
@@ -76,13 +78,23 @@ export function createCommandPalette(commands: Command[]): Palette {
   });
   const cmdRow = (c: Command): Row => ({ id: c.id, title: c.title, desc: c.desc, cat: c.cat, icon: c.icon, shortcut: c.shortcut, run: () => { bump(c.id); close(); c.run(); } });
 
+  function fetchHot(): void {
+    if (!hotPrefsReady || hideHot || loadingHot) return;
+    loadingHot = true;
+    void hotSearch().then(items => {
+      if (hideHot) return;
+      hot = items.map((x, n) => searchRow(x.keyword, 'hot', esc(x.name), n + 1));
+      if (el.dataset.open === 'true' && !input.value.trim()) render();
+    }).catch(() => {}).finally(() => { loadingHot = false; });
+  }
+
   function searchSections(): [string, Row[]][] {
     const q = input.value.trim();
     const out: [string, Row[]][] = [];
     if (!q) {
       const hist = searchHistory().slice(0, 5).map((s) => searchRow(s, 'history'));
       if (hist.length) out.push(['最近搜索', hist]);
-      if (hot.length) out.push(['bilibili 热搜', hot]);
+      if (!hideHot && hot.length) out.push(['bilibili 热搜', hot]);
     } else {
       out.push(['搜索', [
         { id: 'go', title: `搜索「${q}」`, cat: '搜索', icon: ICONS.search, shortcut: '↵', run: () => go(q) },
@@ -138,6 +150,13 @@ export function createCommandPalette(commands: Command[]): Palette {
     if (pane === 'r' && !cmds.length && rows.length) pane = 'l';
     let i = 0;
     list.replaceChildren(...ls.map(([t, r]) => group(t, r.length, r.map((row) => item(row, i++, 'cp', false)))));
+    if (!input.value.trim() && !isSearchHistoryEnabled()) {
+      list.prepend(h('div', { class: 'cp-hist-hint' }, h('span', {}, '搜索记录未开启'),
+        h('button', { class: 'cp-hist-enable', type: 'button',
+          onpointerdown: (e: Event) => e.preventDefault(),
+          onclick: () => { input.focus(); void saveSettings({ searchHistory: true }).catch(() => {}); },
+        }, '开启记录')));
+    }
     if (!rows.length) list.append(h('div', { class: 'cp-empty' }, icon(ICONS.search), h('p', {}, '输入关键词搜索视频和 UP 主')));
     let j = 0;
     side.replaceChildren(...rs.map(([t, r]) => group(t, r.length, r.map((row) => item(row, j++, 'cc', true)))));
@@ -254,7 +273,7 @@ export function createCommandPalette(commands: Command[]): Palette {
     morphKbd.textContent = 'Esc';
     el.style.setProperty('--cp-k', String(animK));
     // 顶栏搜索框可能正在轮播热搜；形变当帧沿用同一句话，避免点击瞬间文字跳变
-    const word = origin?.querySelector('.search-ph-w:not(.out)')?.textContent?.trim();
+    const word = !hideHot && origin?.querySelector('.search-ph-w:not(.out)')?.textContent?.trim();
     input.placeholder = word || '搜索视频、UP 主';
     input.classList.toggle('hot-ph', !!word);
     input.value = q; pane = 'l'; sel = 0; csel = 0; sugg = [];
@@ -288,7 +307,7 @@ export function createCommandPalette(commands: Command[]): Palette {
       input.focus(); input.setSelectionRange(q.length, q.length);
     });
     if (q) input.dispatchEvent(new Event('input'));
-    hotSearch().then((list2) => { hot = list2.map((x, n) => ({ ...searchRow(x.keyword, 'hot', esc(x.name), n + 1) })); if (el.dataset.open === 'true' && !input.value.trim()) render(); });
+    fetchHot();
   }
   function close(immediate = false): void {
     if (immediate) {
@@ -339,8 +358,23 @@ export function createCommandPalette(commands: Command[]): Palette {
   document.addEventListener('visibilitychange', () => { if (document.hidden) close(true); });
 
   let cmdK = true;
-  loadSettings().then((st) => { cmdK = st.cmdK; syncKeyHint(cmdK); animK = 100 / st.paletteSpeed; }).catch(() => {});
-  onSettingsChange((n, p) => { if (n.searchStyle !== p.searchStyle) close(); if (n.cmdK !== p.cmdK) syncKeyHint(n.cmdK); cmdK = n.cmdK; animK = 100 / n.paletteSpeed; });
+  const applyHideHot = (hide: boolean) => {
+    hotPrefsReady = true;
+    hideHot = hide;
+    if (hideHot) {
+      hot = [];
+      input.placeholder = '搜索视频、UP 主';
+      input.classList.remove('hot-ph');
+      if (el.dataset.open === 'true') render();
+    } else if (el.dataset.open === 'true') fetchHot();
+  };
+  loadSettings().then((st) => { cmdK = st.cmdK; syncKeyHint(cmdK); animK = 100 / st.paletteSpeed; applyHideHot(st.hideHotSearch); }).catch(() => {});
+  onSettingsChange((n, p) => {
+    if (n.searchStyle !== p.searchStyle) close();
+    if (n.cmdK !== p.cmdK) syncKeyHint(n.cmdK);
+    cmdK = n.cmdK; animK = 100 / n.paletteSpeed;
+    if (!hotPrefsReady || n.hideHotSearch !== p.hideHotSearch) applyHideHot(n.hideHotSearch);
+  });
   addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && el.dataset.open === 'true') { e.preventDefault(); close(); return; }
     if (isCommandShortcut(e)) { e.preventDefault(); el.dataset.open === 'true' ? close() : open(); return; }

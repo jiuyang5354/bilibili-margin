@@ -79,7 +79,7 @@ export function glassFolder(o: GFOptions): GlassFolderApi {
   const pendingArt = new Map<HTMLCanvasElement, () => void>();
   let files: GFFile[] = [];
 
-  const root = h('div', { class: 'gf-root', style: `width:${width}px;height:${(H + HEADROOM) * k}px` });
+  const root = h('div', { class: 'gf-root', style: `width:${width}px;height:${(H + HEADROOM) * k}px;--gf-k:${k}` });
   const stage = h('div', { class: 'gf-stage', style: `transform:translateY(${HEADROOM * k}px) scale(${k})` });
   const tilt = h('div', { class: 'gf-tilt' });
 
@@ -301,8 +301,9 @@ export function glassFolder(o: GFOptions): GlassFolderApi {
   const ro = new ResizeObserver(([entry]) => {
     const w = entry.contentRect.width;
     if (!w || Math.abs(w - measuredWidth) < .5) return;
-    measuredWidth = w;k = w / W;
+    measuredWidth = w; k = w / W;
     invalidatePointer();
+    root.style.setProperty('--gf-k', String(k));
     root.style.height = `${(H + HEADROOM) * k}px`;
     stage.style.transform = `translateY(${HEADROOM * k}px) scale(${k})`;
   });

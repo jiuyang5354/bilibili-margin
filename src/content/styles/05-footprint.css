@@ -11,6 +11,20 @@
 .app[data-theme="dark"] .fp-card .fp-day-b:hover:not(:disabled) { background: rgb(255 255 255 / .2); }
 .app[data-theme="dark"] .fp-card[data-view="month"] .fp-foot { border-top-color: rgb(255 255 255 / .2); }
 .fp-card .eyebrow { margin-bottom: 10px; white-space: nowrap; }
+.fp-empty-state { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 20px; width: 100%; }
+.fp-empty-copy { flex: 1 1 220px; min-width: 0; color: var(--muted); font: 13px/1.5 var(--sans); }
+.fp-empty-copy .eyebrow { margin-bottom: 4px; }
+.fp-empty-acts { display: flex; flex-wrap: wrap; gap: 8px; }
+.fp-sync-btn {
+  flex: none; display: inline-flex; align-items: center; justify-content: center;
+  height: 32px; padding: 0 14px; border-radius: 999px; border: 1px solid var(--line);
+  background: var(--chip); color: var(--ink); font: 500 12px/1 var(--sans); white-space: nowrap; cursor: pointer;
+  transition: background .15s var(--ease-out), border-color .15s var(--ease-out);
+}
+.fp-sync-btn:hover:not(:disabled) { background: var(--surface); border-color: var(--muted); }
+.app[data-theme="dark"] .fp-sync-btn { border-color: rgb(255 255 255 / .25); color: #fff; }
+.app[data-theme="dark"] .fp-sync-btn:hover:not(:disabled) { border-color: rgb(255 255 255 / .6); }
+.fp-sync-btn:disabled { opacity: .55; cursor: wait; }
 /* 液态玻璃：底色交给背景着色器的透镜画（bg/lens.ts），这里只留投影 */
 .app[data-theme="dark"] .fp-head { margin: 0; font: 400 24px/1.3 var(--serif); letter-spacing: .01em; }
 .fp-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 16px 20px; margin-top: 16px; }
@@ -74,7 +88,7 @@
 .fp-disclosure { flex: none; min-height: 32px; border: 1px solid var(--line); border-radius: 999px; padding: 0 12px; font: 500 12px/1.3 var(--sans); color: var(--ink); }
 .fp-disclosure:hover { background: var(--chip); }
 .fp-brief-status { display: none; }
-.fp-card[data-sync-state="read-error"] .fp-brief-status { display: block; flex-basis: 100%; font-size: 12px; color: var(--muted); }
+.fp-card[data-sync-state="read-error"] .fp-brief-status { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; flex-basis: 100%; font-size: 12px; color: var(--muted); }
 
 /* 21st「Glass Calendar」：年 / 月分段切换 + 月视图日期条 */
 .fp-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 10px; }

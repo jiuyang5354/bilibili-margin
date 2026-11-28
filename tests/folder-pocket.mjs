@@ -211,6 +211,20 @@ try {
   check('More menu remains navigable with the keyboard', await file.locator('[role="menuitem"]:focus').innerText() === '在 B 站打开');
   await page.keyboard.press('Escape');
   check('closing the menu restores focus to its key', await key.evaluate(el => el.matches(':focus') && el.getAttribute('aria-expanded') === 'false'));
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  const transitions = await file.evaluate(card => {
+    const read = sel => {
+      const style = getComputedStyle(card.querySelector(sel));
+      return { property: style.transitionProperty, duration: style.transitionDuration };
+    };
+    return { key: read('.gf-key'), menu: read('.gf-menu') };
+  });
+  check('folder key and menu transitions parse cleanly instead of being dropped',
+    transitions.key.property === 'transform, box-shadow, opacity, scale'
+    && transitions.key.duration.split(',').every(d => parseFloat(d) > 0)
+    && transitions.menu.property === 'opacity, transform, visibility'
+    && parseFloat(transitions.menu.duration) > 0);
+  await page.emulateMedia({ reducedMotion: 'reduce' });
 
   await page.goto('https://space.bilibili.com/1/favlist');
   await spaceCover.locator('img').evaluate(img => img.decode());

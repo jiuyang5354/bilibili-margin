@@ -1,17 +1,18 @@
-import { followFeed, followingLive, portal, toDyn, type Dyn } from '../api/dyn';
+import { DYN_FEATURES, followFeed, followingLive, portal, toDyn, type Dyn } from '../api/dyn';
 import { historyList, type Cursor } from '../api/history';
 import { folders } from '../api/fav';
 import { watchLater, removeWatchLater } from '../api/search';
 import { toast } from './controls';
 import { unread } from '../api/msg';
 import { bvidFromHref } from '../tags';
-import { h, icon, ICONS } from './dom';
+import { h, icon, ICONS, isBiliUrl } from './dom';
 import { getJSON } from '../api/http';
 import { dynCard } from './dyn';
 import type { FilterRuntime } from '../filter-runtime';
 import type { FilterTarget } from '../filter';
 import { targetOfPopRow } from '../filter-targets';
 import { laterButton } from './later-btn';
+import { openBili } from '../navigation';
 import { loadSettings, onSettingsChange, saveSettings } from '../../shared/settings';
 
 /** 悬停多久才弹出：只是路过顶栏时不打扰 */
@@ -151,6 +152,7 @@ export function attachHoverList(btn: HTMLElement, spec: PopSpec, filter?: Filter
     for (const link of content.querySelectorAll<HTMLAnchorElement>('.dy-pics a')) {
       const card = link.closest<HTMLElement>('.dy');
       link.href = card?.dataset.href || d.url;
+      link.rel = isBiliUrl(link.href) ? 'noopener' : 'noopener noreferrer';
       link.setAttribute('aria-label', '打开动态详情');
     }
     // 媒体链接直接跳转，拦截原卡片的图片查看器；正文单击保留阅读。
@@ -167,7 +169,7 @@ export function attachHoverList(btn: HTMLElement, spec: PopSpec, filter?: Filter
       if ((e.target as Element).closest('button, a')) return;
       e.preventDefault();
       e.stopPropagation();
-      window.open(d.url, '_blank', 'noopener,noreferrer');
+      openBili(d.url, '_blank', 'noopener', e);
     });
     return content;
   };
@@ -204,7 +206,7 @@ export function attachHoverList(btn: HTMLElement, spec: PopSpec, filter?: Filter
       detailRequest = request;
       const timeout = window.setTimeout(() => request.abort(), 10000);
       try {
-        const response = await getJSON<{ item: unknown }>('/x/polymer/web-dynamic/v1/detail', { id: d.id, features: 'itemOpusStyle' }, request.signal);
+        const response = await getJSON<{ item: unknown }>('/x/polymer/web-dynamic/v1/detail', { id: d.id, features: DYN_FEATURES }, request.signal);
         const fresh = toDyn(response.item);
         if (!fresh) throw new Error('empty');
         if (current === detailGeneration) {
@@ -419,14 +421,15 @@ export function attachHoverList(btn: HTMLElement, spec: PopSpec, filter?: Filter
 /* ---------- 各入口的数据 ---------- */
 
 function dynSummary(d: Dyn): { line: string; cover: string; kind: string } {
-  if (d.video) return { line: d.video.title, cover: d.video.cover, kind: '视频' };
-  if (d.article) return { line: d.article.title, cover: d.article.cover, kind: '专栏' };
+  if (d.video) return { line: d.video.title, cover: d.video.cover, kind: d.badge || '视频' };
+  if (d.article) return { line: d.article.title, cover: d.article.cover, kind: d.badge || '专栏' };
+  if (d.blocked) return { line: d.title || d.text || d.blocked.title, cover: '', kind: d.blocked.charging ? (d.badge || '充电专属') : '动态' };
   const o = d.orig;
   if (o && !d.text) {
     const s = dynSummary(o);
     return { line: `转发 @${o.author}：${s.line}`, cover: s.cover, kind: '转发' };
   }
-  return { line: d.title || d.text || '分享了动态', cover: d.pics[0] ?? '', kind: d.pics.length ? '图文' : '动态' };
+  return { line: d.title || d.text || '分享了动态', cover: d.pics[0] ?? '', kind: d.badge || (d.pics.length ? '图文' : '动态') };
 }
 
 const dur = (s: number) => { const m = Math.floor(s / 60); return m >= 60 ? `${Math.floor(m / 60)}:${String(m % 60).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}` : `${m}:${String(s % 60).padStart(2, '0')}`; };

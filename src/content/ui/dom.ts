@@ -13,9 +13,23 @@ export function h<K extends keyof HTMLElementTagNameMap>(tag: K, attrs: Attrs = 
     else el.setAttribute(k, v === true ? '' : String(v));
   }
   for (const c of children) if (c) el.append(c);
-  if (tag === 'a') el.setAttribute('rel', [...new Set(`${el.getAttribute('rel') ?? ''} noopener noreferrer`.trim().split(/\s+/))].join(' '));
+  if (tag === 'a') {
+    const sameSite = isBiliUrl(el.getAttribute('href') ?? '');
+    const tokens = `${el.getAttribute('rel') ?? ''} noopener${sameSite ? '' : ' noreferrer'}`.trim().split(/\s+/);
+    el.setAttribute('rel', [...new Set(sameSite ? tokens.filter((t) => t !== 'noreferrer') : tokens)].join(' '));
+  }
   if (tag === 'img') el.setAttribute('referrerpolicy', 'no-referrer');
   return el;
+}
+
+/** 站内 *.bilibili.com 链接不附带 noreferrer，避免 Chromium / Helium 丢弃跨标签页用户激活导致视频默认静音播放；外链仍保留 noreferrer。 */
+export function isBiliUrl(value: string): boolean {
+  if (!value) return false;
+  try {
+    const url = new URL(value, location.href);
+    return (url.protocol === 'https:' || url.protocol === 'http:')
+      && (url.hostname === 'bilibili.com' || url.hostname.endsWith('.bilibili.com'));
+  } catch { return false; }
 }
 
 export function safeUrl(value: string, image = false): boolean {

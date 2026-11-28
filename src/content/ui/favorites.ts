@@ -1,4 +1,4 @@
-import { collectedFolders, createFolder, deleteFolder, folderPlayUrl, folderUrl, folderVideos, folders, seasonVideos, type Folder } from '../api/fav';
+import { collectedFolders, createFolder, deleteFolder, folderPlayUrl, folderUrl, folderVideos, followedMedia, folders, seasonVideos, type Folder, type FollowMedia } from '../api/fav';
 import { videoCard, skeleton, cardData } from './card';
 import { h, icon, ICONS } from './dom';
 import { glassFolder, type GFFile, type GlassFolderApi } from './glass-folder';
@@ -13,7 +13,10 @@ import { segmented } from './controls';
 import { uiReducedMotion } from '../motion';
 import { favoriteActions } from './favorite-actions';
 
-/** 收藏夹抽屉：玻璃文件夹 → 视频网格（无限加载） */
+export type FavGroup = 'created' | 'collected' | 'bangumi' | 'cinema';
+const FOLLOW_FILTERS: [0 | 1 | 2 | 3, string][] = [[0, '全部'], [1, '想看'], [2, '在看'], [3, '看过']];
+
+/** 收藏夹抽屉：玻璃文件夹 / 订阅内容 / 追番 / 追剧（无限加载） */
 export function createFavorites(onRender: (grid: HTMLElement) => void, direct: () => boolean = () => true, filter?: FilterRuntime): Sheet {
   let loaded = false, loading = false;
   const shelf = h('div', { class: 'shelf' });
@@ -22,20 +25,89 @@ export function createFavorites(onRender: (grid: HTMLElement) => void, direct: (
   const sentinel = h('div', { class: 'sentinel' });
   const crumb = h('div', { class: 'crumb' });
   let current: Folder | null = null;
+  let query = '';
+  let searchScope: 'folder' | 'all' = 'folder';
   let page = 1;
   let more = false;
   let busy = false;
   let paused = false, pageFailed = false;
   let gen = 0;
   let folderList: Folder[] = [];
-  let group: 'created' | 'collected' = 'created';
+  let group: FavGroup = 'created';
+  let followStatus: 0 | 1 | 2 | 3 = 0;
+  let myMid = 0;
   let listGen = 0, folderPage = 1, foldersBusy = false;
+  const isFollowGroup = (g: FavGroup = group): g is 'bangumi' | 'cinema' => g === 'bangumi' || g === 'cinema';
+  const searchInput = h('input', {
+    type: 'search', class: 'fav-search-in', placeholder: '搜索收藏夹内视频',
+    'aria-label': '搜索收藏夹内视频', autocomplete: 'off',
+  }) as HTMLInputElement;
+  let searchTimer = 0;
+  const applySearch = () => {
+    const next = searchInput.value.trim();
+    if (next === query || !current) return;
+    query = next;
+    reloadFolder();
+  };
+  const scopeBtn = h('button', {
+    type: 'button', class: 'fav-search-scope', hidden: true, 'aria-pressed': 'false',
+    title: '切换搜索当前收藏夹或全部收藏夹',
+    'aria-label': '切换搜索范围：当前收藏夹或全部收藏夹',
+    onclick: () => {
+      if (group !== 'created' || folderList.length <= 1) return;
+      searchScope = searchScope === 'all' ? 'folder' : 'all';
+      syncSearchUi();
+      if (query) reloadFolder();
+    },
+  }, '当前') as HTMLButtonElement;
+  const syncSearchUi = () => {
+    const canAll = group === 'created' && folderList.length > 1;
+    if (!canAll) searchScope = 'folder';
+    scopeBtn.hidden = !canAll;
+    scopeBtn.textContent = searchScope === 'all' ? '全部' : '当前';
+    scopeBtn.setAttribute('aria-pressed', String(searchScope === 'all'));
+    searchInput.placeholder = searchScope === 'all' ? '搜索全部收藏夹' : '搜索收藏夹内视频';
+  };
+  searchInput.addEventListener('input', () => { clearTimeout(searchTimer); searchTimer = window.setTimeout(applySearch, 350); });
+  searchInput.addEventListener('keydown', (e) => {
+    e.stopPropagation();
+    if (e.key === 'Enter') { clearTimeout(searchTimer); applySearch(); }
+    if (e.key === 'Escape' && searchInput.value) {
+      e.preventDefault();
+      searchInput.value = '';
+      clearTimeout(searchTimer);
+      applySearch();
+    }
+  });
+  const searchBox = h('div', { class: 'fav-search' }, icon(ICONS.search), searchInput, scopeBtn);
+  const otherFavLink = h('a', {
+    class: 'ghost small fav-other-link', hidden: true, target: '_blank', rel: 'noopener',
+    title: '在 B 站原版查看图文、话题与课程收藏夹',
+  }, '图文 / 话题 / 课程', icon(ICONS.arrow)) as HTMLAnchorElement;
+  const updateOtherLink = () => {
+    if (!myMid) { otherFavLink.hidden = true; return; }
+    otherFavLink.hidden = false;
+    otherFavLink.rel = 'noopener';
+    if (group === 'bangumi') {
+      otherFavLink.href = `https://space.bilibili.com/${myMid}/bangumi?margin=off`;
+      otherFavLink.title = '在 B 站原版查看全部追番';
+      otherFavLink.replaceChildren('原版追番页', icon(ICONS.arrow));
+    } else if (group === 'cinema') {
+      otherFavLink.href = `https://space.bilibili.com/${myMid}/cinema?margin=off`;
+      otherFavLink.title = '在 B 站原版查看全部追剧';
+      otherFavLink.replaceChildren('原版追剧页', icon(ICONS.arrow));
+    } else {
+      otherFavLink.href = `https://space.bilibili.com/${myMid}/favlist?ftype=opus&margin=off`;
+      otherFavLink.title = '在 B 站原版查看图文、话题与课程收藏夹';
+      otherFavLink.replaceChildren('图文 / 话题 / 课程', icon(ICONS.arrow));
+    }
+  };
   const moreFolders = h('button', { type: 'button', class: 'btn', hidden: '', onclick: () => loadMoreFolders() }, '加载更多订阅') as HTMLButtonElement;
   const folderStatus = h('div', { class: 'status' });
   const retry = h('button', { type: 'button', class: 'fav-retry', onclick: () => {
     paused = false; recovery.hidden = true;
     for (const { gf } of previews.values()) previewObserver.observe(gf.el);
-    if (pageFailed || page === 1) void load();
+    if (pageFailed || page === 1) void (isFollowGroup() ? loadFollow() : load());
   } }, '重试加载') as HTMLButtonElement;
   const recovery = h('div', { class: 'fav-recovery', role: 'status', hidden: '' });
   const updateRetry = () => { retry.disabled = busy || activePreviews > 0; };
@@ -47,7 +119,12 @@ export function createFavorites(onRender: (grid: HTMLElement) => void, direct: (
     recovery.hidden = false;
     updateRetry();
   };
-  const tabs = segmented([['created', '我的收藏'], ['collected', '订阅内容']], group, (next) => {
+  const tabs = segmented<FavGroup>([
+    ['created', '我的收藏'],
+    ['collected', '订阅内容'],
+    ['bangumi', '追番'],
+    ['cinema', '追剧'],
+  ], group, (next) => {
     if (next === group) return;
     group = next; init();
   });
@@ -57,13 +134,13 @@ export function createFavorites(onRender: (grid: HTMLElement) => void, direct: (
       if (!loaded && !loading) init();
       else if (!paused) {
         previews.forEach(({ gf }) => previewObserver.observe(gf.el));
-        if (page === 1) void load();
+        if (page === 1) void (isFollowGroup() ? loadFollow() : load());
       }
     },
     onClose: () => { previewObserver.disconnect(); previewQueue.clear(); },
   });
   sheet.body.classList.add('fav-body');
-  sheet.body.append(tabs, shelf, folderStatus, moreFolders, crumb, grid, status, sentinel);
+  sheet.body.append(h('div', { class: 'fav-tabs-row' }, tabs, otherFavLink), shelf, folderStatus, moreFolders, crumb, grid, status, sentinel);
   // 21st ibelick Scroll Button: container-local scrolling, adapted to return upward.
   const toTop = h('button', { type: 'button', class: 'fav-to-top', onclick: () => sheet.body.scrollTo({ top: 0, behavior: uiReducedMotion() ? 'auto' : 'smooth' }) }, icon(ICONS.top), '返回顶部');
   sheet.el.querySelector('.sheet')!.append(h('footer', { class: 'fav-footer' }, recovery, toTop));
@@ -72,27 +149,122 @@ export function createFavorites(onRender: (grid: HTMLElement) => void, direct: (
   onSettingsChange((next,prev) => { if (next.favColumns !== prev.favColumns) setColumns(next.favColumns); });
   onRender(grid);
 
+  function pgcCard(item: FollowMedia, i: number): HTMLElement {
+    const coverSrc = item.cover ? `${item.cover}@300w_400h_1c.webp` : '';
+    return h('article', { class: 'pgc-card', style: `--i:${i % 15}` },
+      h('a', { class: 'pgc-cover', href: item.url, target: '_blank', rel: 'noopener', 'aria-label': item.title },
+        coverSrc ? h('img', { src: coverSrc, alt: '', loading: 'lazy', decoding: 'async', referrerpolicy: 'no-referrer' }) : null,
+        item.badge ? h('span', { class: 'pgc-badge' }, item.badge) : null,
+        item.indexShow ? h('span', { class: 'pgc-ep' }, item.indexShow) : null),
+      h('a', { class: 'pgc-title', href: item.url, target: '_blank', rel: 'noopener', title: item.title }, item.title),
+      h('div', { class: 'pgc-prog', title: item.progress || '尚未观看' }, item.progress || '尚未观看'));
+  }
+
+  function renderFollowCrumb(total?: number) {
+    const label = group === 'cinema' ? '追剧' : '追番';
+    const filters = h('div', { class: 'pgc-filters', role: 'group', 'aria-label': `${label}状态筛选` },
+      ...FOLLOW_FILTERS.map(([code, text]) => h('button', {
+        type: 'button', class: 'pgc-filter', 'aria-pressed': String(followStatus === code),
+        onclick: () => {
+          if (followStatus === code) return;
+          followStatus = code;
+          gen++; page = 1; more = true; busy = false; paused = false; pageFailed = false; recovery.hidden = true;
+          grid.replaceChildren(); status.replaceChildren();
+          renderFollowCrumb();
+          void loadFollow();
+        },
+      }, text)));
+    crumb.replaceChildren(
+      h('span', {}, label),
+      ...(total != null ? [h('small', {}, `${total} 部`)] : []),
+      filters,
+    );
+  }
+
+  async function loadFollow() {
+    if (paused || !sheet.isOpen() || busy || !more || !isFollowGroup(group)) return;
+    busy = true;
+    pageFailed = false;
+    const g = gen;
+    const activeGroup: 'bangumi' | 'cinema' = group;
+    const activeStatus = followStatus;
+    const sk = Array.from({ length: page === 1 ? 8 : 4 }, () => h('div', { class: 'pgc-card sk' },
+      h('div', { class: 'pgc-cover' }), h('div', { class: 'line' }), h('div', { class: 'line short' })));
+    grid.append(...sk);
+    try {
+      const r = await followedMedia(activeGroup, page, activeStatus, page === 1);
+      if (g !== gen) return;
+      sk.forEach((n) => n.remove());
+      if (!r) {
+        more = false;
+        otherFavLink.hidden = true;
+        status.replaceChildren(h('div', { class: 'empty' }, h('p', {}, `登录后才能看到你的${activeGroup === 'cinema' ? '追剧' : '追番'}`), h('a', { class: 'user', href: 'https://passport.bilibili.com/login', target: '_blank', rel: 'noopener' }, '去登录')));
+        return;
+      }
+      if (r.mid) { myMid = r.mid; updateOtherLink(); }
+      if (page === 1) renderFollowCrumb(r.total);
+      const start = grid.children.length;
+      r.list.forEach((item, i) => grid.append(pgcCard(item, start + i)));
+      page++;
+      more = r.more;
+      if (!more) {
+        const label = activeGroup === 'cinema' ? '追剧' : '追番';
+        status.replaceChildren(h('span', {}, grid.children.length ? '到底了' : `这里还没有${label}`));
+      }
+    } catch (e) {
+      if (g !== gen) return;
+      sk.forEach((n) => n.remove());
+      pageFailed = true;
+      pause(e);
+    } finally {
+      if (g === gen) { busy = false; updateRetry(); }
+    }
+  }
+
   async function init() {
     const g = ++listGen;
-    gen++; current = null; more = false; busy = false; foldersBusy = false; folderPage = 1;
+    gen++; current = null; query = ''; searchScope = 'folder'; searchInput.value = ''; clearTimeout(searchTimer); more = false; busy = false; foldersBusy = false; folderPage = 1;
     paused = false; pageFailed = false; recovery.hidden = true;
     folderList = [];
+    syncSearchUi();
     previewObserver.disconnect();
     previewQueue.clear();
     for (const { gf } of previews.values()) gf.dispose();
     previews.clear();
     crumb.replaceChildren(); grid.replaceChildren(); status.replaceChildren(); folderStatus.replaceChildren(); moreFolders.hidden = true; moreFolders.disabled = false;
+    updateOtherLink();
+    if (isFollowGroup()) {
+      shelf.hidden = true;
+      folderStatus.hidden = true;
+      grid.classList.add('fav-pgc-grid');
+      followStatus = 0;
+      page = 1;
+      more = true;
+      loaded = true;
+      loading = false;
+      renderFollowCrumb();
+      sheet.body.scrollTo({ top: 0 });
+      void loadFollow();
+      return;
+    }
+    shelf.hidden = false;
+    folderStatus.hidden = false;
+    grid.classList.remove('fav-pgc-grid');
     loaded = false; loading = true;
     shelf.replaceChildren(...Array.from({ length: 4 }, () => h('div', { class: 'gf-sk sk' })));
     try {
       const result = group === 'collected' ? await collectedFolders(1, true) : await folders(true).then((list) => list && ({ list, more: false }));
       if (g !== listGen) return;
       if (!result) {
+        otherFavLink.hidden = true;
         shelf.replaceChildren(h('div', { class: 'empty' }, h('p', {}, '登录后才能看到你的收藏夹'), h('a', { class: 'user', href: 'https://passport.bilibili.com/login', target: '_blank', rel: 'noopener' }, '去登录')));
         return;
       }
       loaded = true;
       folderList = result.list;
+      syncSearchUi();
+      if (folderList[0]?.mid) myMid = folderList[0].mid;
+      updateOtherLink();
       shelf.replaceChildren(...folderList.map((f, i) => folderCard(f, i)));
       if (group === 'created') shelf.append(newTile());
       else if (!folderList.length) folderStatus.textContent = '还没有订阅合集或收藏夹';
@@ -130,11 +302,13 @@ export function createFavorites(onRender: (grid: HTMLElement) => void, direct: (
   const ARTS: ArtPreset[] = ['aurora', 'ember', 'dusk', 'glacier', 'verdant'];
   const keyOf = (f: Folder) => `${f.kind ?? 'created'}:${f.id}`;
   const seasons = new Map<number, Promise<Video[]>>();
-  const videos = async (f: Folder, page: number) => {
-    if (f.kind !== 'season') return folderVideos(f.id, page);
+  const videos = async (f: Folder, page: number, keyword?: string, scope: 'folder' | 'all' = 'folder') => {
+    if (f.kind !== 'season') return folderVideos(f.id, page, keyword, scope);
     let pending = seasons.get(f.id);
     if (!pending) { pending = seasonVideos(f.id); pending.catch(() => seasons.delete(f.id)); seasons.set(f.id, pending); }
-    const list = await pending;
+    const all = await pending;
+    const q = keyword?.trim().toLowerCase();
+    const list = q ? all.filter((v) => v.title.toLowerCase().includes(q) || v.author.toLowerCase().includes(q)) : all;
     return { list: list.slice((page - 1) * 20, page * 20), more: page * 20 < list.length };
   };
   const firstPage = new Map<string, Promise<{ list: Video[]; more: boolean }>>();
@@ -295,21 +469,29 @@ export function createFavorites(onRender: (grid: HTMLElement) => void, direct: (
     if (current && keyOf(current) === key) { gen++; current = null; if (folderList[0]) open(folderList[0]); else { crumb.replaceChildren(); grid.replaceChildren(); status.replaceChildren(); } }
   }
 
-  function open(f: Folder) {
-    if (current && keyOf(current) === keyOf(f) && grid.children.length) return;
-    current = f;
+  function reloadFolder() {
+    if (!current) return;
     pageFailed = false;
     gen++;
     page = 1;
     more = true;
     busy = false;
-    shelf.querySelectorAll<HTMLElement>('.gf-root').forEach((el) => el.toggleAttribute('data-current', el.dataset.key === keyOf(f)));
-    crumb.replaceChildren(h('span', {}, f.title), h('small', {}, `${f.count} 个视频`));
-    if (f.count && f.kind !== 'season') crumb.append(h('a', { class: 'btn small fav-play-all', href: folderPlayUrl(f), target: '_blank', rel: 'noopener' }, '播放全部'));
     grid.replaceChildren();
     status.replaceChildren();
-    sheet.body.scrollTo({ top: 0 });
     load();
+  }
+
+  function open(f: Folder) {
+    if (current && keyOf(current) === keyOf(f) && !query && grid.children.length) return;
+    current = f;
+    query = '';
+    searchInput.value = '';
+    clearTimeout(searchTimer);
+    shelf.querySelectorAll<HTMLElement>('.gf-root').forEach((el) => el.toggleAttribute('data-current', el.dataset.key === keyOf(f)));
+    crumb.replaceChildren(h('span', {}, f.title), h('small', {}, `${f.count} 个视频`), searchBox);
+    if (f.count && f.kind !== 'season') crumb.append(h('a', { class: 'btn small fav-play-all', href: folderPlayUrl(f), target: '_blank', rel: 'noopener' }, '播放全部'));
+    sheet.body.scrollTo({ top: 0 });
+    reloadFolder();
   }
 
   async function load() {
@@ -317,10 +499,12 @@ export function createFavorites(onRender: (grid: HTMLElement) => void, direct: (
     busy = true;
     pageFailed = false;
     const g = gen;
+    const activeQuery = query;
+    const activeScope = searchScope;
     const sk = [...skeleton(page === 1 ? 6 : 3).childNodes];
     grid.append(...sk);
     try {
-      const r = await (page === 1 ? page1(current) : videos(current, page));
+      const r = await (page === 1 && !activeQuery ? page1(current) : videos(current, page, activeQuery, activeScope));
       if (g !== gen) return;
       await filter?.prepare(r.list.map((v) => v.bvid));
       if (g !== gen) return;
@@ -330,7 +514,7 @@ export function createFavorites(onRender: (grid: HTMLElement) => void, direct: (
       r.list.forEach((v, i) => {
         const card = videoCard(v, start + i, { compact: true });
         const folder = current!;
-        if (!folder.kind) {
+        if (!folder.kind && !(activeQuery && activeScope === 'all')) {
           card.append(favoriteActions(v, folder, () => folderList, (action, target) => {
             if (target) {
               firstPage.delete(keyOf(target));
@@ -362,7 +546,7 @@ export function createFavorites(onRender: (grid: HTMLElement) => void, direct: (
         grid.append(card);
       });
       more = r.more;
-      if (!more) status.replaceChildren(h('span', {}, grid.children.length ? '到底了' : '这个收藏夹是空的'));
+      if (!more) status.replaceChildren(h('span', {}, grid.children.length ? '到底了' : activeQuery ? (activeScope === 'all' ? `全部收藏夹中没有找到「${activeQuery}」相关视频` : `没有找到「${activeQuery}」相关视频`) : '这个收藏夹是空的'));
     } catch (e) {
       if (g !== gen) return;
       sk.forEach((n) => (n as Element).remove());
@@ -373,7 +557,7 @@ export function createFavorites(onRender: (grid: HTMLElement) => void, direct: (
     }
   }
 
-  new IntersectionObserver((es) => { if (es.some((e) => e.isIntersecting)) load(); }, { root: sheet.body, rootMargin: '600px 0px' }).observe(sentinel);
+  new IntersectionObserver((es) => { if (es.some((e) => e.isIntersecting)) void (isFollowGroup() ? loadFollow() : load()); }, { root: sheet.body, rootMargin: '600px 0px' }).observe(sentinel);
   filter?.onChange(() => {
     const f = filter;
     if (!f) return;
@@ -386,7 +570,22 @@ export function createFavorites(onRender: (grid: HTMLElement) => void, direct: (
       for (const id of previews.keys()) paintPreview(id);
     });
   });
-  // 顶栏「收藏夹」弹窗里的「全部收藏」：本页有收藏夹面板就直接打开，不再新开标签页
-  addEventListener('margin:open-fav', (e) => { e.preventDefault(); sheet.open(); });
+  // 顶栏「收藏夹」弹窗里的「全部收藏」与个人空间「追番／追剧」：本页有收藏夹面板就直接打开对应分栏
+  addEventListener('margin:open-fav', (e) => {
+    e.preventDefault();
+    const tab = (e as CustomEvent<{ tab?: FavGroup }>).detail?.tab;
+    const valid = tab && ['created', 'collected', 'bangumi', 'cinema'].includes(tab);
+    if (valid && tab !== group) {
+      group = tab;
+      tabs.set(tab);
+      loaded = false;
+      loading = false;
+      const alreadyOpen = sheet.isOpen();
+      sheet.open();
+      if (alreadyOpen) void init();
+      return;
+    }
+    sheet.open();
+  });
   return sheet;
 }

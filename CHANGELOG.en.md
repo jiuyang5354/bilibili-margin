@@ -4,6 +4,42 @@
 
 New entries are grouped under Added, Changed, and Fixed, following [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Version headings link to their GitHub releases. The display version and the browser update version are recorded separately so the latter can keep increasing for automatic updates.
 
+## [v0.7.3](https://github.com/jiuyang5354/bilibili-margin/releases/tag/v0.70.3) · 2026-11-28 · RTX playback compatibility, SDR-to-HDR, favorites search and UI fixes
+
+### Added
+
+- Added an RTX Video Enhancement compatibility toggle under Playback settings to remove player video-area corner clipping and masks so `<video>` stays eligible for Windows DirectComposition hardware overlays (NVIDIA RTX VSR / RTX Video HDR).
+- Added opt-in SDR-to-HDR enhancement (off by default) with a player toolbar HDR button, `Alt+H` shortcut, command palette / floating menu actions, and Soft / Standard / Vivid presets backed by WebGPU Extended HDR (`rgba16float`) with a calibrated fallback filter.
+- Added a Hide Hot Search toggle under Search & Header settings to disable trending placeholders and lists across the header, hero search, command palette, and activity feed sidebar.
+- Added periodic new-post polling on the activity feed with a floating “New items · click to refresh” pill, plus a manual Refresh button and persisted Auto-refresh switch (only auto-reloading near the top when no modal is open).
+- Added adjustable Dynamic post font size (`14 / 16 / 18 / 20 px`, #272) under Appearance settings for the activity feed and Space dynamic tab.
+- Added Anime (追番) and Drama/Docs (追剧) tabs next to My Favorites and Subscriptions in the favorites drawer with 3:4 poster cards, episode status, watch progress and All / Want / Watching / Watched filters. Clicking Anime/Drama on your own profile opens the drawer directly on the Anime tab.
+- Added keyword search to the favorites drawer and Space favorites page, including a Current / All folders scope toggle, root-level all-favorites search on your own profile, and local filtering for subscribed seasons.
+- Added an optional watch-page setting to auto-hide the fixed top navigation bar while scrolling down (off by default), revealing it again on scroll up or pointer hover near the top edge.
+
+### Changed
+
+- Replaced the native `<select>` in Favorites Move/Copy actions with a custom floating glass combobox listbox featuring proximity hover highlight, checkmark state, folder counts, viewport auto-flip, and full keyboard navigation.
+- Surfaced the Space collection order toggle (`默认排序 / 倒序排序`) directly beside the collection heading for immediate discoverability.
+- Added a subtle inline one-click opt-in prompt for local search history in the hero search and command palette while preserving privacy-first default-off behavior.
+- Ported PR #262 for automatic two-row recommendation batch sizing, refresh deduplication across recommended/popular feeds, empty-page skipping in following feeds, and abort-safe classics queues.
+- Unified the header settings button and sticky feed bar buttons (Previous batch / Ranking) with matching liquid-glass styling and aligned the header capsule endcap padding concentrically.
+- Improved 4-column favorites folder card text scaling and overflow menu sizing, prevented label squash while open, and matched the New Folder tile height to folder cards.
+- Added quick links to native non-video favorites (Posts / Topics / Courses) and passed non-video `ftype` favorite links through to native Bilibili pages.
+
+### Fixed
+
+- Removed unconditional `mask-image` and `isolation: isolate` on `.bpx-player-video-area` and paused the watch-page WebGL shader loop during active video playback to reduce Apple Silicon GPU load (#245) and prevent blank video layers (#171).
+- Eliminated 1–2px left/right pillarbox lines on 16:9 videos caused by subpixel player rounding while leaving 4:3, 21:9, vertical, and fullscreen video untouched.
+- Kept the web-fullscreen mini progress bar pinned cleanly to the visible viewport bottom without scrolling (#152).
+- Ported PR #271 (#265), PR #270, PR #269, PR #268, PR #267, and PR #266 covering UP hover card spacing/contrast, single-creator activity tab filtering, passive message refresh scroll preservation, whisper placeholder hydration, glass folder transition syntax, and history delete pagination.
+- Fixed the stretched button layout in the footprint error state, added bounded cold-worker retry and null-record handling, and offered a direct Reload action when the extension context has just updated.
+- Fixed rotating hot-search placeholder overlap in the new header search bar (#171), added narrow/375px single-column responsive layout on `t.bilibili.com`, and added cold-start module/settings retry for taskbar-pinned and PWA launches.
+- Fixed muted autoplay on strict Chromium builds such as Helium when opening videos from the homepage, activity feed, or exact search cards by keeping `rel="noopener"` (without `noreferrer`) on same-site `*.bilibili.com` links so cross-tab user activation is preserved, while external links keep `rel="noopener noreferrer"`.
+- Fixed blank post bodies for charging-exclusive dynamics (`MAJOR_TYPE_BLOCKED` / `is_only_fans`) across the activity feed, profile dynamics, and header hover previews by rendering an explicit charging-only notice card.
+- Fixed overlap between the centered hero search bar and the topbar search bar when scrolling down the homepage by handing off cleanly with a fade transition at the header edge (#274).
+- Fixed the Homepage Weather toggle being disabled when External Auxiliary Services is off so users can hide the weather placeholder card at any time while network weather lookups remain privacy-gated (#275).
+
 ## [v0.7](https://github.com/jiuyang5354/bilibili-margin/releases/tag/v0.70.0) · 2026-11-25 · Search navigation and player compatibility
 
 ### Added

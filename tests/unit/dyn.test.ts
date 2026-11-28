@@ -101,6 +101,52 @@ describe('动态正文与表情', () => {
     const original = item({ desc: { text: '[开心]', rich_text_nodes: [emoji] } });
     expect(toDyn({ ...item(), orig: original })?.orig?.richText?.[0].emoji).toContain('happy.gif');
   });
+  it('未解锁的充电专属动态解析为占位提示卡而非空白', () => {
+    const blocked = toDyn({
+      id_str: '900001', type: 'DYNAMIC_TYPE_NONE',
+      modules: {
+        module_author: { mid: 346563107, name: '波士顿圆脸', icon_badge: { text: '充电专属' } },
+        module_dynamic: {
+          desc: null,
+          major: {
+            type: 'MAJOR_TYPE_BLOCKED',
+            blocked: {
+              blocked_type: 3, title: '仅充电用户可见', hint_message: '加入充电即可解锁完整内容',
+              jump_url: '//space.bilibili.com/346563107', button: { text: '去充电', jump_url: 'javascript:alert(1)' },
+            },
+          },
+        },
+      },
+    })!;
+    expect(blocked.badge).toBe('充电专属');
+    expect(blocked.blocked).toEqual({
+      title: '仅充电用户可见',
+      hint: '加入充电即可解锁完整内容',
+      url: 'https://space.bilibili.com/346563107',
+      action: '去充电',
+      charging: true,
+    });
+
+    const upower = toDyn(item({ major: { type: 'MAJOR_TYPE_UPOWER_COMMON', upower_common: {
+      title_prefix: '充电专属', title: '本周问答汇总', jump_url: '//www.bilibili.com/opus/900002', button: { text: '查看详情' },
+    } } }))!;
+    expect(upower.blocked).toMatchObject({ title: '充电专属 · 本周问答汇总', url: 'https://www.bilibili.com/opus/900002', action: '查看详情', charging: true });
+
+    const fallback = toDyn({
+      id_str: '900003', type: 'DYNAMIC_TYPE_OPUS', basic: { is_only_fans: true },
+      modules: { module_author: { mid: 346563107, name: '波士顿圆脸' }, module_dynamic: { major: { type: 'MAJOR_TYPE_OPUS', opus: { summary: { text: '' } } } } },
+    })!;
+    expect(fallback.badge).toBe('充电专属');
+    expect(fallback.blocked?.charging).toBe(true);
+    expect(fallback.blocked?.title).toBe('充电专属动态');
+
+    const deleted = toDyn(item({ major: { type: 'MAJOR_TYPE_NONE', none: { tips: '源动态已被作者删除' } } }))!;
+    expect(deleted.blocked).toMatchObject({ title: '动态暂不可见', hint: '源动态已被作者删除', charging: false });
+
+    const chargingVideo = toDyn(item({ major: { archive: { bvid: 'BVcharge1', title: '充电专属视频', badge: { text: '充电专属' } } } }))!;
+    expect(chargingVideo.badge).toBe('充电专属');
+    expect(chargingVideo.blocked).toBeUndefined();
+  });
 });
 
 describe('评论标识与置顶评论', () => {

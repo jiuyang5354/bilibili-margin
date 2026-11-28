@@ -10,7 +10,8 @@ const MIGRATED_KEY = 'margin:activity-migrated-v2';
 export async function handleFootprint(m: FpMessage): Promise<unknown> {
   const v = await chrome.storage.local.get([ACTIVITY_KEY, SLOTS_KEY, LEGACY_KEY, MIGRATED_KEY]);
   const current = sanitizeActivity(v[ACTIVITY_KEY]);
-  if (v[ACTIVITY_KEY] !== undefined && !current) throw new Error('本机足迹数据格式异常，请先导出备份');
+  const raw: unknown = v[ACTIVITY_KEY];
+  if (raw !== null && raw !== undefined && !current) throw new Error('本机足迹数据格式异常，请先导出备份');
   const data: Activity = current ?? {};
   const legacy = sanitizeActivity(v[LEGACY_KEY]);
   if (legacy && v[MIGRATED_KEY] !== true) {

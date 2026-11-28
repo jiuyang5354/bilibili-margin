@@ -41,7 +41,20 @@ try {
   // 默认设置：外部服务关、旧版搜索栏。首次打开不走 sync()，依赖状态必须已经画好。
   await tab('搜索与顶栏').click(); await off(palSpeed, 'palette speed under classic search');
   await tab('隐私与数据').click(); await off(interval, 'update reminder');
-  await tab('首页').click(); await off(weather, 'weather');
+  assert.equal(await external.getAttribute('aria-checked'), 'false');
+  await tab('首页').click(); await live(weather, 'weather');
+  const weatherCard = page.locator('#margin-root .wx');
+  assert.equal(await weather.getAttribute('aria-checked'), 'true');
+  assert.equal(await weatherCard.count(), 1);
+  await weather.click();
+  assert.equal(await weather.getAttribute('aria-checked'), 'false');
+  await weatherCard.waitFor({ state: 'detached' });
+  assert.equal(await weatherCard.count(), 0);
+  await weather.click();
+  assert.equal(await weather.getAttribute('aria-checked'), 'true');
+  await weatherCard.waitFor({ state: 'attached' });
+  assert.equal(await weatherCard.count(), 1);
+  results.push('weather card can be hidden and restored while external services are off');
   await tab('内容过滤').click(); await off(sponsor, 'sponsor skip');
   await tab('隐私与数据').click(); await page.waitForTimeout(350); await page.screenshot({ path: join(out, 'external-off.png') });
   results.push('dependent controls greyed out on first open while external services are off');
@@ -50,7 +63,7 @@ try {
   await tab('总览').click(); await live(dialog.getByRole('button', { name: '检查更新', exact: true }), 'check update');
   results.push('manual update check stays clickable while external services are off');
 
-  // 打开外部服务：三个子项一起解禁，各自的值不变
+  // 打开外部服务：依赖项解禁，天气开关仍可用，各自的值不变
   await tab('隐私与数据').click();
   assert.equal(await external.getAttribute('aria-checked'), 'false');
   await external.click();
@@ -58,7 +71,7 @@ try {
   await live(interval, 'update reminder');
   await tab('首页').click(); await live(weather, 'weather'); assert.equal(await weather.getAttribute('aria-checked'), 'true');
   await tab('内容过滤').click(); await live(sponsor, 'sponsor skip'); assert.equal(await sponsor.getAttribute('aria-checked'), 'false');
-  results.push('enabling external services re-enables weather, sponsor skip and update reminders without changing their values');
+  results.push('enabling external services re-enables sponsor skip and update reminders and preserves the weather setting');
 
   // 关掉后再次变灰；从 storage 侧改回（弹窗开关、导入备份的路径）也要同步
   await tab('隐私与数据').click(); await external.click(); await off(interval, 'update reminder');

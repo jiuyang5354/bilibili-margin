@@ -18,17 +18,33 @@ export interface BackfillResult {
 }
 export const failedBackfill = (reason: BackfillReason): BackfillResult => ({ status: 'fail', reason, pages: 0, days: 0, entries: 0 });
 
-/** Reject both transport errors and an explicit { ok: false } from the worker. */
+export class ContextInvalidatedError extends Error {
+  readonly code = 'contextInvalidated';
+  constructor() { super('Extension context invalidated'); }
+}
+
+const RETRY_DELAYS = [250, 600];
+const TRANSIENT_MESSAGE_ERROR = /receiving end does not exist|(?:message channel|message port|connection) (?:was )?closed|disconnected port|timed?\s*out|timeout|超时/i;
+
+/** Retry transport failures and reject an explicit { ok: false } from the worker. */
 async function send(m: FpMessage): Promise<{ ok: true; data?: unknown }> {
-  let timer: ReturnType<typeof setTimeout> | undefined;
-  try {
-    const reply = await Promise.race([
-      chrome.runtime.sendMessage(m),
-      new Promise<never>((_, reject) => { timer = setTimeout(() => reject(new Error('足迹后台响应超时')), 8_000); }),
-    ]);
-    if (!reply || reply.ok !== true) throw new Error('足迹后台未确认保存，请刷新页面后重试');
-    return reply;
-  } finally { if (timer !== undefined) clearTimeout(timer); }
+  for (let attempt = 0; ; attempt++) {
+    // A content script always has a runtime ID until its extension context is invalidated.
+    if (typeof document !== 'undefined' && !chrome.runtime?.id) throw new ContextInvalidatedError();
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    try {
+      const reply = await Promise.race([
+        chrome.runtime.sendMessage(m),
+        new Promise<never>((_, reject) => { timer = setTimeout(() => reject(new Error('足迹后台响应超时')), 8_000); }),
+      ]);
+      if (!reply || reply.ok !== true) throw new Error('足迹后台未确认保存，请刷新页面后重试');
+      return reply;
+    } catch (error) {
+      if (!chrome.runtime?.id || /extension context invalidated/i.test(String(error))) throw new ContextInvalidatedError();
+      if (attempt >= RETRY_DELAYS.length || !TRANSIENT_MESSAGE_ERROR.test(String(error))) throw error;
+    } finally { if (timer !== undefined) clearTimeout(timer); }
+    await new Promise<void>((resolve) => setTimeout(resolve, RETRY_DELAYS[attempt]));
+  }
 }
 
 export async function loadActivity(): Promise<Activity> {

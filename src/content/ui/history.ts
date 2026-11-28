@@ -107,6 +107,10 @@ export class HistoryApp {
     this.load();
   }
 
+  private updateCount(): void {
+    this.count.textContent = this.total ? (this.done ? `${this.total} 条` : `${this.total}+ 条`) : '';
+  }
+
   private async load(): Promise<void> {
     if (this.loading || this.done) return;
     this.loading = true;
@@ -130,7 +134,7 @@ export class HistoryApp {
       for (const it of items) this.add(it);
       this.applyFilters();
       this.total += items.length;
-      this.count.textContent = this.total ? (this.done ? `${this.total} 条` : `${this.total}+ 条`) : '';
+      this.updateCount();
       if (!this.total) this.list.append(h('div', { class: 'ms-empty' }, h('p', {}, this.keyword ? `没有找到「${this.keyword}」` : '这里还空着')));
       else if (this.done) this.status.textContent = '— 到底了 —';
     } catch (e) {
@@ -145,7 +149,7 @@ export class HistoryApp {
 
   private add(it: HistItem): void {
     const b = dayBucket(it.viewAt, true);
-    if (b !== this.bucket || !this.group) {
+    if (b !== this.bucket || !this.group?.isConnected) {
       this.bucket = b;
       this.group = h('ol', { class: 'hi-group' });
       this.list.append(h('div', { class: 'ms-day hi-day' }, h('span', {}, b)), this.group);
@@ -162,7 +166,7 @@ export class HistoryApp {
       it.duration && it.kind !== 'live' ? h('span', { class: 'dur' }, fmtDuration(it.duration)) : null,
       it.live ? h('span', { class: 'hi-live' }, 'LIVE') : null,
       pct ? h('span', { class: 'hi-prog' }, h('i', { style: `width:${pct}%` })) : null);
-    const del = h('button', { class: 'hi-del', type: 'button', 'aria-label': '删除这条记录', title: '删除这条记录' }, icon(ICONS.close));
+    const del = h('button', { class: 'hi-del', type: 'button', 'aria-label': '删除这条记录', title: '删除这条记录' }, icon(ICONS.close)) as HTMLButtonElement;
     const li = h('li', { class: 'hi-row' },
       h('time', { class: 'hi-time' }, clock(it.viewAt)),
       h('i', { class: 'hi-dot' }),
@@ -178,11 +182,39 @@ export class HistoryApp {
       del);
     del.addEventListener('click', async (e) => {
       e.preventDefault();
+      if (del.disabled) return;
+      const gen = this.gen;
+      del.disabled = true;
       li.classList.add('out');
       try {
         await deleteHistory(it.kid);
-        setTimeout(() => { const g = li.parentElement; li.remove(); if (g && !g.children.length) { g.previousElementSibling?.remove(); g.remove(); } }, 260);
-      } catch (err) { li.classList.remove('out'); toast(this.shell.app, `删除失败：${(err as Error).message}`); }
+        if (gen !== this.gen) return;
+        this.total = Math.max(0, this.total - 1);
+        this.updateCount();
+        setTimeout(() => {
+          if (gen !== this.gen) return;
+          const g = li.parentElement;
+          li.remove();
+          if (g && !g.children.length) {
+            g.previousElementSibling?.remove();
+            g.remove();
+            if (g === this.group) { this.group = null; this.bucket = ''; }
+          }
+          if (!this.list.querySelector('.hi-row:not(.sk)')) {
+            if (this.done) {
+              this.status.textContent = '';
+              this.list.replaceChildren(h('div', { class: 'ms-empty' }, h('p', {}, this.keyword ? `没有找到「${this.keyword}」` : '这里还空着')));
+            } else if (this.sentinel.getBoundingClientRect().top < innerHeight + 900) {
+              void this.load();
+            }
+          }
+        }, 260);
+      } catch (err) {
+        if (gen !== this.gen) return;
+        del.disabled = false;
+        li.classList.remove('out');
+        toast(this.shell.app, `删除失败：${(err as Error).message}`);
+      }
     });
     histData.set(li, it);
     li.toggleAttribute('data-margin-filtered', !this.shell.filter.allows(targetOfHistory(it)));

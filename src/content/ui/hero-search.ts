@@ -1,6 +1,8 @@
 import { every } from '../sched';
 import { openBili } from '../navigation';
 import { forgetSearch, hotSearch, rememberSearch, searchHistory, searchUrl, suggest, type Hot } from '../api/search';
+import { isSearchHistoryEnabled } from '../api/search-history';
+import { loadSettings, onSettingsChange, saveSettings } from '../../shared/settings';
 import { h, highlight, icon, ICONS } from './dom';
 import { onUiMotionChange as onMotionChange, uiReducedMotion as reducedMotion } from '../motion';
 import { acceptTextDrop } from './text-drop';
@@ -42,12 +44,14 @@ export function createHeroSearch(app: () => HTMLElement, _onPalette?: () => void
 
   // ── 热搜词轮播占位 ──
   let hot: Hot[] = [];
+  let hideHot = false, loadingHot = false;
   let hi = 0;
   let rot: (() => void) | null = null;
   const phWord = (text: string, cls = '') => h('span', { class: `hs-ph-w ${cls}` }, text);
   const phWords = h('span', { class: 'hs-ph-ws' });
-  ph.append(h('span', { class: 'hs-ph-pre' }, '搜索视频、UP 主'), phWords);
-  const current = () => hot[hi]?.keyword ?? '';
+  const phPrefix = h('span', { class: 'hs-ph-pre' }, '搜索视频、UP 主');
+  ph.append(phPrefix, phWords);
+  const current = () => hideHot ? '' : hot[hi]?.keyword ?? '';
   function showHot(first = false) {
     const k = hot[hi]?.name || current();
     if (!k) return;
@@ -59,7 +63,7 @@ export function createHeroSearch(app: () => HTMLElement, _onPalette?: () => void
   const stopRot = () => { rot?.(); rot = null; };
   const startRot = () => {
     stopRot();
-    if (reducedMotion() || !hot.length) return;
+    if (hideHot || reducedMotion() || !hot.length) return;
     rot = every(3200, () => {
       if (input.value || !el.isConnected || !el.getClientRects().length) return;
       hi = (hi + 1) % hot.length;
@@ -70,15 +74,31 @@ export function createHeroSearch(app: () => HTMLElement, _onPalette?: () => void
     if (reducedMotion()) stopRot();
     else if (!rot) startRot();
   });
-  hotSearch().then((x) => {
-    hot = x.slice(0, 10);
-    if (!hot.length) return;
-    ph.firstElementChild!.textContent = '大家都在搜';
-    ph.classList.add('has-hot');
-    showHot(true);
-    startRot();
-    if (isOpen()) render();
-  }).catch(() => {});
+  const applyHideHot = (hide: boolean) => {
+    hideHot = hide;
+    if (hideHot) {
+      stopRot();
+      hot = [];
+      hi = 0;
+      phWords.replaceChildren();
+      phPrefix.textContent = '搜索视频、UP 主';
+      ph.classList.remove('has-hot');
+      if (isOpen()) render();
+    } else if (!loadingHot && !hot.length) {
+      loadingHot = true;
+      void hotSearch().then((x) => {
+        if (hideHot || !x.length) return;
+        hot = x.slice(0, 10);
+        phPrefix.textContent = '大家都在搜';
+        ph.classList.add('has-hot');
+        showHot(true);
+        startRot();
+        if (isOpen()) render();
+      }).catch(() => {}).finally(() => { loadingHot = false; });
+    }
+  };
+  loadSettings().then(s => applyHideHot(s.hideHotSearch)).catch(() => {});
+  onSettingsChange((n, p) => { if (n.hideHotSearch !== p.hideHotSearch) applyHideHot(n.hideHotSearch); });
 
   // ── 联想面板 ──
   let opts: HTMLElement[] = [];
@@ -117,6 +137,14 @@ export function createHeroSearch(app: () => HTMLElement, _onPalette?: () => void
     let n = 0;
     const stag = (o: HTMLElement) => { o.style.setProperty('--i', String(n)); o.id = `hs-o${n}`; n++; return o; };
     if (!q) {
+      if (!isSearchHistoryEnabled()) {
+        list.append(h('div', { class: 'hs-hist-hint' }, icon(ICONS.history),
+          h('span', {}, '搜索记录未开启 · 仅保存在本地扩展内（最多 8 条）'),
+          h('button', { class: 'hs-hist-enable', type: 'button',
+            onpointerdown: (e: Event) => e.preventDefault(),
+            onclick: () => { input.focus(); void saveSettings({ searchHistory: true }).catch(() => {}); },
+          }, '开启记录')));
+      }
       const hist = searchHistory().slice(0, 8);
       if (hist.length) {
         const chips = h('div', { class: 'hs-chips' });
@@ -133,7 +161,7 @@ export function createHeroSearch(app: () => HTMLElement, _onPalette?: () => void
         wipe.addEventListener('click', () => { forgetSearch(); render(); });
         list.append(h('div', { class: 'hs-sec' }, h('div', { class: 'hs-head' }, h('span', {}, '最近搜索'), h('span', { class: 'en' }, 'Recent'), wipe), chips));
       }
-      if (hot.length) {
+      if (!hideHot && hot.length) {
         const grid = h('div', { class: 'hs-hot' });
         hot.forEach((x, i) => grid.append(stag(opt('hs-hot-i', () => go(x.keyword),
           h('span', { class: `hs-no${i < 3 ? ' lead' : ''}` }, String(i + 1).padStart(2, '0')),
@@ -153,9 +181,8 @@ export function createHeroSearch(app: () => HTMLElement, _onPalette?: () => void
       list.append(rows);
     }
     opts = [...list.querySelectorAll<HTMLElement>('.hs-opt')];
-    sel = -1;
-    if (q) setSel(0);
-    box.classList.toggle('has-list', opts.length > 0);
+    setSel(q ? 0 : -1);
+    box.classList.toggle('has-list', list.childElementCount > 0);
   }
 
   function open() {
@@ -178,7 +205,9 @@ export function createHeroSearch(app: () => HTMLElement, _onPalette?: () => void
     box.classList.toggle('has-value', !!input.value);
   };
   input.addEventListener('focus', open);
-  input.addEventListener('blur', () => setTimeout(() => { if (!box.contains(document.activeElement)) close(); }, 0));
+  input.addEventListener('blur', () => setTimeout(() => {
+    if (!box.contains((box.getRootNode() as Document | ShadowRoot).activeElement)) close();
+  }, 0));
   input.addEventListener('input', () => {
     sync();
     if (!isOpen()) open();

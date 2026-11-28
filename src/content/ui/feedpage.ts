@@ -1,9 +1,8 @@
 import { attachPreview } from './preview';
-import type { Settings } from '../../shared/settings';
+import { saveSettings, type Settings } from '../../shared/settings';
 import { nav } from '../api/http';
-import { followings } from '../api/dyn';
 import { account, accountStat } from '../api/account';
-import { followFeed, followingLive, portal, searchFollowing, type FeedType, type LiveUp, type Up } from '../api/dyn';
+import { followFeed, followFeedUpdates, followings, followingLive, portal, searchFollowing, type Dyn, type FeedType, type LiveUp, type Up } from '../api/dyn';
 import { hotSearch } from '../api/search';
 import { dynCard } from './dyn';
 import { compileDynFilter } from '../filter';
@@ -14,9 +13,19 @@ import { PageShell } from './shell';
 import { targetOfDyn } from '../filter-targets';
 import { uiReducedMotion as reducedMotion } from '../motion';
 import { createDynamicComposer } from './dynamic-composer';
+import { toast } from './controls';
+import { every } from '../sched';
 
 type FeedTab = FeedType | 'posts';
 const TYPES: [FeedTab, string][] = [['all', '全部'], ['posts', '图文'], ['video', '视频投稿'], ['pgc', '追番追剧'], ['article', '专栏']];
+const TAB_LABEL = Object.fromEntries(TYPES) as Record<FeedTab, string>;
+function matchesTab(d: Dyn, tab: FeedTab): boolean {
+  if (tab === 'all') return true;
+  if (tab === 'posts') return ['DYNAMIC_TYPE_WORD', 'DYNAMIC_TYPE_DRAW', 'DYNAMIC_TYPE_ARTICLE'].includes(d.type);
+  if (tab === 'video') return d.type === 'DYNAMIC_TYPE_AV';
+  if (tab === 'pgc') return d.type.startsWith('DYNAMIC_TYPE_PGC') || d.type === 'DYNAMIC_TYPE_BANGUMI';
+  return d.type === 'DYNAMIC_TYPE_ARTICLE';
+}
 const ext = { target: '_blank', rel: 'noopener' };
 const face = (src: string, cls: string, w = 96) => h('img', { class: cls, src: src ? `${src}@${w}w_${w}h_1c.webp` : '', alt: '', loading: 'lazy', decoding: 'async', referrerpolicy: 'no-referrer' });
 
@@ -33,6 +42,13 @@ export class FeedApp {
   private done = false;
   private loading = false;
   private gen = 0;
+  private baseline = '';
+  private updateRequest: AbortController | null = null;
+  private newPill!: HTMLButtonElement;
+  private newLabel!: HTMLElement;
+  private autoButton!: HTMLButtonElement;
+  private rightAside!: HTMLElement;
+  private hotBox: HTMLElement | null = null;
   private list!: HTMLElement;
   private status!: HTMLElement;
   private sentinel!: HTMLElement;
@@ -43,6 +59,7 @@ export class FeedApp {
 
   constructor(settings: Settings) {
     this.shell = new PageShell(settings, 'feed');
+    this.shell.app.style.setProperty('--margin-dfs', `${settings.dynamicSize}px`);
     document.title = '动态 · 映间';
     const t = new URLSearchParams(location.search).get('tab');
     this.type = t === 'posts' || t === 'video' || t === 'pgc' || t === 'article' ? t : 'all';
@@ -51,6 +68,9 @@ export class FeedApp {
 
   update(s: Settings): void {
     this.shell.update(s);
+    this.shell.app.style.setProperty('--margin-dfs', `${s.dynamicSize}px`);
+    this.autoButton.setAttribute('aria-checked', String(s.feedAutoRefresh));
+    this.syncHot();
     this.applyLayout();
     const box = this.shell.app.querySelector<HTMLElement>('.fd-follows');
     if (box) box.hidden = !s.feedFollowList || s.feedLayout === 'sidebar';
@@ -75,13 +95,26 @@ export class FeedApp {
   private render(): void {
     const s = this.shell;
     const left = h('aside', { class: 'fd-side fd-left' });
-    const right = h('aside', { class: 'fd-side fd-right' });
+    this.rightAside = h('aside', { class: 'fd-side fd-right' });
     this.strip = h('div', { class: 'fd-ups' });
     this.tabs = h('div', { class: 'tabs fd-tabs', role: 'tablist' }, ...TYPES.map(([id, label]) => {
       const b = h('button', { class: 'tab', role: 'tab', type: 'button', 'aria-selected': String(id === this.type), onclick: () => this.setType(id) }, label);
       b.dataset.tab = id;
       return b;
     }));
+    const refresh = h('button', { class: 'fd-refresh-btn', type: 'button', title: '刷新动态', disabled: true, onclick: () => this.reload() }, icon(ICONS.refresh), '刷新');
+    this.autoButton = h('button', { class: 'fd-auto-btn', type: 'button', role: 'switch', 'aria-checked': String(s.settings.feedAutoRefresh) }, '自动刷新');
+    this.autoButton.addEventListener('click', async () => {
+      this.autoButton.disabled = true;
+      try { await saveSettings({ feedAutoRefresh: !s.settings.feedAutoRefresh }); }
+      catch { toast(s.app, '自动刷新设置保存失败，请重试'); }
+      finally { this.autoButton.disabled = false; }
+    });
+    this.newLabel = h('span');
+    this.newPill = h('button', { class: 'fd-new-pill', type: 'button', hidden: true, onclick: () => {
+      s.app.scrollTo({ top: 0, behavior: reducedMotion() ? 'instant' : 'smooth' });
+      this.reload();
+    } }, icon(ICONS.arrowUp), h('i', { 'aria-hidden': 'true' }), this.newLabel);
     let composer: ReturnType<typeof createDynamicComposer> | null = null;
     const post = h('button', { type: 'button', class: 'fd-post', onclick: () => {
       composer ??= createDynamicComposer(s.app, () => this.reload()); composer.open();
@@ -95,9 +128,9 @@ export class FeedApp {
         h('div', {}, h('div', { class: 'eyebrow' }, h('span', { class: 'en' }, 'Following'), h('span', {}, '关注的人')), h('h1', { class: 'fd-h1' }, '动态')),
         post),
       this.strip,
-      h('div', { class: 'bar-row fd-bar' }, this.tabs),
-      this.list, this.status, this.sentinel);
-    s.main.append(h('div', { class: 'fd' }, left, center, right));
+      h('div', { class: 'bar-row fd-bar' }, this.tabs, h('div', { class: 'fd-bar-acts' }, refresh, this.autoButton)),
+      this.newPill, this.list, this.status, this.sentinel);
+    s.main.append(h('div', { class: 'fd' }, left, center, this.rightAside));
     this.applyLayout();
     new IntersectionObserver((es) => { if (es.some((e) => e.isIntersecting)) this.load(); }, { root: s.app, rootMargin: '1200px 0px' }).observe(this.sentinel);
     // 动态流同时用 compileDynFilter（含转发内容）和 FilterRuntime，条件变化后重新拉取一次
@@ -105,7 +138,7 @@ export class FeedApp {
     let st = 0;
     s.app.addEventListener('scroll', () => { clearTimeout(st); st = window.setTimeout(() => this.fill(), 160); }, { passive: true });
 
-    this.renderHot(right);
+    this.syncHot();
     nav().then((n) => {
       if (!n?.isLogin) {
         this.done = true;
@@ -113,12 +146,50 @@ export class FeedApp {
         this.list.replaceChildren(h('div', { class: 'ms-empty' }, h('p', {}, '登录后查看关注的人的动态'), h('a', { class: 'sp-follow', href: 'https://passport.bilibili.com/login', ...ext }, '去登录')));
         return;
       }
+      refresh.disabled = false;
+      this.startPolling();
       this.renderMe(left);
       this.followParent = left;
       portal().then((p) => { this.renderUps(p.ups); this.renderLive(left, p.live, p.liveCount); this.applyLayout(); }).catch(() => { /* 头像条可缺省 */ });
       void this.renderFollowList(left);
       this.load();
-    }).catch(() => this.load());
+    }).catch(() => { refresh.disabled = false; this.load(); });
+  }
+
+  private startPolling(): void {
+    const poll = () => { void this.pollUpdates(); };
+    let stop = every(60_000, poll);
+    let hiddenAt = document.hidden ? Date.now() : 0;
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) { hiddenAt = Date.now(); return; }
+      if (hiddenAt && Date.now() - hiddenAt > 15_000) {
+        stop();
+        poll();
+        stop = every(60_000, poll);
+      }
+      hiddenAt = 0;
+    });
+  }
+
+  private async pollUpdates(): Promise<void> {
+    if (document.hidden || this.host || !this.baseline || this.loading || this.updateRequest) return;
+    const request = new AbortController();
+    this.updateRequest = request;
+    let count: number;
+    try { count = await followFeedUpdates(this.type === 'posts' ? 'all' : this.type, this.baseline, request.signal); }
+    catch { return; }
+    finally { if (this.updateRequest === request) this.updateRequest = null; }
+    if (request.signal.aborted || document.hidden) return;
+    const { app, settings } = this.shell;
+    if (count > 0 && settings.feedAutoRefresh && app.scrollTop <= 40 && !app.querySelector('.sheet-layer[data-open="true"]')) {
+      this.reload();
+      toast(app, `已自动更新 ${count} 条新动态`);
+    } else this.setPending(count);
+  }
+
+  private setPending(n: number): void {
+    this.newPill.hidden = n <= 0;
+    this.newLabel.textContent = n > 0 ? `有 ${n > 99 ? '99+' : n} 条新动态 · 点击刷新` : '';
   }
 
   /** #16：左侧「关注」列表——比头像条能装更多人，点一行就把动态流切成该 UP */
@@ -280,11 +351,20 @@ export class FeedApp {
     this.strip.replaceChildren(all, search, prev, row, next);
   }
 
-  private async renderHot(right: HTMLElement): Promise<void> {
+  private syncHot(): void {
+    if (this.shell.settings.hideHotSearch) {
+      this.hotBox?.remove();
+      this.hotBox = null;
+    } else if (!this.hotBox) void this.renderHot();
+  }
+
+  private async renderHot(): Promise<void> {
     const box = h('section', { class: 'fd-card fd-hot' }, h('div', { class: 'fd-card-h' }, h('span', {}, '热搜'), h('b', {}, 'TRENDING')));
-    right.append(box);
+    this.hotBox = box;
+    this.rightAside.append(box);
     const list = await hotSearch();
-    if (!list.length) { box.remove(); return; }
+    if (this.hotBox !== box) return;
+    if (!list.length) { box.remove(); this.hotBox = null; return; }
     box.append(h('ol', { class: 'fd-hot-list' }, ...list.slice(0, 10).map((x, i) =>
       h('li', {}, h('a', { href: `https://search.bilibili.com/all?keyword=${encodeURIComponent(x.keyword)}`, ...ext }, h('i', { class: i < 3 ? 'hot' : '' }, String(i + 1).padStart(2, '0')), h('span', {}, x.name))))));
   }
@@ -301,6 +381,10 @@ export class FeedApp {
 
   private reload(): void {
     this.gen++;
+    this.updateRequest?.abort();
+    this.updateRequest = null;
+    this.baseline = '';
+    this.setPending(0);
     this.offset = ''; this.done = false; this.loading = false;
     this.list.replaceChildren();
     this.status.textContent = '';
@@ -314,12 +398,13 @@ export class FeedApp {
     const sk = Array.from({ length: this.offset ? 1 : 3 }, () => h('article', { class: 'dy sk' }, h('div', { class: 'line short' }), h('div', { class: 'line' }), h('div', { class: 'line' })));
     this.list.append(...sk);
     try {
-      const r = await followFeed(this.host || this.type === 'posts' ? 'all' : this.type, this.offset, this.host);
+      const clientFilter = this.type === 'posts' || (!!this.host && this.type !== 'all');
+      const requestType: FeedType = this.host || this.type === 'posts' ? 'all' : this.type;
+      const r = await followFeed(requestType, this.offset, this.host);
       if (gen !== this.gen) return;
+      if (!this.offset && !this.host && r.baseline) this.baseline = r.baseline;
       // 动态里转发的视频也按标签过滤：先预热标签，再编译保留条件
-      const items = this.type === 'posts'
-        ? r.list.filter(d => ['DYNAMIC_TYPE_WORD', 'DYNAMIC_TYPE_DRAW', 'DYNAMIC_TYPE_ARTICLE'].includes(d.type))
-        : r.list;
+      const items = clientFilter ? r.list.filter(d => matchesTab(d, this.type)) : r.list;
       await this.shell.filter.prepare(items.map((d) => d.video?.bvid));
       if (gen !== this.gen) return;
       sk.forEach((n) => n.remove());
@@ -332,8 +417,8 @@ export class FeedApp {
       });
       this.done = !r.more || !r.offset || r.offset === this.offset;
       this.offset = r.offset;
-      if (this.type === 'posts' && !shown.length && !this.done) {
-        this.status.replaceChildren(h('button', { type: 'button', class: 'ghost', onclick: () => { this.status.replaceChildren(); void this.load(); } }, '继续查找图文'));
+      if (clientFilter && !shown.length && !this.done) {
+        this.status.replaceChildren(h('button', { type: 'button', class: 'ghost', onclick: () => { this.status.replaceChildren(); void this.load(); } }, `继续查找${TAB_LABEL[this.type]}`));
         return;
       }
       if (this.done && !this.list.children.length) this.list.append(h('div', { class: 'ms-empty' }, h('p', {}, '这里还空着')));

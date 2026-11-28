@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { collectedFolders, folderUrl, folderVideos, folders, seasonVideos } from '../../src/content/api/fav';
+import { collectedFolders, folderUrl, folderVideos, followedMedia, folders, seasonVideos } from '../../src/content/api/fav';
 import { getJSON, nav } from '../../src/content/api/http';
 
 vi.mock('../../src/content/api/http', () => ({ getJSON: vi.fn(), nav: vi.fn() }));
@@ -54,11 +54,54 @@ describe('订阅合集和收藏夹', () => {
     expect(await folderVideos(7, 2)).toMatchObject({ list: [{ bvid: 'BVvalid' }], more: true });
     expect(getJSON).toHaveBeenCalledWith('/x/v3/fav/resource/list', { media_id: 7, pn: 2, ps: 20, platform: 'web' }, expect.any(AbortSignal));
   });
+  it('收藏夹搜索传入去空白关键词，支持全部收藏夹范围，空词不附加参数', async () => {
+    vi.mocked(getJSON).mockResolvedValue({ medias: [{ type: 2, attr: 0, bvid: 'BVhit', title: '命中视频' }], has_more: false });
+    expect(await folderVideos(7, 1, '  字体  ')).toMatchObject({ list: [{ bvid: 'BVhit' }], more: false });
+    expect(getJSON).toHaveBeenLastCalledWith('/x/v3/fav/resource/list', { media_id: 7, pn: 1, ps: 20, platform: 'web', keyword: '字体' }, expect.any(AbortSignal));
+    await folderVideos(7, 1, '字体', 'all');
+    expect(getJSON).toHaveBeenLastCalledWith('/x/v3/fav/resource/list', { media_id: 7, pn: 1, ps: 20, platform: 'web', keyword: '字体', type: 1 }, expect.any(AbortSignal));
+    await folderVideos(7, 1, '   ', 'all');
+    expect(getJSON).toHaveBeenLastCalledWith('/x/v3/fav/resource/list', { media_id: 7, pn: 1, ps: 20, platform: 'web' }, expect.any(AbortSignal));
+  });
   it.each([['season', '21'], ['collected', '11']] as const)('%s 跳转回原站对应的订阅项', (kind, ctype) => {
     const url = new URL(folderUrl({ id: 7, mid: 42, kind, title: '', count: 0, cover: '', isDefault: false, isPrivate: false }));
     expect(url.pathname).toBe('/42/favlist');
     expect(url.searchParams.get('fid')).toBe('7');
     expect(url.searchParams.get('ftype')).toBe('collect');
     expect(url.searchParams.get('ctype')).toBe(ctype);
+  });
+  it('追番与追剧支持 type 区分、状态筛选、补全播放链接与分页判断', async () => {
+    vi.mocked(getJSON).mockResolvedValueOnce({
+      total: 20,
+      list: [
+        {
+          season_id: 4001, title: '葬送的芙莉莲', cover: 'http://i0.hdslb.com/f.jpg',
+          badge: '独家', progress: '看到第12话 10:20', new_ep: { index_show: '全28话' },
+          url: '//www.bilibili.com/bangumi/play/ss4001', follow_status: 2,
+        },
+        {
+          season_id: 4002, title: '迷宫饭', square_cover: '//i0.hdslb.com/m.jpg',
+          badge_info: { text: '会员专享' }, progress: '', new_ep: { index_show: '全24话' },
+          url: '', follow_status: 1,
+        },
+      ],
+    });
+    const bangumi = await followedMedia('bangumi', 1, 2);
+    expect(getJSON).toHaveBeenLastCalledWith('/x/space/bangumi/follow/list', { vmid: 42, type: 1, pn: 1, ps: 15, follow_status: 2 }, expect.any(AbortSignal));
+    expect(bangumi).toEqual({
+      mid: 42, total: 20, more: true,
+      list: [
+        { seasonId: 4001, title: '葬送的芙莉莲', cover: 'https://i0.hdslb.com/f.jpg', badge: '独家', progress: '看到第12话 10:20', indexShow: '全28话', url: 'https://www.bilibili.com/bangumi/play/ss4001', status: 2 },
+        { seasonId: 4002, title: '迷宫饭', cover: 'https://i0.hdslb.com/m.jpg', badge: '会员专享', progress: '', indexShow: '全24话', url: 'https://www.bilibili.com/bangumi/play/ss4002', status: 1 },
+      ],
+    });
+
+    vi.mocked(getJSON).mockResolvedValueOnce({ total: 1, list: [{ season_id: 5001, title: '航拍中国', cover: '', url: '', follow_status: 3 }] });
+    const cinema = await followedMedia('cinema', 1, 0);
+    expect(getJSON).toHaveBeenLastCalledWith('/x/space/bangumi/follow/list', { vmid: 42, type: 2, pn: 1, ps: 15 }, expect.any(AbortSignal));
+    expect(cinema).toMatchObject({ mid: 42, total: 1, more: false, list: [{ seasonId: 5001, title: '航拍中国', url: 'https://www.bilibili.com/bangumi/play/ss5001', status: 3 }] });
+
+    vi.mocked(nav).mockResolvedValueOnce({ isLogin: false, wbi_img: { img_url: '', sub_url: '' } });
+    expect(await followedMedia('bangumi')).toBeNull();
   });
 });

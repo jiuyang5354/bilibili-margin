@@ -1,4 +1,4 @@
-import { activeOf, dayKey, firstOf, levelOf, levelThresholds, loadActivity, secondsOf, sourceOf, type Activity, type DayRecord, type BackfillResult } from '../footprint/store';
+import { activeOf, ContextInvalidatedError, dayKey, firstOf, levelOf, levelThresholds, loadActivity, secondsOf, sourceOf, type Activity, type DayRecord, type BackfillResult } from '../footprint/store';
 import { parseSyncState, syncHistory, syncNote, SYNC_KEY } from '../footprint/sync';
 import { ACTIVITY_KEY } from '../../shared/activity';
 import { h, icon, ICONS } from './dom';
@@ -74,45 +74,65 @@ export function createFootprintCard(): HTMLElement {
   const tip = h('div', { class: 'fp-tip', hidden: '' });
   let note = '正在读取本机足迹…';
   let readFailed = false, disposed = false, syncBusy = false, syncStarted = false;
+  let readingForRetry = false, contextInvalidated = false;
   let refreshVersion = 0, refreshFrame = 0;
   let syncResult: BackfillResult | null = null;
   let syncPages = 0, syncEntries = 0;
   const lifetime = new AbortController();
+  const syncTitle = '手动同步最多读取 200 页，补全近一年内可获取的观看历史';
+  const needsReload = () => contextInvalidated || !chrome.runtime?.id;
   const retry = h('button', {
     type: 'button', class: 'fp-sync-btn', 'aria-label': '同步 B 站观看历史',
-    style: 'flex:none;border:1px solid currentColor;border-radius:999px;padding:4px 10px;background:transparent;color:inherit;font:inherit;cursor:pointer',
-    title: '手动同步最多读取 200 页，补全近一年内可获取的观看历史',
-    onclick: () => { void runSync(true, true); },
+    title: syncTitle, disabled: true,
+    onclick: () => { void retrySync(); },
   }, '同步历史');
   function status() {
-    note = readFailed ? '无法读取本机足迹；扩展更新后请刷新 B 站页面重试，已有数据未清除'
+    const reload = readFailed && needsReload();
+    note = readingForRetry ? '正在重新读取本机足迹…'
+      : reload ? '扩展刚完成更新，刷新当前页面即可恢复本机足迹，已有数据未清除'
+      : readFailed ? '无法读取本机足迹，请重试；已有数据未清除'
       : syncStarted ? `正在补全 B 站观看历史…${syncPages ? ` 已读取 ${syncPages} 页、${syncEntries} 条` : ''}` : syncNote(syncResult, activity);
     el.dataset.syncState = readFailed ? 'read-error' : syncStarted ? 'loading' : syncResult?.status ?? 'idle';
     const target = el.querySelector('.fp-status');
     if (target && target.textContent !== note) target.textContent = note;
-    retry.disabled = syncBusy;
-    retry.setAttribute('aria-busy', String(syncBusy));
-    retry.textContent = syncStarted ? '同步中…' : readFailed || (syncResult && !['ok', 'empty'].includes(syncResult.status)) ? '重试同步' : '同步历史';
+    retry.disabled = syncBusy || readingForRetry;
+    retry.setAttribute('aria-busy', String(retry.disabled));
+    retry.setAttribute('aria-label', reload ? '刷新页面' : '同步 B 站观看历史');
+    retry.title = reload ? '刷新页面' : syncTitle;
+    retry.textContent = reload ? '刷新页面' : readingForRetry ? '读取中…' : syncStarted ? '同步中…' : readFailed || (syncResult && !['ok', 'empty'].includes(syncResult.status)) ? '重试同步' : '同步历史';
   }
   const refresh = async () => {
     const version = ++refreshVersion;
     try {
       const data = await loadActivity();
       if (disposed || version !== refreshVersion) return;
-      readFailed = false;
+      readFailed = contextInvalidated = false;
       paint(data);
-    } catch {
+    } catch (error) {
       if (disposed || version !== refreshVersion) return;
       readFailed = true;
+      contextInvalidated = error instanceof ContextInvalidatedError;
       status(); // Keep the last rendered data; a read failure is not an empty history.
     }
   };
+  async function retrySync() {
+    if (needsReload()) { location.reload(); return; }
+    if (readFailed) {
+      if (refreshFrame) { cancelAnimationFrame(refreshFrame); refreshFrame = 0; }
+      readingForRetry = true;
+      status();
+      await refresh();
+      readingForRetry = false;
+      status();
+    }
+    if (!readFailed) await runSync(true, true);
+  }
   const scheduleRefresh = () => {
-    if (disposed || refreshFrame || !el.isConnected || document.hidden) return;
+    if (disposed || readingForRetry || refreshFrame || !el.isConnected || document.hidden) return;
     refreshFrame = requestAnimationFrame(() => { refreshFrame = 0; void refresh(); });
   };
   async function runSync(force = false, deep = false) {
-    if (disposed || syncBusy || !el.isConnected || document.hidden) return;
+    if (disposed || readFailed || syncBusy || !el.isConnected || document.hidden) return;
     syncBusy = true;
     status();
     const since = new Date(); since.setHours(0, 0, 0, 0); since.setDate(since.getDate() - 364 - since.getDay());
@@ -156,7 +176,7 @@ export function createFootprintCard(): HTMLElement {
       el.dataset.view = 'compact'; disclosure.hidden = false; disclosure.textContent = '展开全年'; disclosure.setAttribute('aria-expanded','false');
       el.replaceChildren(h('div', { class: 'fp-brief-copy' }, h('div', { class: 'eyebrow' }, h('span', { class: 'en' }, 'Footprint'), '足迹'), headline),
         h('div', { class: 'fp-brief-actions' }, h('div', { class: 'fp-week-wrap' }, h('span', {}, '近七天'), week), disclosure),
-        h('span', { class: 'fp-status fp-brief-status', role: 'status' }, note));
+        h('div', { class: 'fp-brief-status' }, h('span', { class: 'fp-status', role: 'status' }, note), retry));
     }
     const todayKey = dayKey(today);
     // Returning after a year is not a first visit. Count only known active days, not empty heartbeat records.
@@ -388,7 +408,11 @@ export function createFootprintCard(): HTMLElement {
     chrome.storage.onChanged.removeListener(changed);
   }, { signal: lifetime.signal });
   // A failed first read is not an empty history. Preserve the status and recovery action.
-  el.replaceChildren(h('span', { class: 'fp-status', role: 'status' }, note), retry);
+  el.replaceChildren(h('div', { class: 'fp-empty-state' },
+    h('div', { class: 'fp-empty-copy' },
+      h('div', { class: 'eyebrow' }, h('span', { class: 'en' }, 'Footprint'), ' · 足迹'),
+      h('span', { class: 'fp-status', role: 'status' }, note)),
+    h('div', { class: 'fp-empty-acts' }, retry)));
   queueMicrotask(() => { void refresh().then(() => runSync()); });
   return el;
 }

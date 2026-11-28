@@ -57,6 +57,14 @@ describe('settings 迁移（merge / loadSettings）', () => {
     expect(sanitizeSettings({playerCorners:false})?.playerCorners).toBe(false);
     expect(sanitizeSettings({playerCorners:'false'})?.playerCorners).toBe(true);
   });
+  it('播放页顶栏下滚自动隐藏默认关闭，仅接受显式布尔值', async () => {
+    expect(DEFAULTS.watchHeaderHide).toBe(false);
+    expect((await loadSettings()).watchHeaderHide).toBe(false);
+    await saveSettings({ watchHeaderHide: true });
+    expect((await loadSettings()).watchHeaderHide).toBe(true);
+    expect(sanitizeSettings({ watchHeaderHide: true })?.watchHeaderHide).toBe(true);
+    expect(sanitizeSettings({ watchHeaderHide: 'true' })?.watchHeaderHide).toBe(false);
+  });
   it('旧设置使用经典搜索，切换新版可以保存和重新载入', async () => {
     store.set('margin:settings', {});
     expect((await loadSettings()).searchStyle).toBe('classic');
@@ -120,6 +128,56 @@ describe('settings 迁移（merge / loadSettings）', () => {
     expect(sanitizeSettings({ batchNav: true })?.batchNav).toBe(true);
     expect(sanitizeSettings({ batchSize: 1 })?.batchSize).toBe(1);
     expect(sanitizeSettings({ batchSize: 999 })?.batchSize).toBe(100);
+  });
+
+  it('自动批次默认开启，旧版自定义条数继续使用手动模式', async () => {
+    expect(DEFAULTS.batchAutoSize).toBe(true);
+    store.set('margin:settings', { batchSize: DEFAULTS.batchSize });
+    expect((await loadSettings()).batchAutoSize).toBe(true);
+    store.set('margin:settings', { batchSize: 8 });
+    expect(await loadSettings()).toMatchObject({ batchSize: 8, batchAutoSize: false });
+    await saveSettings({ batchAutoSize: true });
+    expect(await loadSettings()).toMatchObject({ batchSize: 8, batchAutoSize: true });
+    expect(sanitizeSettings({ batchSize: 8, batchAutoSize: 'true' })?.batchAutoSize).toBe(false);
+    expect(sanitizeSettings({ batchSize: 8, batchAutoSize: true })?.batchAutoSize).toBe(true);
+    expect(sanitizeSettings({ batchAutoSize: false })?.batchAutoSize).toBe(false);
+  });
+
+  it('RTX、HDR、热搜和动态设置使用默认值，合法设置可保存和导入', async () => {
+    const defaults = {
+      rtxCompat: false, hdrEnhance: false, hdrStrength: 'standard',
+      hideHotSearch: false, dynamicSize: 16, feedAutoRefresh: false,
+    };
+    const valid = {
+      rtxCompat: true, hdrEnhance: true, hdrStrength: 'vivid',
+      hideHotSearch: true, dynamicSize: 20, feedAutoRefresh: true,
+    } as const;
+    expect(await loadSettings()).toMatchObject(defaults);
+    expect(sanitizeSettings({})).toMatchObject(defaults);
+    expect(sanitizeSettings(valid)).toMatchObject(valid);
+    await saveSettings(valid);
+    expect(await loadSettings()).toMatchObject(valid);
+    for (const hdrStrength of ['soft', 'standard', 'vivid'] as const) {
+      expect(sanitizeSettings({ hdrStrength })?.hdrStrength).toBe(hdrStrength);
+    }
+    for (const dynamicSize of [14, 16, 18, 20] as const) {
+      expect(sanitizeSettings({ dynamicSize })?.dynamicSize).toBe(dynamicSize);
+    }
+  });
+
+  it('存储和导入拒绝非布尔开关、非法档位与字符串字号', async () => {
+    const invalid = {
+      rtxCompat: 'true', hdrEnhance: 1, hdrStrength: 'strong',
+      hideHotSearch: {}, dynamicSize: '18', feedAutoRefresh: 'false',
+    };
+    const defaults = {
+      rtxCompat: false, hdrEnhance: false, hdrStrength: 'standard',
+      hideHotSearch: false, dynamicSize: 16, feedAutoRefresh: false,
+    };
+    store.set('margin:settings', invalid);
+    expect(await loadSettings()).toMatchObject(defaults);
+    expect(sanitizeSettings(invalid)).toMatchObject(defaults);
+    expect(sanitizeSettings({ dynamicSize: 15 })?.dynamicSize).toBe(16);
   });
 
   it('撤回的播放页评论布局选项不再导入或作为默认设置', () => {

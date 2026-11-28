@@ -29,6 +29,10 @@ export interface Dyn {
   link?: { title: string; cover: string; desc: string; url: string; kind: string };
   attachment?: Dyn['link'];
   reserve?: DynReserve;
+  /** 充电专属等来源角标（如 module_author.icon_badge / major.archive.badge / basic.is_only_fans） */
+  badge?: string;
+  /** 未解锁的充电专属动态、受限或失效动态占位（MAJOR_TYPE_BLOCKED / MAJOR_TYPE_UPOWER_COMMON / MAJOR_TYPE_NONE） */
+  blocked?: { title: string; hint: string; url: string; action?: string; charging?: boolean };
   orig?: Dyn | null;
   stat: { comment: number; forward: number; like: number };
   url: string;
@@ -37,8 +41,10 @@ export interface Dyn {
   liked?: boolean; cmtType?: number; cmtOid?: string;
 }
 
+export const DYN_FEATURES = 'itemOpusStyle,listOnlyfans,onlyfansVote,onlyfansAssetsV2';
 const https = (u: unknown) => String(u ?? '').replace(/^\/\//, 'https://').replace(/^http:/, 'https:');
 const reserveUrl = (u: unknown) => /^https:\/\//.test(https(u)) ? https(u) : '';
+const cleanText = (v: unknown) => typeof v === 'string' ? v.trim() : '';
 
 export function toDyn(it: any): Dyn | null {
   if (!it?.modules) return null;
@@ -110,7 +116,71 @@ export function toDyn(it: any): Dyn | null {
       desc3: reserve.desc3 ? { text: String(reserve.desc3.text ?? ''), jump_url: reserveUrl(reserve.desc3.jump_url) } : undefined,
       premiere: reserve.premiere ? { ...reserve.premiere, cover: reserveUrl(reserve.premiere.cover) } : undefined };
   }
+  const rawBadge = cleanText(a.icon_badge?.text)
+    || cleanText(major.archive?.badge?.text)
+    || cleanText(major.upower_common?.title_prefix)
+    || (cleanText(m.module_tag?.text).includes('充电') ? cleanText(m.module_tag?.text) : '')
+    || (it.basic?.is_only_fans === true || cleanText(a.pub_action).includes('充电') ? '充电专属' : '');
+  if (rawBadge) out.badge = rawBadge;
+  if (major.blocked || major.type === 'MAJOR_TYPE_BLOCKED') {
+    const b = major.blocked ?? {};
+    const charging = b.blocked_type === 3 || b.blocked_type === 4 || it.basic?.is_only_fans === true
+      || /充电|专属/.test(`${b.title ?? ''}${b.hint_message ?? ''}${b.text ?? ''}${b.sub_title ?? ''}${out.badge ?? ''}${a.pub_action ?? ''}`);
+    const title = cleanText(b.title) || (charging ? '充电专属动态' : '内容暂不可见');
+    const hint = [cleanText(b.hint_message) || cleanText(b.text), cleanText(b.sub_title)].filter(Boolean).join(' · ')
+      || (charging ? '该动态为充电专属，未开启充电时无法直接展示正文，前往原动态页可查看详情或开通充电' : '前往原动态页查看详情');
+    const jump = reserveUrl(b.button?.jump_url) || reserveUrl(b.jump_url) || out.url;
+    const action = cleanText(b.button?.text) || (charging ? '去充电查看' : '查看详情');
+    out.blocked = { title, hint, url: jump, action, charging };
+    if (charging && !out.badge) out.badge = '充电专属';
+  } else if (major.upower_common || major.type === 'MAJOR_TYPE_UPOWER_COMMON') {
+    const u = major.upower_common ?? {};
+    const title = [cleanText(u.title_prefix), cleanText(u.title)].filter(Boolean).join(' · ') || '充电专属动态';
+    const hint = cleanText(u.sub_title) || '该动态为充电专属内容，前往原动态页查看详情';
+    const jump = reserveUrl(u.button?.jump_url) || reserveUrl(u.jump_url) || out.url;
+    const action = cleanText(u.button?.text) || '查看详情';
+    out.blocked = { title, hint, url: jump, action, charging: true };
+    if (!out.badge) out.badge = cleanText(u.title_prefix) || '充电专属';
+  } else if (major.none || major.type === 'MAJOR_TYPE_NONE') {
+    const tips = cleanText(major.none?.tips);
+    const charging = it.basic?.is_only_fans === true || /充电|专属/.test(`${tips}${out.badge ?? ''}${a.pub_action ?? ''}`);
+    if (tips || charging) {
+      out.blocked = {
+        title: charging ? '充电专属动态' : '动态暂不可见',
+        hint: tips || '该动态为充电专属，前往原动态页查看详情',
+        url: out.url,
+        action: charging ? '去充电查看' : undefined,
+        charging,
+      };
+      if (charging && !out.badge) out.badge = '充电专属';
+    }
+  }
   if (it.orig) out.orig = toDyn(it.orig);
+  const emptyBody = !out.title && !out.text && !out.video && !out.pics.length
+    && !out.article && !out.live && !out.link && !out.attachment && !out.reserve && !out.orig && !out.blocked;
+  if (emptyBody) {
+    const pubAction = cleanText(a.pub_action);
+    const charging = it.basic?.is_only_fans === true
+      || /充电|专属/.test(`${out.badge ?? ''}${pubAction}${major.type ?? ''}`);
+    if (charging) {
+      out.blocked = {
+        title: '充电专属动态',
+        hint: '未开启充电时无法直接展示正文，前往原动态页可查看详情或开通充电',
+        url: out.url,
+        action: '去充电查看',
+        charging: true,
+      };
+      if (!out.badge) out.badge = '充电专属';
+    } else if (pubAction || major.type) {
+      out.blocked = {
+        title: pubAction || '暂不支持直接预览此动态',
+        hint: '前往 B 站原动态页查看完整内容',
+        url: out.url,
+        action: '查看详情',
+        charging: false,
+      };
+    }
+  }
   return out;
 }
 
@@ -132,17 +202,22 @@ export async function deleteSpaceDynamic(d: Dyn): Promise<void> {
 }
 
 export async function spaceDynamics(mid: number, offset: string): Promise<{ list: Dyn[]; offset: string; more: boolean }> {
-  const d = await getJSON<any>('/x/polymer/web-dynamic/v1/feed/space', { host_mid: mid, offset, timezone_offset: -480, features: 'itemOpusStyle' });
+  const d = await getJSON<any>('/x/polymer/web-dynamic/v1/feed/space', { host_mid: mid, offset, timezone_offset: -480, features: DYN_FEATURES });
   return { list: (d.items ?? []).map(toDyn).filter(Boolean) as Dyn[], offset: d.offset ?? '', more: !!d.has_more };
 }
 
 export type FeedType = 'all' | 'video' | 'pgc' | 'article';
 /** 关注动态流；hostMid 只看某个 UP */
 export async function followFeed(type: FeedType, offset: string, hostMid = 0, signal?: AbortSignal): Promise<{ list: Dyn[]; offset: string; more: boolean; baseline: string }> {
-  const p: Record<string, string | number> = { type, offset, timezone_offset: -480, features: 'itemOpusStyle' };
+  const p: Record<string, string | number> = { type, offset, timezone_offset: -480, features: DYN_FEATURES };
   if (hostMid) p.host_mid = hostMid;
   const d = await getJSON<any>('/x/polymer/web-dynamic/v1/feed/all', p, signal);
   return { list: (d.items ?? []).map(toDyn).filter(Boolean) as Dyn[], offset: d.offset ?? '', more: !!d.has_more, baseline: d.update_baseline ?? '' };
+}
+
+export async function followFeedUpdates(type: FeedType, baseline: string, signal?: AbortSignal): Promise<number> {
+  const d = await getJSON<{ update_num?: number }>('/x/polymer/web-dynamic/v1/feed/all/update', { type, update_baseline: baseline }, signal);
+  return Math.max(0, Number(d.update_num) || 0);
 }
 
 /** 首页「关注」只取作者直接投稿的视频，沿用动态流顺序和游标。 */

@@ -169,7 +169,7 @@ export class RecommendationFeed {
   }
 }
 
-export async function popular(page: number): Promise<{ list: Video[]; done: boolean }> {
-  const data = await getJSON<{ list: any[]; no_more: boolean }>('/x/web-interface/popular', { ps: 20, pn: page });
+export async function popular(page: number, signal?: AbortSignal): Promise<{ list: Video[]; done: boolean }> {
+  const data = await getJSON<{ list: any[]; no_more: boolean }>('/x/web-interface/popular', { ps: 20, pn: page }, signal);
   return { list: (data.list || []).map(toVideo), done: data.no_more };
 }

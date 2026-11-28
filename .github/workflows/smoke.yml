@@ -263,6 +263,7 @@ jobs:
           SMOKE_OUT=smoke-artifacts/watch-playlist node tests/watch-playlist.mjs
           SMOKE_OUT=smoke-artifacts/watch-scroll-padding node tests/watch-scroll-padding.mjs
           SMOKE_OUT=smoke-artifacts/watch-header-pointer-events node tests/watch-header-pointer-events.mjs
+          SMOKE_OUT=smoke-artifacts/watch-header-autohide node tests/watch-header-autohide.mjs
       - name: Reported theme, overlay, automatic mode and authorization regressions
         run: |
           SMOKE_OUT=smoke-artifacts/header-feedback node tests/header-feedback.mjs
@@ -289,6 +290,16 @@ jobs:
           node tests/settings-dependencies.mjs
         env:
           SMOKE_OUT: smoke-artifacts/settings-page
+      - name: Home search handoff, watch RTX/HDR, feed updates and ported PR regressions
+        run: |
+          SMOKE_OUT=smoke-artifacts/home-search-scroll-handoff node tests/home-search-scroll-handoff.mjs
+          SMOKE_OUT=smoke-artifacts/watch-rtx-hdr node tests/watch-rtx-hdr.mjs
+          SMOKE_OUT=smoke-artifacts/watch-usercard node tests/watch-usercard.mjs
+          SMOKE_OUT=smoke-artifacts/feed-updates-and-font node tests/feed-updates-and-font.mjs
+          SMOKE_OUT=smoke-artifacts/feed-creator-tab-filter node tests/feed-creator-tab-filter.mjs
+          SMOKE_OUT=smoke-artifacts/footprint-recovery-and-search node tests/footprint-recovery-and-search.mjs
+          SMOKE_OUT=smoke-artifacts/message-refresh node tests/message-refresh.mjs
+          SMOKE_OUT=smoke-artifacts/history-delete-pagination node tests/history-delete-pagination.mjs
       - if: always()
         uses: actions/upload-artifact@v4
         with:
@@ -313,6 +324,10 @@ jobs:
           node tests/firefox-message-extension.mjs
         env:
           SMOKE_OUT: privacy-performance/message-editor
+      - name: Folder scaling, header glass rim, capsule alignment and favorites search
+        run: node tests/quick-fixes-263-237-219-261.mjs
+        env:
+          SMOKE_OUT: privacy-performance/quick-fixes
       - name: Native recommendation username rendering
         run: node tests/watch-upnames.mjs
         env:

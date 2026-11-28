@@ -4,7 +4,11 @@
 .app.wt { position: fixed; inset: 0 0 auto 0; height: 72px; overflow: visible; background: transparent; scrollbar-gutter: auto; pointer-events: none; }
 /* 用 :where() 把特异性降到零：子元素自己声明的 pointer-events（如工具提示 .tt 的 none）始终优先 */
 :where(.app.wt > :not(.top), .app.wt .top > *) { pointer-events: auto; }
-.app.wt .top { position: relative; }
+.app.wt .top { position: relative; transition: transform .22s var(--ease-out), opacity .18s var(--ease-out); }
+.app.wt[data-header-hidden] .top { transform: translateY(-100%); opacity: 0; }
+.app.wt[data-header-hidden] .top > * { pointer-events: none; }
+.app.wt.margin-reduce .top, .app.wt.margin-ui-still .top { transition: none; }
+@media (prefers-reduced-motion: reduce) { .app.wt .top { transition: none; } }
 .app.wt .top:has(.et-labels) { display: flex; padding-inline: clamp(16px, 3vw, 64px); }
 .app.wt .top:has(.et-labels) .search { flex: 1 1 120px; max-width: 520px; }
 .app.wt .top:has(.et-labels) .acts { margin-left: auto; }
@@ -40,9 +44,9 @@
   background: transparent; backdrop-filter: none; border-bottom: 0;
 }
 /* 整条顶栏保持透明，避免图片背景和滚动内容上出现横向渐变 / 模糊分界。
-   搜索框和快捷入口胶囊各自保留玻璃效果。 */
-.top :is(.brand .tv,.hd-settings > svg) { filter: drop-shadow(0 1px 2px color-mix(in srgb, var(--canvas) 80%, transparent)); }
-.et { position: relative; isolation: isolate; border-radius: 99em; padding: 4px 6px; gap: 6px; }
+   搜索框、快捷入口胶囊和设置钮各自保留玻璃效果。 */
+.top .brand .tv { filter: drop-shadow(0 1px 2px color-mix(in srgb, var(--canvas) 80%, transparent)); }
+.et { position: relative; isolation: isolate; border-radius: 99em; padding: 4px; gap: 6px; }
 .top :is(.search,.et) { outline: 1px solid color-mix(in srgb, var(--ink) 12%, transparent); outline-offset: -1px; }
 .et-sep { background: color-mix(in srgb, var(--ink) 14%, transparent); }
 .et-btn { border-radius: 99em; color: color-mix(in srgb, var(--ink) 72%, transparent); }

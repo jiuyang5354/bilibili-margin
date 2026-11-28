@@ -26,6 +26,7 @@ html.margin-skin {
   --m-sans: var(--margin-sans, "Geist", "Margin Sans SC", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif);
   --m-radius: calc(16px * var(--margin-rk, 1));
   --m-player-radius: calc(16px * var(--margin-player-rk, var(--margin-rk, 1)));
+  --m-wcard-player-radius: calc(20px * var(--margin-player-rk, var(--margin-rk, 1)));
 
   --bg1: #ffffff; --bg2: #f5f4f1; --bg3: #efeeea; --bg1_float: #ffffff; --bg2_float: #f1f0ec;
   --bg1_rgb: 255, 255, 255;
@@ -67,8 +68,8 @@ html.margin-skin .bili-header.fixed-header { display: none !important; }
 html.margin-skin bili-popup { z-index: 10001 !important; }
 #margin-watch-top[hidden] { display: none !important; }
 html.margin-watch .video-container-v1, html.margin-watch .playlist-container { padding-top: 96px !important; }
-/* 「看评论」、#comment 锚点等滚动落点同样让出顶栏（72px + 24px 间距），否则评论标题和输入框会压在顶栏底下；网页全屏顶栏收起后不再让位 */
-html.margin-watch:not(.margin-webscreen) { scroll-padding-top: 96px; }
+/* 「看评论」、#comment 锚点等滚动落点同样让出顶栏（72px + 24px 间距），否则评论标题和输入框会压在顶栏底下；网页全屏或顶栏自动收起后不再让位 */
+html.margin-watch:not(.margin-webscreen):not(.margin-watch-header-hidden) { scroll-padding-top: 96px; }
 html.margin-watch .follow-btn-inner { background:var(--margin-primary,var(--m-ink))!important;color:var(--margin-primary-fg,var(--m-canvas))!important; }
 
 /* 广告与推广：统一由 global.css 的 html.margin-ads-hide 控制（v0.47） */
@@ -100,13 +101,23 @@ html.margin-watch .bpx-player-container[data-screen="wide"] {
   border-radius: var(--m-player-radius) !important; background: transparent !important;
   box-shadow: var(--sh-md) !important;
 }
-/* 视频层是合成层，单靠父级 overflow:hidden + 圆角在 Chromium 里裁不干净，四角会漏出黑底；
-   直接在视频区域上用 mask 裁圆角 */
+/* 视频区使用圆角裁剪，避免视频帧经过合成遮罩。 */
 html.margin-watch .bpx-player-container:not([data-screen]) .bpx-player-video-area,
 html.margin-watch .bpx-player-container[data-screen="normal"] .bpx-player-video-area,
 html.margin-watch .bpx-player-container[data-screen="wide"] .bpx-player-video-area {
-  border-radius: var(--m-player-radius) var(--m-player-radius) 0 0; overflow: hidden; isolation: isolate;
-  -webkit-mask-image: linear-gradient(#000, #000); mask-image: linear-gradient(#000, #000);
+  border-radius: var(--m-player-radius) var(--m-player-radius) 0 0; overflow: clip;
+}
+html.margin-watch :is(.bpx-player-video-area, .bpx-player-video-perch, .bpx-player-video-wrap) {
+  box-sizing: border-box; width: 100%; height: 100%; padding: 0 !important; border: 0 !important; outline: 0 !important;
+}
+html.margin-watch .bpx-player-video-area[data-margin-exact-fit="1"] .bpx-player-video-wrap :is(video, bwp-video) {
+  object-fit: cover !important; width: 100% !important; height: 100% !important;
+}
+html.margin-watch:is(.margin-rtx-compat, .margin-player-square) :is(
+  #playerWrap, .bpx-player-container, .bpx-player-primary-area, .bpx-player-video-area, .bpx-player-video-perch, .bpx-player-video-wrap
+) {
+  border-radius: 0 !important; overflow: visible !important; clip-path: none !important;
+  -webkit-mask-image: none !important; mask-image: none !important; isolation: auto !important;
 }
 html.margin-watch .bpx-player-container:not([data-screen]) .bpx-player-primary-area,
 html.margin-watch .bpx-player-container[data-screen="normal"] .bpx-player-primary-area,
@@ -444,9 +455,9 @@ html.margin-watch .m-wcard {
 }
 html.margin-watch .m-wcard:not(.from-player) { margin-top: 0; }
 html.margin-wcard.margin-watch .bpx-player-container:not([data-screen]),
-html.margin-wcard.margin-watch .bpx-player-container[data-screen="normal"] { box-shadow: none !important; border-radius: 20px 20px 0 0 !important; }
+html.margin-wcard.margin-watch .bpx-player-container[data-screen="normal"] { box-shadow: none !important; border-radius: var(--m-wcard-player-radius) var(--m-wcard-player-radius) 0 0 !important; }
 html.margin-wcard.margin-watch .bpx-player-container:not([data-screen]) .bpx-player-video-area,
-html.margin-wcard.margin-watch .bpx-player-container[data-screen="normal"] .bpx-player-video-area { border-radius: 20px 20px 0 0; }
+html.margin-wcard.margin-watch .bpx-player-container[data-screen="normal"] .bpx-player-video-area { border-radius: var(--m-wcard-player-radius) var(--m-wcard-player-radius) 0 0; }
 html.margin-wcard.margin-watch .bpx-player-sending-area,
 html.margin-wcard.margin-watch .bpx-player-sending-area .bpx-player-sending-bar { border-radius: 0 !important; background: transparent !important; }
 html.margin-wcard.margin-watch .bpx-player-sending-area { border-bottom: 1px solid var(--m-line, rgb(127 127 127 / .14)); }
@@ -495,7 +506,7 @@ html.margin-watch .usercard-wrap .user-card-m-exp {
 @keyframes m-ucard-in { from { opacity: 0; } }
 html.margin-watch .usercard-wrap .bg { height: 96px !important; border-radius: 0 !important; background-size: cover !important; background-position: center !important;
   -webkit-mask-image: linear-gradient(#000 40%, transparent); mask-image: linear-gradient(#000 40%, transparent); }
-html.margin-watch .usercard-wrap .user-info-wrapper { padding: 0 20px !important; margin-top: -36px !important; position: relative; }
+html.margin-watch .usercard-wrap .user-info-wrapper { padding: 0 20px 16px !important; margin-top: -36px !important; position: relative; }
 html.margin-watch .usercard-wrap .face { position: relative !important; left: auto !important; top: auto !important; display: block !important; width: 56px !important; height: 56px !important; margin-bottom: 12px; border-radius: 50%; box-shadow: 0 0 0 3px var(--m-surface); }
 html.margin-watch .usercard-wrap .face .bili-avatar { width: 56px !important; height: 56px !important; }
 html.margin-watch .usercard-wrap .info { margin-left: 0 !important; padding: 0 !important; width: auto !important; }
@@ -513,11 +524,11 @@ html.margin-watch .usercard-wrap .btn-box { display: flex !important; gap: 8px; 
 html.margin-watch .usercard-wrap .btn-box a { flex: 1; display: inline-flex !important; align-items: center; justify-content: center; gap: 4px; width: auto !important; height: 36px !important; margin: 0 !important; border-radius: 999px !important; font-size: 14px !important; font-weight: 500 !important; border: 0 !important; transition: transform 150ms cubic-bezier(.23, 1, .32, 1), opacity 150ms; }
 html.margin-watch .usercard-wrap .btn-box a:active { transform: scale(.97); }
 html.margin-watch .usercard-wrap .btn-box .like { background: var(--m-ink) !important; color: var(--m-surface) !important; }
-html.margin-watch .usercard-wrap .btn-box .like .plus i { color: inherit !important; }
+html.margin-watch .usercard-wrap .btn-box .like :is(.plus, .plus i) { color: inherit !important; }
 html.margin-watch .usercard-wrap .btn-box .like.is-followed, html.margin-watch .usercard-wrap .btn-box .liked { background: var(--m-chip) !important; color: var(--m-muted) !important; }
 html.margin-watch .usercard-wrap .btn-box .message { background: var(--m-chip) !important; color: var(--m-ink) !important; box-shadow: inset 0 0 0 1px var(--m-line) !important; }
 html.margin-watch .usercard-wrap .btn-box a:hover { opacity: .88; }
-html.margin-watch .usercard-wrap .latest-archives { margin: 16px 0 0 !important; padding: 16px 20px 20px !important; border-top: 1px solid var(--m-line) !important; width: auto !important; }
+html.margin-watch .usercard-wrap .latest-archives { margin: 0 !important; padding: 16px 20px 20px !important; border-top: 1px solid var(--m-line) !important; width: auto !important; }
 html.margin-watch .usercard-wrap .latest-archives__header { color: var(--m-ink) !important; font-size: 14px !important; font-weight: 600; }
 html.margin-watch .usercard-wrap .latest-archives__more { color: var(--m-muted) !important; font-size: 12px !important; }
 html.margin-watch .usercard-wrap .latest-archives__list { gap: 10px !important; }
@@ -549,9 +560,33 @@ html.margin-webscroll .player-wrap,
 html.margin-webscroll #bilibili-player-wrap,
 html.margin-webscroll .bilibili-player-wrap { height: var(--m-ws-h) !important; }
 html.margin-webscroll .mode-webscreen { position: absolute !important; top: var(--m-ws-y) !important; left: var(--m-ws-x) !important;
-  width: var(--m-ws-w) !important; height: 100dvh !important; box-sizing: border-box; right: auto !important; bottom: auto !important; }
-html.margin-watch .bpx-player-container[data-screen="web"] .bpx-player-shadow-progress-area { bottom: 0 !important; }
+  width: var(--m-ws-w) !important; height: var(--m-ws-vh, 100dvh) !important; max-height: 100dvh !important;
+  overflow: hidden !important; box-sizing: border-box; right: auto !important; bottom: auto !important; }
+html.margin-webscroll .bpx-player-container[data-screen="web"]:not(.mode-webscreen),
+html.margin-webscroll .bpx-player-container[data-screen="web"] :is(.bpx-player-primary-area, .bpx-player-video-area) {
+  height: 100% !important; max-height: 100% !important; min-height: 0 !important; box-sizing: border-box;
+}
+html.margin-watch .bpx-player-container[data-screen="web"] .bpx-player-shadow-progress-area { bottom: 0 !important; z-index: 65 !important; }
 html.margin-webscroll.margin-watch :is(.left-container, .playlist-container--left) > .m-wcard:not([hidden]) { display: block !important; }
+
+html.margin-watch .bpx-player-ctrl-btn.m-hdr-btn {
+  display: inline-flex; align-items: center; justify-content: center; width: auto; min-width: 44px;
+  padding: 0 4px; border: 0; background: transparent; color: #fff; cursor: pointer;
+}
+html.margin-watch .m-hdr-btn span {
+  display: inline-flex; align-items: center; gap: 4px; padding: 2px 5px; border: 1px solid rgb(255 255 255 / .45);
+  border-radius: 999px; font: 500 10px/1 var(--m-mono);
+}
+html.margin-watch .m-hdr-btn span::before {
+  content: ""; width: 5px; height: 5px; border-radius: 50%; background: currentColor; opacity: .45;
+}
+html.margin-watch .m-hdr-btn[aria-pressed="true"] span { color: #ffd380; border-color: currentColor; }
+html.margin-watch .m-hdr-btn[aria-pressed="true"] span::before { opacity: 1; }
+:where(html.margin-watch) .bpx-player-video-wrap:where(.m-hdr-position) { position: relative; }
+html.margin-watch .m-hdr-canvas { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1; }
+html.margin-watch .m-hdr-fallback[data-hdr-strength="soft"] video { filter: contrast(1.03) saturate(1.05) brightness(1.01); }
+html.margin-watch .m-hdr-fallback[data-hdr-strength="standard"] video { filter: contrast(1.06) saturate(1.10) brightness(1.03); }
+html.margin-watch .m-hdr-fallback[data-hdr-strength="vivid"] video { filter: contrast(1.09) saturate(1.16) brightness(1.05); }
 
 /* v0.48 网页全屏可滚动时的滚轮音量提示 */
 .m-voltip { position: absolute; left: 50%; top: 50%; z-index: 120; transform: translate(-50%, -50%) scale(.96);

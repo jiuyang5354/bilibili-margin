@@ -203,6 +203,13 @@ try {
   await until(async () => (await firstTitle()) === '第 25 条推荐');
   passed('顶部刷新保持顶部，上一批后能返回刚才的新批次');
 
+  await seed({ batchAutoSize: true });
+  await page.setViewportSize({ width: 2300, height: 900 });
+  await until(async () => (await cards()) === 16);
+  await page.setViewportSize({ width: 850, height: 900 });
+  await until(async () => (await cards()) === 6);
+  passed('自动批次随宽窄窗口切换为 16 或 6 条');
+
   await page.screenshot({ path: join(out, 'batch-bar.png') });
   assert.deepEqual(errors, []);
 } finally {

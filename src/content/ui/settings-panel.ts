@@ -215,6 +215,8 @@ function buildSettingsPanel(sheet: SettingsPage, get: () => Settings, currentSha
   const hoverT = toggle(s0.headHover, '顶栏悬停指示', (v) => save({ headHover: v }));
   const labelsT = toggle(s0.headLabels, '顶栏显示文字', (v) => save({ headLabels: v }));
   const feedLayout = segmented<Settings['feedLayout']>([['classic', '经典'], ['sidebar', '左侧关注']], s0.feedLayout, v => save({ feedLayout: v }));
+  const dfsS = segmented<string>([['14', '14'], ['16', '16'], ['18', '18'], ['20', '20']], String(s0.dynamicSize), (v) => save({ dynamicSize: Number(v) as 14 | 16 | 18 | 20 }));
+  const feedAutoT = toggle(s0.feedAutoRefresh, '动态自动刷新', (v) => save({ feedAutoRefresh: v }));
   const cmdKT = toggle(s0.cmdK, 'Ctrl+K 打开命令面板', (v) => save({ cmdK: v }));
   // 视频 CDN 节点（v0.47.2）：列表 + 延迟测速；选中后新打开的视频生效
   const CDNS: [string, string][] = [
@@ -264,9 +266,13 @@ function buildSettingsPanel(sheet: SettingsPage, get: () => Settings, currentSha
   const favCols = segmented<string>([['2','2 列'],['3','3 列'],['4','4 列']], String(s0.favColumns),(v) => save({ favColumns:Number(v) as 2 | 3 | 4 }));
   const wideT = toggle(s0.wide, '宽屏模式', (v) => save({ wide: v }));
   const cornersT = toggle(s0.playerCorners, '播放器圆角', (v) => save({ playerCorners: v }));
+  const rtxCompatT = toggle(s0.rtxCompat, 'RTX 视频增强兼容', (v) => save({ rtxCompat: v }));
+  const hdrEnhanceT = toggle(s0.hdrEnhance, 'SDR 转 HDR 增强', (v) => save({ hdrEnhance: v }));
+  const hdrStrengthS = segmented<Settings['hdrStrength']>([['soft', '柔和'], ['standard', '标准'], ['vivid', '鲜明']], s0.hdrStrength, (v) => save({ hdrStrength: v }));
   const autoExtT = toggle(s0.autoplayExt, '连播方式扩展', (v) => save({ autoplayExt: v }));
   const autoW = toggle(s0.autoWeb, '自动网页全屏', (v) => save({ autoWeb: v }));
   const webS = toggle(s0.webScroll, '网页全屏可滚动', (v) => save({ webScroll: v }));
+  const watchHeaderHideT = toggle(s0.watchHeaderHide, '顶栏下滚自动隐藏', (v) => save({ watchHeaderHide: v }));
   const spdK = toggle(s0.speedKeys, '倍速快捷键', (v) => save({ speedKeys: v }));
   const treeT = toggle(s0.replyTree, '楼中楼对话树', (v) => save({ replyTree: v }));
   const msgT = toggle(s0.msgRemind, '消息提醒', (v) => save({ msgRemind: v }));
@@ -274,7 +280,7 @@ function buildSettingsPanel(sheet: SettingsPage, get: () => Settings, currentSha
   // 推荐批次导航（v0.53）：占据分类栏原来的「换一批」位置；关闭后恢复原来的单级「上一批」
   const batchSizeIn = h('input', {
     type: 'number', class: 'city-in batch-size-in', min: '1', max: '100', step: '1',
-    value: String(s0.batchSize), 'aria-label': '每批视频数', inputmode: 'numeric',
+    value: String(s0.batchSize), disabled: s0.batchAutoSize, 'aria-label': '每批视频数', inputmode: 'numeric',
   }) as HTMLInputElement;
   const commitBatchSize = () => {
     const n = clampBatchSize(Number(batchSizeIn.value));
@@ -288,10 +294,12 @@ function buildSettingsPanel(sheet: SettingsPage, get: () => Settings, currentSha
     commitBatchSize();
     batchSizeIn.blur();
   });
+  const batchAutoSizeT = toggle(s0.batchAutoSize, '按窗口调整每批条数', (v) => save({ batchAutoSize: v }));
   const batchRefreshT = toggle(s0.batchRefresh, '批次条刷新按钮', (v) => save({ batchRefresh: v }));
   const batchPrefetchT = toggle(s0.batchPrefetch, '预载下一轮', (v) => save({ batchPrefetch: v }));
   const batchOpts = h('div', { class: 'batch-opts', hidden: !s0.batchNav },
-    row('每批视频数', '一次「换一批」约 24 条，按此切成多批；1–100 之间', batchSizeIn),
+    row('按窗口调整每批条数', '根据当前网格列数显示两行视频', batchAutoSizeT),
+    row('每批视频数', '关闭自动调整后手动设置，1–100 条', batchSizeIn),
     row('预载下一轮', '始终保留一轮预载：加载、换一批或翻到预载内容后自动补下一轮；关闭则到末批点右箭头才请求', batchPrefetchT),
     row('显示刷新按钮', '关闭后批次条只保留左右箭头；刷新键可在任意批次直接追加新内容', batchRefreshT));
   const batchNavT = toggle(s0.batchNav, '批次导航', (v) => { batchOpts.hidden = !v; void save({ batchNav: v }); });
@@ -581,6 +589,7 @@ function buildSettingsPanel(sheet: SettingsPage, get: () => Settings, currentSha
   };
   const sub = (title: string) => h('h4', { class: 'stg-sub' }, title);
   const palSpeedRow = row('搜索框展开速度', '点击搜索框展开命令面板的动画速度（%），50–200 之间，100 为默认；只在「新版」搜索栏下生效', palSpeedIn);
+  const hideHotT = toggle(s0.hideHotSearch, '隐藏热搜', (v) => save({ hideHotSearch: v }));
   const playbackNote = h('p', { class: 'stg-warn', hidden: watch.getAttribute('aria-checked') === 'true' },
     '当前已关闭「其他页面重设计」，本组设置不会生效。',
     h('button', { type: 'button', class: 'ghost small', onclick: () => watch.click() }, '立即开启'));
@@ -664,6 +673,8 @@ function buildSettingsPanel(sheet: SettingsPage, get: () => Settings, currentSha
     row('账号卡片可拖拽', '控件动效开启且允许动画时可拖拽；固定时也能点击翻面', idD),
     row('动态页关注列表', '显示左侧关注列表，顶部头像条保留', followListT),
     block('动态页布局', '左侧关注将近期更新移到左栏，直播移到右栏；选择 UP 后回到顶部', feedLayout),
+    row('动态字号', '动态页与个人空间动态正文大小（px）', dfsS),
+    row('动态自动刷新', '停在动态页顶部时检测到新动态自动刷新；关闭后仅弹出新动态提示胶囊', feedAutoT),
     sub('背景'),
     block('模式', '随机：每次打开换一款，不连续重复', mode),
     block('样式', null, swatches),
@@ -682,7 +693,7 @@ function buildSettingsPanel(sheet: SettingsPage, get: () => Settings, currentSha
     row('日期栏', '推荐上方的日期和「For You」', dateT),
     row('换一批按钮', null, refreshT),
     row('足迹热力图', '关掉只是不显示，足迹照样在本机记录', foot),
-    row('天气', '关掉后不再请求天气和城市定位', wxT),
+    row('天气', '显示首页天气卡片；关闭后隐藏卡片且不再请求天气和城市定位', wxT),
     drawer('天气城市与卡片信息', () => { const l = savedLoc(); return l?.manual ? l.name : '自动定位'; },
       block('天气城市', '选中候选固定城市；点击「自动」恢复 IP 定位', cityBox),
       block('卡片信息', '首页视频卡片下面显示哪些，点一下开关', cardBits)),
@@ -697,6 +708,7 @@ function buildSettingsPanel(sheet: SettingsPage, get: () => Settings, currentSha
   sheet.section('bar', '搜索与顶栏', '顶栏搜索框、快捷键和入口。',
     block('搜索栏样式', '旧版保留原顶栏搜索框，新版原位展开搜索面板并轮播热搜', searchStyle),
     palSpeedRow,
+    row('隐藏热搜', '关闭搜索框热搜轮播、搜索面板热搜词与动态页右侧热搜榜', hideHotT),
     row('Ctrl+K 打开命令面板', 'B 站自己没有 Ctrl+K；和浏览器或其他扩展冲突时关掉，按 / 照样能打开', cmdKT),
     row('悬停指示', '指示条跟随鼠标移到的顶栏图标；关闭后跟随点击', hoverT),
     row('顶栏显示文字', '在快捷入口图标旁显示名称，默认关闭', labelsT),
@@ -706,7 +718,11 @@ function buildSettingsPanel(sheet: SettingsPage, get: () => Settings, currentSha
 
   sheet.section('playback', '播放页', '播放器、评论和弹幕。',
     playbackNote,
+    row('顶栏下滚自动隐藏', '播放页向下滚动时收起固定顶栏，向上滚动或鼠标移到顶部边缘时恢复', watchHeaderHideT),
     row('播放器圆角', '关闭后保留完整矩形画面，其他卡片圆角不变', cornersT),
+    row('RTX 视频增强兼容', '关闭播放器圆角裁剪与视频区遮罩，保证直通硬件叠加层以稳定触发 NVIDIA RTX 超分 / RTX HDR', rtxCompatT),
+    row('SDR 转 HDR 增强', '通过 WebGPU Extended HDR 将 SDR 视频高光拓展至 HDR 屏幕（默认关闭，可在播放器栏按钮或按 Alt+H 一键切换）', hdrEnhanceT),
+    row('HDR 增强强度', '调整 SDR 转 HDR 的高光拓展幅度', hdrStrengthS),
     row('评论字号', '视频、动态评论与输入文字大小（px）', cfsS),
     row('宽屏模式', '有播放器时自动进入宽屏；番剧、列表和稍后再看等页面同样生效；和自动网页全屏同时开启时优先网页全屏', wideT),
     row('连播方式扩展', '开启后可分别控制合集、分P、番剧与推荐的连播，需把官方「播放方式」设为自动切集', autoExtT),
@@ -750,12 +766,12 @@ function buildSettingsPanel(sheet: SettingsPage, get: () => Settings, currentSha
     row('X 式重排', '按你的观看历史重新排：常看完的 UP 往前，秒退和「不感兴趣」的往后，混入关注的人 48 小时内的新稿，看过的不再出现。只在本机计算，可和 App 推荐流一起用', rankT));
 
   const deps: [HTMLElement, ...(() => boolean)[]][] = [
-    [wxT, on(externalT)],              // 天气定位与查询走外部服务（api/weather）
     [sponsorT, on(externalT)],         // 小电视空降助手（background/sponsor）
     [updateInterval, on(externalT)],   // 更新提醒查 GitHub（background/update-reminder）
     // 「检查更新」按钮保持可点：外部服务关闭时点击会提示去隐私分类开启（reported-20261118 回归）
     [intro, off(reduceM)],             // shouldPlayIntro：减少动画时不放开场
     [idD, on(effects), off(reduceM)],  // 账号卡片：控件动效关或减少动画时固定（user-menu）
+    [hdrStrengthS, on(hdrEnhanceT)],
   ];
   const paintDeps = () => {
     const style = searchStyle.querySelector<HTMLElement>('[aria-checked="true"]')?.dataset.v ?? 'classic';
@@ -792,6 +808,7 @@ function buildSettingsPanel(sheet: SettingsPage, get: () => Settings, currentSha
       effects.setAttribute('aria-checked', String(s.uiEffects));
       if (!palSpeedIn.matches(':focus')) palSpeedIn.value = String(s.paletteSpeed);
       searchStyle.set(s.searchStyle);
+      hideHotT.setAttribute('aria-checked', String(s.hideHotSearch));
       appT.setAttribute('aria-checked', String(s.appFeed));
       rankT.setAttribute('aria-checked', String(s.rerank));
       sponsorT.setAttribute('aria-checked', String(s.sponsorSkip));
@@ -808,6 +825,8 @@ function buildSettingsPanel(sheet: SettingsPage, get: () => Settings, currentSha
       batchNavT.setAttribute('aria-checked', String(s.batchNav));
       batchRefreshT.setAttribute('aria-checked', String(s.batchRefresh));
       batchPrefetchT.setAttribute('aria-checked', String(s.batchPrefetch));
+      batchAutoSizeT.setAttribute('aria-checked', String(s.batchAutoSize));
+      batchSizeIn.disabled = s.batchAutoSize;
       if (!batchSizeIn.matches(':focus')) batchSizeIn.value = String(s.batchSize);
       batchOpts.hidden = !s.batchNav;
       cardBits.set(shownCard(s.homeHide));
@@ -817,8 +836,12 @@ function buildSettingsPanel(sheet: SettingsPage, get: () => Settings, currentSha
       favCols.set(String(s.favColumns));
       wideT.setAttribute('aria-checked', String(s.wide));
       cornersT.setAttribute('aria-checked', String(s.playerCorners));
+      rtxCompatT.setAttribute('aria-checked', String(s.rtxCompat));
+      hdrEnhanceT.setAttribute('aria-checked', String(s.hdrEnhance));
+      hdrStrengthS.set(s.hdrStrength);
       autoW.setAttribute('aria-checked', String(s.autoWeb));
       webS.setAttribute('aria-checked', String(s.webScroll));
+      watchHeaderHideT.setAttribute('aria-checked', String(s.watchHeaderHide));
       spdK.setAttribute('aria-checked', String(s.speedKeys));
       treeT.setAttribute('aria-checked', String(s.replyTree));
       msgT.setAttribute('aria-checked', String(s.msgRemind));
@@ -836,6 +859,8 @@ function buildSettingsPanel(sheet: SettingsPage, get: () => Settings, currentSha
       hoverT.setAttribute('aria-checked', String(s.headHover));
       labelsT.setAttribute('aria-checked', String(s.headLabels));
       feedLayout.set(s.feedLayout);
+      dfsS.set(String(s.dynamicSize));
+      feedAutoT.setAttribute('aria-checked', String(s.feedAutoRefresh));
       cmdKT.setAttribute('aria-checked', String(s.cmdK));
       paintCdn();
       paintHead();

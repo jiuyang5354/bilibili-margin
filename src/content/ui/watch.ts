@@ -29,6 +29,7 @@ import { uiReducedMotion as reducedMotion } from '../motion';
 import { FilterRuntime } from '../filter-runtime';
 import { openBili } from '../navigation';
 import { ThemeWriter } from './theme-writer';
+import { WatchHdrController } from './watch-hdr';
 
 // IconMCP headphones, normalized from its 16-unit grid to the shared 24-unit wrapper.
 const LISTEN_ICON = '<g data-iconmcp="headphones" transform="scale(1.5)" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2.25 10 L2.25 8 A5.75 5.75 0 0 1 13.75 8 L13.75 10"/><rect x="2.25" y="9" width="3.25" height="4.75" rx="1"/><rect x="10.5" y="9" width="3.25" height="4.75" rx="1"/></g>';
@@ -50,10 +51,12 @@ export class WatchSkin {
   private panel: SettingsPanel;
   private fav: Sheet;
   private screenSync?: () => void;
+  private syncHeaderHide?: () => void;
   private autoDone = '';
   private wideDone = '';
   private media = matchMedia('(prefers-color-scheme: dark)');
   private themeWriter = new ThemeWriter();
+  private hdr?: WatchHdrController;
   private music: Promise<{ open: () => void }> | null = null;
 
   constructor(private settings: Settings, private kind: SkinKind = 'watch') {
@@ -63,6 +66,7 @@ export class WatchSkin {
     if (isWatch) this.bg.cap(30);
     // 全局换皮样式（watch.css + pages.css）由入口脚本在 document_start 挂上（见 main.ts skinStyle），这里只补类名
     de.classList.add('margin-skin', `margin-${kind}`);
+    if (isWatch) this.syncPlayerCompatibility();
 
     // Shader 背景：独立宿主，fixed 铺满、z-index -1，在 B 站内容之下、画布底色之上
     const bgHost = h('div', { id: 'margin-bg' });
@@ -89,6 +93,7 @@ export class WatchSkin {
       { id: 'w-web', title: '网页全屏', cat: '操作', icon: ICONS.image, keys: ['全屏'], run: () => clickSel('.bpx-player-ctrl-web') },
       { id: 'w-music', title: '听歌模式', cat: '操作', icon: LISTEN_ICON, keys: ['音乐', '歌词'], run: () => { void this.openMusic(); } },
       { id: 'w-wide', title: '宽屏模式', cat: '操作', icon: ICONS.image, keys: ['宽屏'], run: () => clickSel('.bpx-player-ctrl-wide') },
+      { id: 'w-hdr', title: '切换 SDR 转 HDR 增强', cat: '操作', icon: ICONS.sun, keys: ['hdr', '画质', 'sdr'], shortcut: 'Alt+H', run: () => this.hdr?.toggle() },
       { id: 'w-later', title: '把这个视频加入稍后再看', cat: '操作', icon: ICONS.later, keys: ['稍后'], run: async () => { const bv = location.href.match(/BV\w+/)?.[0]; if (!bv) return; const r = await addWatchLater(bv); toast(this.app, r.msg, r.ok ? { label: '查看', run: () => later.open() } : undefined); } },
       { id: 'w-copy', title: '复制视频链接', cat: '操作', icon: ICONS.link, keys: ['分享'], run: () => navigator.clipboard.writeText(location.href.split('?')[0]).then(() => toast(this.app, '链接已复制')) },
     ] : [{ id: 'w-top', title: '回到顶部', cat: '操作', icon: ICONS.top, run: () => scrollTo({ top: 0, behavior: 'smooth' }) }];
@@ -126,6 +131,7 @@ export class WatchSkin {
       { label: '看评论', en: 'Comments', run: () => document.querySelector('#commentapp, bili-comments, .comment-container')?.scrollIntoView({ behavior: 'smooth', block: 'start' }) },
       { label: '网页全屏', en: 'Web Fullscreen', run: () => click('.bpx-player-ctrl-web') },
       { label: '宽屏模式', en: 'Wide Mode', run: () => click('.bpx-player-ctrl-wide') },
+      { label: 'HDR 增强', en: 'SDR → HDR', run: () => this.hdr?.toggle() },
       { label: '收藏夹', en: 'Favorites', run: () => this.fav.open() },
     ]) : null;
     const backTop = kind === 'search' ? h('button', { type: 'button', class: 'page-back-top', hidden: true, 'aria-label': '返回顶部',
@@ -147,7 +153,7 @@ export class WatchSkin {
     this.media.addEventListener('change', () => this.applyTheme(false));
     // 搜索页没有播放器；普通视频、番剧、列表等换皮页都运行播放器相关设置
     if (kind !== 'search') this.watchScreen();
-    if (isWatch) { startTriple(); podProgress(); startWatchCard(); }
+    if (isWatch) { this.watchHeaderAutoHide(); startTriple(); podProgress(); startWatchCard(); }
   }
 
   update(s: Settings): void {
@@ -156,6 +162,10 @@ export class WatchSkin {
     this.app.classList.toggle('margin-ui-still', !s.uiEffects);
     const prev = this.settings;
     this.settings = s;
+    if (this.kind === 'watch') {
+      this.syncPlayerCompatibility();
+      this.hdr?.update(s);
+    }
     this.filter.update(s);
     if (prev.reduceMotion !== s.reduceMotion || prev.theme !== s.theme || JSON.stringify(prev.bg) !== JSON.stringify(s.bg)) this.applyTheme(false);
     if (prev.webScroll !== s.webScroll || prev.wide !== s.wide || prev.autoWeb !== s.autoWeb) {
@@ -163,6 +173,7 @@ export class WatchSkin {
       this.wideDone = '';
       this.screenSync?.();
     }
+    if (prev.watchHeaderHide !== s.watchHeaderHide) this.syncHeaderHide?.();
     this.head.setMsgRemind(s.msgRemind);
     this.panel.sync(s);
   }
@@ -210,6 +221,63 @@ export class WatchSkin {
     }
   }
 
+  private syncPlayerCompatibility(): void {
+    const de = document.documentElement;
+    de.classList.toggle('margin-rtx-compat', this.settings.rtxCompat);
+    de.classList.toggle('margin-player-square', !this.settings.playerCorners);
+  }
+
+  private watchVideo(volTip: (text: string) => void): () => void {
+    const de = document.documentElement;
+    const hdr = this.hdr = new WatchHdrController(this.settings, volTip);
+    let video: HTMLVideoElement | null = null;
+    let area: HTMLElement | null = null;
+    let events: AbortController | undefined;
+    const syncPlaying = () => this.bg.hold('playing', !!video && !video.paused && !video.ended && video.readyState >= 2
+      && !de.classList.contains('margin-listening-bg'));
+    const syncVideoFit = () => {
+      if (!area) return;
+      const { width, height } = area.getBoundingClientRect();
+      const boxRatio = width / height;
+      const fit = !!video && video.videoWidth > 0 && video.videoHeight > 0 && width > 0 && height > 0
+        && !document.fullscreenElement && area.closest('.bpx-player-container')?.getAttribute('data-screen') !== 'full'
+        && Math.abs(video.videoWidth / video.videoHeight - boxRatio) / boxRatio < 0.022;
+      if (fit === (area.dataset.marginExactFit === '1')) return;
+      if (fit) area.dataset.marginExactFit = '1';
+      else delete area.dataset.marginExactFit;
+      hdr.refreshFrame();
+    };
+    const resize = new ResizeObserver(syncVideoFit);
+    const sync = () => {
+      const nextVideo = document.querySelector<HTMLVideoElement>('.bpx-player-video-wrap video')
+        ?? document.querySelector<HTMLVideoElement>('.bpx-player-container video, #bilibili-player video, .bilibili-player-video video');
+      const nextArea = nextVideo?.closest<HTMLElement>('.bpx-player-video-area') ?? null;
+      if (nextArea !== area) {
+        if (area) { resize.unobserve(area); delete area.dataset.marginExactFit; }
+        area = nextArea;
+        if (area) resize.observe(area);
+      }
+      if (nextVideo !== video) {
+        events?.abort();
+        events = new AbortController();
+        video = nextVideo;
+        for (const event of ['loadedmetadata', 'resize', 'emptied']) video?.addEventListener(event, syncVideoFit, { signal: events.signal });
+        for (const event of ['play', 'playing', 'pause', 'ended', 'loadeddata', 'emptied']) video?.addEventListener(event, syncPlaying, { signal: events.signal });
+      }
+      syncVideoFit();
+      syncPlaying();
+      hdr.sync(video);
+    };
+    const playerNodes = 'video, .bpx-player-video-area, .bpx-player-control-bottom-right, .bpx-player-ctrl-wide, .bpx-player-ctrl-web';
+    new MutationObserver(records => {
+      if ((video && !video.isConnected) || records.some(record => [...record.addedNodes, ...record.removedNodes].some(node =>
+        node instanceof Element && (node.matches(playerNodes) || node.querySelector(playerNodes))))) sync();
+    }).observe(de, { childList: true, subtree: true });
+    every(1500, sync);
+    sync();
+    return sync;
+  }
+
   /** 网页全屏 / 全屏时收起顶栏，不挡播放器 */
   private watchScreen(): void {
     // B 站有两代播放器：新版的 .bpx-player-container[data-screen]，旧版依赖包裹层 class
@@ -225,6 +293,7 @@ export class WatchSkin {
       return 'normal';
     };
     let lastState = '';
+    let syncVideo: (() => void) | undefined;
     const sync = (force = false) => {
       const screen = playerScreen();
       const full = !!document.fullscreenElement;
@@ -238,6 +307,7 @@ export class WatchSkin {
       webScroll(screen === 'web' && !full && this.settings.webScroll);
       this.bg.hold('screen', hide && (!document.documentElement.classList.contains('margin-listening-bg') || full));
       document.documentElement.classList.toggle('margin-webscreen', hide);
+      syncVideo?.();
       // 小窗只移动播放器本体，文档仍沿用进入小窗前的宽屏布局。
       wide(screen === 'wide' || (screen === 'mini' && de.classList.contains('margin-wide')));
     };
@@ -305,7 +375,7 @@ export class WatchSkin {
       if (!on) {
         webHeading?.disconnect(); webHeading = null;
         cancelAnimationFrame(webFrame); webFrame = 0;
-        if (de.classList.contains('margin-webscroll')) { de.classList.remove('margin-webscroll'); for (const k of ['y', 'x', 'w', 'h']) de.style.removeProperty(`--m-ws-${k}`); }
+        if (de.classList.contains('margin-webscroll')) { de.classList.remove('margin-webscroll'); for (const k of ['y', 'x', 'w', 'h', 'vh']) de.style.removeProperty(`--m-ws-${k}`); }
         return;
       }
       const wrap = document.querySelector<HTMLElement>('.player-wrap, #bilibili-player-wrap, .bilibili-player-wrap');
@@ -323,6 +393,7 @@ export class WatchSkin {
         de.style.setProperty('--m-ws-y', `${-top}px`);
         de.style.setProperty('--m-ws-x', `${-left}px`);
         de.style.setProperty('--m-ws-w', `${de.clientWidth}px`);
+        de.style.setProperty('--m-ws-vh', `${de.clientHeight}px`);
         de.style.setProperty('--m-ws-h', `${Math.max(0, innerHeight - top)}px`);
         if (!webHeading) {
           const title = document.querySelector('.video-info-container');
@@ -359,7 +430,8 @@ export class WatchSkin {
     let tipEl: HTMLElement | null = null, tipT = 0;
     const volTip = (text: string) => {
       const host = document.querySelector<HTMLElement>('.bpx-player-video-area') ?? document.body;
-      if (!tipEl || !tipEl.isConnected) {
+      if (tipEl?.parentElement !== host) {
+        tipEl?.remove();
         tipEl = document.createElement('div');
         tipEl.className = 'm-voltip';
         host.appendChild(tipEl);
@@ -416,6 +488,7 @@ export class WatchSkin {
       v.addEventListener('loadstart', checkShortcut);
       volTip(`${n.toFixed(1)}×`);
     }, true);
+    if (this.kind === 'watch') syncVideo = this.watchVideo(volTip);
     this.screenSync = () => sync(true);
     addEventListener('resize', () => { if (de.classList.contains('margin-webscroll')) webScroll(true); });
     new MutationObserver(() => sync()).observe(document.documentElement, { subtree: true, attributes: true, attributeFilter: ['data-screen'] });
@@ -478,6 +551,48 @@ export class WatchSkin {
     }, { immediate: true });
     document.addEventListener('fullscreenchange', () => sync());
     sync();
+  }
+
+  /** 可选顶栏下滚自动隐藏（#258）：下滚收起，上滚 / 回到顶部 / 移到顶缘 / 聚焦 / 抽屉打开时恢复 */
+  private watchHeaderAutoHide(): void {
+    const de = document.documentElement;
+    const top = this.head.el;
+    let hidden = false;
+    let hovering = false;
+    let lastY = scrollY;
+    const pinned = () =>
+      hovering
+      || !!top.querySelector('input:focus, textarea:focus, [contenteditable]:focus')
+      || this.app.classList.contains('sheeted')
+      || !!this.app.querySelector('.cp[data-open="true"], .cm[data-state="open"], .dw:not([hidden]), .dp[data-open], .idcl-stage:not([hidden])');
+    const setHidden = (next: boolean) => {
+      const want = next && this.settings.watchHeaderHide && !pinned();
+      if (want === hidden) return;
+      hidden = want;
+      this.app.toggleAttribute('data-header-hidden', hidden);
+      de.classList.toggle('margin-watch-header-hidden', hidden);
+    };
+    const onScroll = () => {
+      const y = scrollY;
+      const dy = y - lastY;
+      lastY = y;
+      if (!this.settings.watchHeaderHide) { setHidden(false); return; }
+      if (y <= 24) { setHidden(false); return; }
+      if (dy > 8 && y > 88) setHidden(true);
+      else if (dy < -6) setHidden(false);
+    };
+    top.addEventListener('pointerenter', () => { hovering = true; setHidden(false); });
+    top.addEventListener('pointerleave', () => { hovering = false; });
+    top.addEventListener('focusin', () => setHidden(false));
+    this.app.addEventListener('margin:sheet', () => { if (pinned()) setHidden(false); });
+    addEventListener('scroll', onScroll, { passive: true });
+    addEventListener('pointermove', (e) => {
+      if (this.settings.watchHeaderHide && e.clientY <= 14) setHidden(false);
+    }, { passive: true });
+    this.syncHeaderHide = () => {
+      lastY = scrollY;
+      if (!this.settings.watchHeaderHide) setHidden(false);
+    };
   }
 }
 

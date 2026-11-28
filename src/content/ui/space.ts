@@ -77,17 +77,23 @@ export class SpaceApp {
   private searchCards = new Map<string, HTMLElement>();
   private folder: Folder | null = null;
   private folderTargets: Promise<Folder[]> | null = null;
+  private otherFavLink!: HTMLAnchorElement;
+  private isOwnSpace = false;
   private contentSeen = new Set<string>();
   /** 最近投币 / 点赞：进页面时各请求一次，对方公开了才出标签 */
   private recent: Partial<Record<'coin' | 'like', Video[]>> = {};
 
   constructor(settings: Settings, private mid: number, initial: Tab) {
     this.shell = new PageShell(settings, 'space');
+    this.shell.app.style.setProperty('--margin-dfs', `${settings.dynamicSize}px`);
     this.tab = initial;
     this.render();
   }
 
-  update(s: Settings): void { this.shell.update(s); }
+  update(s: Settings): void {
+    this.shell.update(s);
+    this.shell.app.style.setProperty('--margin-dfs', `${s.dynamicSize}px`);
+  }
 
   private render(): void {
     const s = this.shell;
@@ -102,7 +108,7 @@ export class SpaceApp {
     tabs.append(mk('video', '视频'), mk('collections', '合集和系列'), mk('article', '图文'), mk('audio', '音频'), mk('favorites', '收藏夹'), mk('dynamic', '动态'));
     const input = h('input', { type: 'search', class: 'sp-q-in', placeholder: '搜索 TA 的视频', 'aria-label': '搜索 TA 的视频', autocomplete: 'off' }) as HTMLInputElement;
     let qt = 0;
-    const apply = () => { const v = input.value.trim(); if (v === this.q) return; this.q = v; if (this.tab === 'video' || this.collection) this.reload(); };
+    const apply = () => { const v = input.value.trim(); if (v === this.q) return; this.q = v; if (this.tab === 'video' || this.collection || this.folder || (this.tab === 'favorites' && this.isOwnSpace)) this.reload(); };
     input.addEventListener('input', () => { clearTimeout(qt); qt = window.setTimeout(apply, 400); });
     input.addEventListener('keydown', (e) => { e.stopPropagation(); if (e.key === 'Enter') { clearTimeout(qt); apply(); } if (e.key === 'Escape') { input.value = ''; clearTimeout(qt); apply(); } });
     this.searchBox = h('label', { class: 'sp-q' }, icon(ICONS.search), input);
@@ -124,7 +130,12 @@ export class SpaceApp {
     this.kindSeg.hidden = true;
     this.layoutSeg = segmented<Layout>([['grid', '网格'], ['list', '列表']], this.layout, (v) => { this.layout = v; localStorage.setItem(LAYOUT_KEY, v); this.reload(); });
     this.layoutSeg.classList.add('sp-sort', 'sp-layout');
-    const bar = h('div', { class: 'bar sp-bar' }, h('div', { class: 'bar-row' }, tabs, h('div', { class: 'sp-tools' }, this.searchBox, this.kindSeg, this.sort, this.collectionSort, this.layoutSeg)));
+    this.otherFavLink = h('a', {
+      class: 'ghost small fav-other-link', hidden: true,
+      href: `https://space.bilibili.com/${this.mid}/favlist?ftype=opus&margin=off`,
+      target: '_blank', rel: 'noopener', title: '在 B 站原版查看图文、话题与课程收藏夹',
+    }, '图文 / 话题 / 课程收藏', icon(ICONS.arrow)) as HTMLAnchorElement;
+    const bar = h('div', { class: 'bar sp-bar' }, h('div', { class: 'bar-row' }, tabs, h('div', { class: 'sp-tools' }, this.otherFavLink, this.searchBox, this.kindSeg, this.sort, this.layoutSeg)));
     this.list = h('section', { class: 'grid' });
     this.status = h('div', { class: 'status' });
     this.sentinel = h('div', { class: 'sentinel' });
@@ -296,15 +307,24 @@ export class SpaceApp {
       followBtn,
       h('a', { class: 'sp-msg', href: `https://message.bilibili.com/#/whisper/mid${i.mid}`, target: '_blank', rel: 'noopener' }, icon(ICONS.message), '私信'),
       moreBtn, menu);
+    const bangumiLink = h('a', { class: 'ghost small sp-native-following', href: `https://space.bilibili.com/${i.mid}/bangumi?margin=off`, target: '_blank', rel: 'noopener', 'aria-label': '追番／追剧' }, '追番／追剧', icon(ICONS.arrow));
     // 自己的空间：关注 / 私信换成收藏夹、历史记录、稍后再看（用户反馈：不想每次去顶栏找）
     account().then((me) => {
       if (!me || me.mid !== i.mid) return;
+      this.isOwnSpace = true;
+      this.applyTabUi();
       // 21st「Glass Button」(jahed, 4922)：玻璃胶囊 + 图标底片，hover 微抬。抽屉在这里本地创建，
       // 不依赖 shell（空间页是独立 PageShell，顶层 Shell 可能没构造，panels 为空会导致点了没反应）
       const openPanel = (kind: 'fav' | 'hist' | 'later', fallback: string) => {
         try { drawers(this.shell.app, () => this.shell.settings)[kind].open(); }
         catch (e) { console.warn('[映间] 抽屉打开失败，退回原页面', e); openBili(fallback); }
       };
+      bangumiLink.addEventListener('click', (e) => {
+        if (e.ctrlKey || e.metaKey || e.shiftKey || e.altKey || e.button !== 0) return;
+        const ev = new CustomEvent('margin:open-fav', { cancelable: true, detail: { tab: 'bangumi' } });
+        dispatchEvent(ev);
+        if (ev.defaultPrevented) e.preventDefault();
+      });
       const tile = (label: string, ic: string, run: () => void) => {
         const b = h('button', {
           class: 'sp-tile', type: 'button', onclick: run,
@@ -336,7 +356,7 @@ export class SpaceApp {
           h('h1', {}, i.name),
           i.official ? h('p', { class: 'sp-official' }, i.official) : null,
           i.sign ? h('p', { class: 'sp-sign' }, i.sign) : null,
-          h('a', { class: 'ghost small sp-native-following', href: `https://space.bilibili.com/${i.mid}/bangumi?margin=off`, target: '_blank', rel: 'noopener', 'aria-label': '追番／追剧（B 站原版）' }, '追番／追剧', icon(ICONS.arrow))),
+          bangumiLink),
         h('div', { class: 'sp-side' },
           this.stats(null),
           acts)),
@@ -386,20 +406,22 @@ export class SpaceApp {
 
   private applyTabUi(): void {
     this.shell.main.querySelectorAll<HTMLElement>('.sp-bar .tab').forEach((b) => b.setAttribute('aria-selected', String(b.dataset.tab === this.tab)));
-    const vid = ['video', 'coin', 'like'].includes(this.tab) || !!this.collection || !!this.folder;
-    const searchable = this.tab === 'video' || (this.tab === 'collections' && !!this.collection);
+    const favRootSearch = this.tab === 'favorites' && !this.folder && this.isOwnSpace && !!this.q;
+    const vid = ['video', 'coin', 'like'].includes(this.tab) || !!this.collection || !!this.folder || favRootSearch;
+    const searchable = this.tab === 'video' || (this.tab === 'collections' && !!this.collection) || (this.tab === 'favorites' && (!!this.folder || this.isOwnSpace));
     this.sort.hidden = this.tab !== 'video';
     this.collectionSort.hidden = !this.collection || !!this.q;
     this.kindSeg.hidden = this.tab !== 'video' || !this.chargingCount;
+    this.otherFavLink.hidden = !this.isOwnSpace || this.tab !== 'favorites' || !!this.folder || favRootSearch;
     this.searchBox.hidden = !searchable;
     if (this.qInput) {
-      const label = this.tab === 'collections' ? '搜索合集内视频' : '搜索 TA 的视频';
+      const label = this.tab === 'collections' ? '搜索合集内视频' : this.tab === 'favorites' ? (this.folder ? '搜索收藏夹内视频' : '搜索全部收藏夹') : '搜索 TA 的视频';
       this.qInput.placeholder = label;
       this.qInput.setAttribute('aria-label', label);
     }
     this.layoutSeg.hidden = !vid;
     this.list.className = this.tab === 'dynamic' ? 'dy-list' : vid && this.layout === 'list' ? 'vlist' : 'grid';
-    this.collectionHead.hidden = !this.collection && !this.folder;
+    this.collectionHead.hidden = !this.collection && !this.folder && !favRootSearch;
   }
 
   /** 第一次从投稿接口拿到「充电专属」数量时，把筛选显示出来并标上数量 */
@@ -428,10 +450,12 @@ export class SpaceApp {
   }
 
   private openFolder(folder: Folder): void {
+    this.clearQuery();
     this.folder = folder;
     history.replaceState(null, '', `/${this.mid}/favlist?fid=${folder.id}`);
     this.collectionHead.replaceChildren(
       h('button', { class: 'ghost small', type: 'button', onclick: () => {
+        this.clearQuery();
         this.folder = null; history.replaceState(null, '', `/${this.mid}/favlist`); this.reload();
       } }, icon(ICONS.back), '收藏夹'), h('h2', {}, folder.title));
     const link = { target: '_blank', rel: 'noopener' };
@@ -480,7 +504,7 @@ export class SpaceApp {
       history.replaceState(null, '', `/${this.mid}?margin_tab=collections`);
       this.collectionHead.replaceChildren(
         h('button', { class: 'ghost small', type: 'button', onclick: () => { this.clearQuery(); this.collection = null; this.reload(); } }, icon(ICONS.back), '合集和系列'),
-        h('h2', {}, c.name));
+        h('h2', {}, c.name), this.collectionSort);
       this.reload();
     };
     return h('button', { class: 'sp-search-hit', type: 'button', onclick: open },
@@ -497,7 +521,7 @@ export class SpaceApp {
         h('button', { class: 'ghost small', type: 'button', onclick: () => {
           this.clearQuery(); this.collection = null; this.reload();
         } }, icon(ICONS.back), '合集和系列'),
-        h('h2', {}, c.name));
+        h('h2', {}, c.name), this.collectionSort);
       this.reload();
       this.collectionHead.querySelector('button')?.focus({ preventScroll: true });
     };
@@ -533,7 +557,8 @@ export class SpaceApp {
     this.status.replaceChildren();
     const gen = this.gen;
     const vid = this.tab !== 'dynamic';
-    const listMode = this.layout === 'list' && (['video', 'coin', 'like'].includes(this.tab) || !!this.collection || !!this.folder);
+    const favRootSearch = this.tab === 'favorites' && !this.folder && this.isOwnSpace && !!this.q;
+    const listMode = this.layout === 'list' && (['video', 'coin', 'like'].includes(this.tab) || !!this.collection || !!this.folder || favRootSearch);
     const sk = listMode ? h('div', { class: 'vrow sk' }, h('div', { class: 'line' })) : vid ? skeleton(this.list.children.length ? 5 : 15) : h('div', { class: 'dy sk' }, h('div', { class: 'line' }), h('div', { class: 'line' }), h('div', { class: 'line short' }));
     const skNodes = sk instanceof DocumentFragment ? [...sk.childNodes] : [sk];
     this.list.append(sk);
@@ -554,7 +579,7 @@ export class SpaceApp {
         if (this.folder) {
           const folder = this.folder;
           const [r, own] = await Promise.all([
-            folderVideos(folder.id, this.page),
+            folderVideos(folder.id, this.page, this.q),
             nav().then(n => n.isLogin && n.mid === folder.mid, () => false),
           ]);
           if (gen !== this.gen) return;
@@ -576,6 +601,30 @@ export class SpaceApp {
             this.list.append(card);
           }
           this.done = !r.more;
+        } else if (this.q && this.isOwnSpace) {
+          if (this.page === 1) {
+            this.collectionHead.replaceChildren(
+              h('button', { class: 'ghost small', type: 'button', onclick: () => { this.clearQuery(); this.reload(); } }, icon(ICONS.back), '收藏夹'),
+              h('h2', {}, `全部收藏夹 · 搜索「${this.q}」`));
+          }
+          const folders = await this.targets();
+          if (gen !== this.gen) return;
+          const root = folders.find(f => f.isDefault) ?? folders[0];
+          if (!root) {
+            skNodes.forEach(n => (n as Element).remove());
+            this.done = true;
+          } else {
+            const r = await folderVideos(root.id, this.page, this.q, 'all');
+            if (gen !== this.gen) return;
+            skNodes.forEach(n => (n as Element).remove());
+            this.page++;
+            for (const video of r.list) {
+              if (this.contentSeen.has(video.bvid)) continue;
+              this.contentSeen.add(video.bvid);
+              this.list.append(listMode ? this.row(video, this.contentSeen.size) : videoCard(video, this.contentSeen.size - 1, { compact: false }));
+            }
+            this.done = !r.more;
+          }
         } else {
           const r = await publicFolders(this.mid, this.page);
           if (gen !== this.gen) return;
@@ -587,7 +636,7 @@ export class SpaceApp {
           }
           this.done = !r.more;
         }
-        if (!this.list.children.length) this.status.replaceChildren(h('span', {}, this.folder ? '暂无可播放视频' : '没有公开的收藏夹'));
+        if (!this.list.children.length) this.status.replaceChildren(h('span', {}, this.folder ? (this.q ? `没有找到「${this.q}」相关视频` : '暂无可播放视频') : this.q && this.isOwnSpace ? `全部收藏夹中没有找到「${this.q}」相关视频` : '没有公开的收藏夹'));
       } else if (this.tab === 'collections' && !this.collection) {
         const r = await spaceCollections(this.mid, this.page);
         if (gen !== this.gen) return;

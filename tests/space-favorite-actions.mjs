@@ -51,9 +51,10 @@ try {
   const card = cards.first();
   await card.getByRole('button', { name: '复制到…', exact: true }).click();
   const select = card.getByRole('combobox', { name: '目标收藏夹' });
-  await select.locator('option[value="103"]').waitFor({ state: 'attached' });
-  assert.equal(await select.locator('option').count(), 2, 'include later-page and private target, exclude source');
-  await select.selectOption('103');
+  const menu = page.locator('#margin-root [role="listbox"].fav-select-menu');
+  await select.click();
+  assert.equal(await menu.getByRole('option').count(), 2, 'include later-page and private target, exclude source');
+  await menu.locator('[role="option"][data-value="103"]').click();
   await card.getByRole('button', { name: '确认复制', exact: true }).click();
   await card.getByText('已复制到「收藏夹 103」', { exact: true }).waitFor();
   assert.equal(await cards.count(), 2);
@@ -62,11 +63,12 @@ try {
   checks.push('owned grid, lazy paginated targets and copy retain source');
   fail = true;
   await card.getByRole('button', { name: '移动到…', exact: true }).click();
-  await card.getByRole('combobox').selectOption('102');
+  await select.click();
+  await menu.locator('[role="option"][data-value="102"]').click();
   await card.getByRole('button', { name: '确认移动', exact: true }).click();
   await card.getByRole('alert').filter({ hasText: '移动失败' }).waitFor();
   assert.equal(await cards.count(), 2);
-  assert.equal(await card.getByRole('combobox').inputValue(), '102');
+  assert.equal(await select.getAttribute('data-value'), '102');
   fail = false; hold = true;
   await card.getByRole('button', { name: '确认移动', exact: true }).click();
   await page.waitForFunction(() => document.querySelector('#margin-root').shadowRoot.querySelector('.fav-video-transfer button').disabled);

@@ -46,11 +46,40 @@ type Pages = {
   'channel-carousel': typeof import('./pages/channel-carousel');
   'search-exact': typeof import('./pages/search-exact');
 };
+async function retryStartup<T>(
+  run: (attempt: number) => Promise<T>,
+  delays: readonly number[],
+  transient: (error: unknown) => boolean,
+): Promise<T> {
+  for (let attempt = 0; ; attempt++) {
+    try { return await run(attempt); }
+    catch (error) {
+      if (attempt >= delays.length || !chrome.runtime?.id || !transient(error)) throw error;
+      await new Promise<void>(resolve => setTimeout(resolve, delays[attempt]));
+    }
+  }
+}
+
 /** 按需加载页面模块；content script 不能是 ES module，但可以动态 import 扩展里的 ES 模块 */
-const load = <K extends keyof Pages>(name: K): Promise<Pages[K]> => import(/* @vite-ignore */ chrome.runtime.getURL(`pages/${name}.js`));
+const load = <K extends keyof Pages>(name: K): Promise<Pages[K]> => retryStartup(
+  (attempt) => {
+    // A failed fetch can be cached in the document's module map.
+    const retry = attempt ? `?retry=${attempt}` : '';
+    return import(/* @vite-ignore */ chrome.runtime.getURL(`pages/${name}.js${retry}`));
+  },
+  [120, 300],
+  error => error instanceof TypeError && /fetch|load|network|timed?\s*out|timeout/i.test(error.message),
+);
 let bootSettings: Promise<Settings> | null = null;
 let settingsReload = false;
-const startupSettings = (): Promise<Settings> => bootSettings ??= loadSettings();
+function startupSettings(): Promise<Settings> {
+  if (!bootSettings) {
+    const pending = retryStartup(loadSettings, [100, 250], error => !/extension context invalidated/i.test(String(error)));
+    bootSettings = pending;
+    void pending.catch(() => { if (bootSettings === pending) bootSettings = null; });
+  }
+  return bootSettings;
+}
 
 const HIDE_CSS = 'html{background:#111!important;overflow:hidden!important}body{display:none!important}@media (prefers-color-scheme: light){html{background:#f5f4f1!important}}';
 
@@ -121,7 +150,8 @@ const LOC = '(?:[a-z]{2}(?:-[A-Za-z]{2,4})?/)?';
 const spaceMatch = () => {
   if (location.hostname !== 'space.bilibili.com') return null;
   const match = location.pathname.match(new RegExp(`^/${LOC}(\\d+)(?:/(video|upload/(?:video|opus|article|audio)|dynamic|article|opus|audio|favlist|upload))?/?$`));
-  if (match?.[2] === 'favlist' && new URLSearchParams(location.search).get('ftype') === 'collect') return null;
+  const ftype = match?.[2] === 'favlist' ? new URLSearchParams(location.search).get('ftype') : null;
+  if (ftype && ftype !== 'create') return null;
   return match;
 };
 const isMessage = () => location.hostname === 'message.bilibili.com' && window.top === window;
@@ -322,7 +352,11 @@ async function start(): Promise<void> {
   const mod = load('home');
   mod.catch(() => {});
 
-  const settings = await startupSettings();
+  const settings = await startupSettings().catch(error => {
+    unmute();
+    restoreNative(hide, guardEnabled());
+    throw error;
+  });
   if (settingsReload) return;
   setSkinMirror(redesignOn(settings) ? settings.theme : '0');
   if (!redesignOn(settings)) { hide.remove(); unmute(); return disabledAfterMute(); }
@@ -347,7 +381,11 @@ async function takeover<M>(mod: Promise<M>, make: (m: M, s: Settings) => { shell
   if (sessionStorage.getItem('margin:off') || offByUrl()) { backPill(); return; }
   const hide = hideOriginal();
   const unmute = mute ? muteNative() : () => {};
-  const settings = await startupSettings();
+  const settings = await startupSettings().catch(error => {
+    unmute();
+    restoreNative(hide, mute && guardEnabled());
+    throw error;
+  });
   if (settingsReload) return;
   setSkinMirror(redesignOn(settings) ? settings.theme : '0');
   if (!redesignOn(settings)) { hide.remove(); unmute(); return mute ? disabledAfterMute() : undefined; }
@@ -435,6 +473,9 @@ function applyFont(s: Settings): void {
   }
   set('--margin-player-rk', on && !s.playerCorners ? '0' : null);
   set('--margin-cfs', on && s.commentSize !== 14 ? `${s.commentSize}px` : null);
+  set('--margin-dfs', on && s.dynamicSize !== 16 ? `${s.dynamicSize}px` : null);
+  de.classList.toggle('margin-player-square', on && !s.playerCorners);
+  de.classList.toggle('margin-rtx-compat', on && s.rtxCompat);
 }
 if (!offByUrl() && !sessionStorage.getItem('margin:off')) {
   startupSettings().then((s) => { applyFont(s); applyGlobalUi(s); }).catch(() => {});

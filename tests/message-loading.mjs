@@ -39,8 +39,11 @@ try{
   await input.fill('保留草稿和焦点');await input.focus();
   await first.evaluate(e=>{window.marginInitialSession=e;});
   if(interactive){releaseProfiles();await first.locator('.wh-sn b').filter({hasText:'联系人'}).waitFor();}
-  results.profileHydration={draft:await draftValue(input),focused:await input.evaluate(e=>e.getRootNode().activeElement===e),sameRow:await first.evaluate(e=>window.marginInitialSession===e)};
+  const hydratedName=await first.locator('.wh-sn b').textContent();
+  results.profileHydration={draft:await draftValue(input),focused:await input.evaluate(e=>e.getRootNode().activeElement===e),sameRow:await first.evaluate(e=>window.marginInitialSession===e),placeholder:await input.getAttribute('data-placeholder'),ariaLabel:await input.getAttribute('aria-label')};
   assert.equal(results.profileHydration.draft,'保留草稿和焦点');assert(results.profileHydration.focused&&results.profileHydration.sameRow);
+  assert.equal(results.profileHydration.placeholder,`发消息给 ${hydratedName}`);
+  assert.equal(results.profileHydration.ariaLabel,`发消息给 ${hydratedName}`);
   await rows.nth(1).click();await page.locator('#margin-root .wh-log').getByText('已加载的聊天记录',{exact:true}).waitFor();
   holdHistory=true;await first.click();
   const cached=await page.locator('#margin-root .wh-log').getByText('已加载的聊天记录',{exact:true}).waitFor({timeout:1000}).then(()=>true,()=>false);

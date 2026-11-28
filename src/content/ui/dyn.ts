@@ -29,7 +29,11 @@ export function dynCard(d: Dyn, nested = false, withAuthor = false): HTMLElement
   const media: (Node | null)[] = [];
   if (d.video) {
     media.push(h('a', { class: 'dy-video', href: `https://www.bilibili.com/video/${d.video.bvid}`, ...ext },
-      h('span', { class: 'dy-vcover', 'data-bvid': d.video.bvid }, img(d.video.cover, 480, 270), d.video.dur ? h('span', { class: 'dur' }, d.video.dur) : null, laterButton(d.video.bvid)),
+      h('span', { class: 'dy-vcover', 'data-bvid': d.video.bvid },
+        img(d.video.cover, 480, 270),
+        d.badge ? h('span', { class: 'tag-charge' }, d.badge) : null,
+        d.video.dur ? h('span', { class: 'dur' }, d.video.dur) : null,
+        laterButton(d.video.bvid)),
       h('span', { class: 'dy-vbody' },
         h('span', { class: 'dy-vtitle' }, d.video.title),
         d.video.desc ? h('span', { class: 'dy-vdesc' }, d.video.desc) : null,
@@ -65,6 +69,7 @@ export function dynCard(d: Dyn, nested = false, withAuthor = false): HTMLElement
       h('span', {}, h('b', {}, link.title), h('span', {}, [link.kind, link.desc].filter(Boolean).join(' · ')))));
   }
   if (d.reserve) media.push(reserveCard(d));
+  if (d.blocked) media.push(blockedCard(d));
   if (d.orig) {
     const original = h('div', { class: 'dy-orig' }, h('div', { class: 'dy-orig-by' }, `@${d.orig.author}`), dynCard(d.orig, true));
     observeDynamicGlass(original); media.push(original);
@@ -85,22 +90,36 @@ export function dynCard(d: Dyn, nested = false, withAuthor = false): HTMLElement
     ...media);
   if (nested) return clickable(h('div', { class: 'dy nested' }, body), d.url);
   const open = () => h('a', { class: 'dy-open', href: d.url, ...ext, title: '查看详情' }, icon(ICONS.arrow));
+  const badgeEl = () => d.badge && !d.blocked?.charging ? h('span', { class: 'dy-charge-badge' }, d.badge) : null;
   // 动态首页：21st SocialPostCard 的作者行（头像 · 名字 · 时间/类型），空间页作者固定所以只留眉标
   const by = withAuthor ? h('div', { class: 'dy-by' },
     h('a', { class: 'dy-by-face', href: `https://space.bilibili.com/${d.mid}`, 'aria-label': `${d.author} 的个人空间`, ...ext }, h('img', { src: d.face ? `${d.face}@80w_80h_1c.webp` : '', alt: '', loading: 'lazy', referrerpolicy: 'no-referrer' })),
     h('div', { class: 'dy-by-b' },
       h('a', { class: 'dy-by-name', href: `https://space.bilibili.com/${d.mid}`, ...ext }, d.author),
-      h('div', { class: 'dy-eyebrow' }, h('span', {}, d.ts ? fmtAgo(d.ts) : d.time), h('span', { class: 'dy-kind' }, kindLabel(d)))),
+      h('div', { class: 'dy-eyebrow' }, h('span', {}, d.ts ? fmtAgo(d.ts) : d.time), h('span', { class: 'dy-kind' }, kindLabel(d)), badgeEl())),
     open()) : null;
   const el = clickable(h('article', { class: withAuthor ? 'dy with-by' : 'dy' },
     by ?? h('div', { class: 'dy-eyebrow' },
       h('span', {}, d.ts ? fmtAgo(d.ts) : d.time),
       h('span', { class: 'dy-kind' }, kindLabel(d)),
+      badgeEl(),
       h('a', { class: 'dy-open', href: d.url, ...ext, title: '查看详情' }, icon(ICONS.arrow))),
     body,
     actions(d)), d.url);
   dynData.set(el, d);
   return el;
+}
+
+function blockedCard(d: Dyn): HTMLElement {
+  const b = d.blocked!;
+  const tag = b.charging ? h('span', { class: 'dy-blocked-tag' }, d.badge || '充电专属') : null;
+  const detail = h('div', { class: 'dy-blocked-body' },
+    h('div', { class: 'dy-blocked-head' }, tag, h('b', {}, b.title)),
+    b.hint ? h('span', { class: 'dy-blocked-hint' }, b.hint) : null);
+  const action = b.action && b.url && safeUrl(b.url)
+    ? h('a', { class: 'dy-blocked-action', href: b.url, ...ext }, b.action, icon(ICONS.arrow))
+    : null;
+  return h('section', { class: b.charging ? 'dy-blocked is-charging' : 'dy-blocked', 'aria-label': b.title }, detail, action);
 }
 
 function reserveCard(d: Dyn): HTMLElement {
@@ -181,6 +200,8 @@ function kindLabel(d: Dyn): string {
   if (d.video) return 'VIDEO';
   if (d.article) return 'ARTICLE';
   if (d.pics.length) return 'PHOTO';
+  if (d.blocked?.charging) return 'CHARGING';
+  if (d.blocked) return 'NOTICE';
   return 'NOTE';
 }
 

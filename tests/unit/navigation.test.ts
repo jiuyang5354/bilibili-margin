@@ -90,3 +90,40 @@ describe('应用窗口站内导航', () => {
     expect(assign).not.toHaveBeenCalled();
   });
 });
+
+
+describe('站内链接 rel 策略（避免丢弃跨标签页用户激活导致静音播放）', () => {
+  it('站内 *.bilibili.com 链接仅保留 noopener，外链与伪装域名保留 noopener noreferrer', async () => {
+    const makeEl = () => {
+      const attrs = new Map<string, string>();
+      return {
+        className: '',
+        setAttribute: (k: string, v: string) => attrs.set(k, v),
+        getAttribute: (k: string) => attrs.get(k) ?? null,
+        addEventListener: vi.fn(),
+        append: vi.fn(),
+      };
+    };
+    vi.stubGlobal('DOMParser', class { parseFromString() { return { body: { childNodes: [] } }; } });
+    vi.stubGlobal('document', { createElement: () => makeEl() });
+    const { h, isBiliUrl } = await import('../../src/content/ui/dom');
+
+    expect(isBiliUrl('https://www.bilibili.com/video/BV1xx')).toBe(true);
+    expect(isBiliUrl('https://t.bilibili.com/123')).toBe(true);
+    expect(isBiliUrl('/video/BV1xx')).toBe(true);
+    expect(isBiliUrl('https://github.com/jiuyang5354/bilibili-margin')).toBe(false);
+    expect(isBiliUrl('https://bilibili.com.evil.test/video/BV1xx')).toBe(false);
+
+    const biliLink = h('a', { href: 'https://www.bilibili.com/video/BV1xx', target: '_blank', rel: 'noopener noreferrer' });
+    expect(biliLink.getAttribute('rel')).toBe('noopener');
+
+    const dynLink = h('a', { href: 'https://www.bilibili.com/opus/999', target: '_blank' });
+    expect(dynLink.getAttribute('rel')).toBe('noopener');
+
+    const extLink = h('a', { href: 'https://github.com/jiuyang5354/bilibili-margin', target: '_blank' });
+    expect(extLink.getAttribute('rel')).toBe('noopener noreferrer');
+
+    const spoofLink = h('a', { href: 'https://bilibili.com.evil.test/x', target: '_blank' });
+    expect(spoofLink.getAttribute('rel')).toBe('noopener noreferrer');
+  });
+});

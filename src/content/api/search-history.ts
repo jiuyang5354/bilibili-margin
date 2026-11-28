@@ -40,23 +40,32 @@ function readHistory(): void {
 function start(): void {
   if (started) return;
   started = true;
+  let initialized = false;
   chrome.storage.local.get('margin:settings').then(data => {
+    if (initialized) return;
+    initialized = true;
     enabled = (data['margin:settings'] as { searchHistory?: boolean } | undefined)?.searchHistory === true;
-    readHistory();
+    if (enabled) readHistory();
+    notify();
   }).catch(() => {});
   chrome.storage.onChanged.addListener((changes, area) => {
     if (area !== 'local') return;
     if (changes['margin:settings']) {
-      enabled = (changes['margin:settings'].newValue as { searchHistory?: boolean } | undefined)?.searchHistory === true;
-      if (!enabled) entries = [];
-      readHistory();
+      const nextEnabled = (changes['margin:settings'].newValue as { searchHistory?: boolean } | undefined)?.searchHistory === true;
+      if (!initialized || enabled !== nextEnabled) {
+        enabled = nextEnabled;
+        if (enabled) readHistory();
+        else { ++revision; entries = []; }
+      }
+      initialized = true;
     }
     if (changes[SEARCH_HISTORY_KEY]) entries = enabled ? cleanHistory(changes[SEARCH_HISTORY_KEY].newValue) : [];
     if (changes[SEARCH_HISTORY_KEY] || changes['margin:settings']) notify();
   });
 }
 
-export function searchHistory(): string[] { start(); return enabled ? cleanHistory(entries).map(entry => entry.text) : []; }
+export function isSearchHistoryEnabled(): boolean { start(); return enabled; }
+export function searchHistory(): string[] { return isSearchHistoryEnabled() ? cleanHistory(entries).map(entry => entry.text) : []; }
 export function rememberSearch(query: string): void {
   start();
   if (enabled && query.trim() && query.length <= 200) entries = cleanHistory([{ text: query.trim(), at: Date.now() }, ...entries.filter(entry => entry.text !== query.trim())]);

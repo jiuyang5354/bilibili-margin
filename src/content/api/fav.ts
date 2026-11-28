@@ -67,8 +67,18 @@ export async function seasonVideos(id: number): Promise<Video[]> {
   return (data.medias ?? []).filter((m) => m.bvid && (m.attr == null || m.attr === 0)).map((m) => mediaVideo(m, m.upper ?? data.info?.upper));
 }
 
-export async function folderVideos(id: number, page: number): Promise<{ list: Video[]; more: boolean }> {
-  const data = await getJSON<{ medias: any[] | null; has_more: boolean }>('/x/v3/fav/resource/list', { media_id: id, pn: page, ps: 20, platform: 'web' }, AbortSignal.timeout(12_000));
+export async function folderVideos(
+  id: number,
+  page: number,
+  keyword?: string,
+  scope: 'folder' | 'all' = 'folder',
+): Promise<{ list: Video[]; more: boolean }> {
+  const q = keyword?.trim();
+  const data = await getJSON<{ medias: any[] | null; has_more: boolean }>(
+    '/x/v3/fav/resource/list',
+    { media_id: id, pn: page, ps: 20, platform: 'web', ...(q ? { keyword: q, ...(scope === 'all' ? { type: 1 } : {}) } : {}) },
+    AbortSignal.timeout(12_000),
+  );
   const list = (data.medias ?? [])
     .filter((m) => m.type === 2 && m.bvid && m.attr === 0)
     .map((m) => mediaVideo(m));
@@ -109,3 +119,50 @@ export async function transferFolderVideo(action: 'move' | 'copy', source: Folde
 }
 
 export const folderPlayUrl = (f: Folder) => `https://www.bilibili.com/list/ml${f.id}?sid=${f.id}`;
+
+export interface FollowMedia {
+  seasonId: number;
+  title: string;
+  cover: string;
+  badge: string;
+  progress: string;
+  indexShow: string;
+  url: string;
+  status: 0 | 1 | 2 | 3;
+}
+
+/** 追番（type=1）/ 追剧（type=2）列表，支持按状态筛选（0 全部 / 1 想看 / 2 在看 / 3 看过）。 */
+export async function followedMedia(
+  kind: 'bangumi' | 'cinema',
+  page = 1,
+  followStatus: 0 | 1 | 2 | 3 = 0,
+  refreshLogin = false,
+): Promise<{ list: FollowMedia[]; total: number; more: boolean; mid: number } | null> {
+  const n = await nav(refreshLogin);
+  if (!n?.isLogin || !n.mid) return null;
+  const ps = 15;
+  const params: Record<string, string | number> = { vmid: n.mid, type: kind === 'cinema' ? 2 : 1, pn: page, ps };
+  if (followStatus) params.follow_status = followStatus;
+  const data = await getJSON<{ list?: any[] | null; total?: number }>(
+    '/x/space/bangumi/follow/list',
+    params,
+    AbortSignal.timeout(12_000),
+  );
+  const raw = Array.isArray(data?.list) ? data.list : [];
+  const list: FollowMedia[] = raw.map((x) => {
+    const seasonId = Number(x.season_id) || 0;
+    const st = x.follow_status;
+    return {
+      seasonId,
+      title: String(x.title || ''),
+      cover: https(x.cover || x.square_cover || x.horizontal_cover_169 || x.horizontal_cover_1610 || ''),
+      badge: String(x.badge || x.badge_info?.text || ''),
+      progress: String(x.progress || ''),
+      indexShow: String(x.new_ep?.index_show || ''),
+      url: https(x.url) || (seasonId ? `https://www.bilibili.com/bangumi/play/ss${seasonId}` : ''),
+      status: (st === 1 || st === 2 || st === 3 ? st : 0) as 0 | 1 | 2 | 3,
+    };
+  }).filter((x) => x.title && x.url);
+  const total = Number(data?.total) || 0;
+  return { list, total, more: raw.length > 0 && (total > 0 ? page * ps < total : raw.length >= ps), mid: n.mid };
+}

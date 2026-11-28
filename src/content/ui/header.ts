@@ -47,6 +47,7 @@ type OpenSearch = (q: string, origin?: HTMLElement) => void;
 
 function searchField(onSearch?: OpenSearch): HTMLFormElement {
   let searchStyle: Settings['searchStyle'] = 'classic';
+  let hideHot = false;
 
   const input = h('input', { type: 'search', placeholder: '搜索视频、UP 主', autocomplete: 'off', 'aria-label': '搜索' }) as HTMLInputElement;
   const search = h('form', {
@@ -66,6 +67,7 @@ function searchField(onSearch?: OpenSearch): HTMLFormElement {
     const words = h('span', { class: 'search-ph-ws' });
     const placeholder = h('span', { class: 'search-ph', 'aria-hidden': 'true' }, words);
     let names: string[] = [], index = 0;
+    let loadingHot = false;
     let stopRotation: (() => void) | undefined;
     const paint = () => {
       const previous = words.querySelector('.search-ph-w:not(.out)');
@@ -79,7 +81,8 @@ function searchField(onSearch?: OpenSearch): HTMLFormElement {
     };
     const startRotation = () => {
       stopRotation?.();
-      if (searchStyle !== 'new' || uiReducedMotion() || !names.length) return;
+      stopRotation = undefined;
+      if (hideHot || searchStyle !== 'new' || uiReducedMotion() || !names.length) return;
       stopRotation = every(3200, () => {
         if (!search.isConnected) { stopRotation?.(); return; }
         const rect = search.getBoundingClientRect();
@@ -89,20 +92,34 @@ function searchField(onSearch?: OpenSearch): HTMLFormElement {
       });
     };
     const syncSearch = () => {
-      const hot = searchStyle === 'new' && names.length > 0;
+      const hot = !hideHot && searchStyle === 'new' && names.length > 0;
       search.classList.toggle('has-hot', hot);
       if (hot) search.append(placeholder); else placeholder.remove();
       startRotation();
     };
     onUiMotionChange(startRotation);
-    loadSettings().then(st => { searchStyle = st.searchStyle; syncSearch(); }).catch(() => {});
-    onSettingsChange((n, p) => { searchStyle = n.searchStyle; if (n.searchStyle !== p.searchStyle) syncSearch(); });
-    hotSearch().then(list => {
-      names = list.slice(0, 10).map(item => item.name);
-      if (!names.length) return;
-      paint();
+    const applySearchSettings = (s: Settings) => {
+      searchStyle = s.searchStyle;
+      hideHot = s.hideHotSearch;
+      if (hideHot) {
+        names = [];
+        index = 0;
+        words.replaceChildren();
+      }
       syncSearch();
-    }).catch(() => {});
+      if (hideHot || searchStyle !== 'new' || loadingHot || names.length) return;
+      loadingHot = true;
+      void hotSearch().then(list => {
+        if (hideHot) return;
+        names = list.slice(0, 10).map(item => item.name);
+        if (names.length) paint();
+        syncSearch();
+      }).catch(() => {}).finally(() => { loadingHot = false; });
+    };
+    loadSettings().then(applySearchSettings).catch(() => {});
+    onSettingsChange((n, p) => {
+      if (n.searchStyle !== p.searchStyle || n.hideHotSearch !== p.hideHotSearch) applySearchSettings(n);
+    });
   }
 
   acceptTextDrop(search, (text) => {
@@ -183,10 +200,11 @@ export function createHeader(o: { tabs: TabItem[]; onTheme: () => void; onSearch
   // 屏蔽词/隐藏广告变化后，悬停列表的 60 秒缓存要失效
   o.filter?.onChange(() => popHandles.forEach((p) => p.invalidate()));
   const sunMoon = createSunMoon(o.onTheme);
+  const settingsBtn = o.onSettings ? createSettingsButton(o.onSettings) : null;
   const el = h('header', { class: 'top' },
     h('a', { class: 'brand', href: 'https://www.bilibili.com/', title: '首页', 'aria-label': '首页' }, tv()),
     search,
-    h('div', { class: 'acts' }, tabsNav.el, sunMoon.el, o.onSettings ? createSettingsButton(o.onSettings) : null, upload, userSlot),
+    h('div', { class: 'acts' }, tabsNav.el, sunMoon.el, settingsBtn, upload, userSlot),
   );
 
   account().then((a) => {
@@ -243,5 +261,5 @@ export function createHeader(o: { tabs: TabItem[]; onTheme: () => void; onSearch
 
   if (!user.classList.contains('in')) user.dataset.tip = '登录 B 站';
   attachTooltips(el);
-  return { el, sunMoon, glass: [...(command ? [] : [search]), tabsNav.el, sunMoon.glass], thumb: tabsNav.thumb, setMsgRemind };
+  return { el, sunMoon, glass: [...(command ? [] : [search]), tabsNav.el, sunMoon.glass, ...(settingsBtn ? [settingsBtn] : [])], thumb: tabsNav.thumb, setMsgRemind };
 }

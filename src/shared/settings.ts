@@ -81,6 +81,8 @@ export interface Settings {
   autoWeb: boolean;
   /** 网页全屏时可以往下滚动看评论（播放器跟着滚走） */
   webScroll: boolean;
+  /** 播放页向下滚动时自动隐藏固定顶栏，上滚或移到顶部边缘时恢复（#258） */
+  watchHeaderHide: boolean;
   /** v0.49：播放页 X / C 减速加速 0.1×、Z 在当前倍速与 1× 之间切换（B 站评论建议） */
   speedKeys: boolean;
   /** v0.49：楼中楼按回复关系缩进成对话树（参考 BewlyCat，B 站评论建议） */
@@ -95,6 +97,8 @@ export interface Settings {
   batchNav: boolean;
   /** 每批视频数 */
   batchSize: number;
+  /** 按网格列数显示两行 */
+  batchAutoSize: boolean;
   /** 批次条中间的刷新按钮；关闭后只剩左右箭头 */
   batchRefresh: boolean;
   /** 每次加载或换一批后预载下一轮；关闭则到末批点右箭头才请求 */
@@ -110,6 +114,10 @@ export interface Settings {
   headOrder: string[];
   headLabels: boolean;
   feedLayout: 'classic' | 'sidebar';
+  /** 动态正文字号（px，#272）：14 / 16 默认 / 18 / 20 */
+  dynamicSize: 14 | 16 | 18 | 20;
+  /** 动态页自动刷新：停在顶部时发现新动态自动刷新（关闭时仅显示顶部新动态提示胶囊） */
+  feedAutoRefresh: boolean;
   /** 内容缩放（v0.47.1，评论区：字有点小）：首页和接管页正文区整体放大，100 / 110 / 120 */
   zoom: 100 | 110 | 120;
   /** Ctrl+K 打开命令面板（v0.47.2，评论区：和浏览器 / 其他扩展的 Ctrl+K 冲突时可以关掉，/ 键仍可用） */
@@ -129,10 +137,18 @@ export interface Settings {
   /** 搜索框展开成命令面板的动画速度（%）：50–200，100 = 默认 */
   paletteSpeed: number;
   searchStyle: 'classic' | 'new';
+  /** 隐藏热搜：关闭搜索框热搜轮播、搜索面板热搜词与动态页右侧热搜榜 */
+  hideHotSearch: boolean;
   /** 有 B 站播放器时自动进入宽屏（v0.47），番剧、列表等页面同样生效 */
   wide: boolean;
   /** 播放器独立圆角，关闭时不影响页面卡片 */
   playerCorners: boolean;
+  /** RTX 视频增强直通兼容：关闭播放器圆角裁剪与叠加层滤镜，确保视频直通 Windows DirectComposition 硬件叠加层 */
+  rtxCompat: boolean;
+  /** 播放页 SDR 转 HDR 增强（默认关闭，可用播放器 HDR 按钮或 Alt+H 一键开关） */
+  hdrEnhance: boolean;
+  /** SDR 转 HDR 增强强度 */
+  hdrStrength: 'soft' | 'standard' | 'vivid';
   /** 连播方式扩展：按合集/分P/番剧/推荐分别控制连播；默认关闭，开启后才接管 */
   autoplayExt: boolean;
   /** 隐藏广告与推广（v0.47），默认开启；只做展示层过滤 */
@@ -195,6 +211,7 @@ export const DEFAULTS: Settings = {
   favColumns: 3,
   autoWeb: false,
   webScroll: true,
+  watchHeaderHide: false,
   speedKeys: true,
   replyTree: true,
   cols: 0,
@@ -203,6 +220,7 @@ export const DEFAULTS: Settings = {
   tabRefresh: false,
   batchNav: false,
   batchSize: BATCH_DEFAULT,
+  batchAutoSize: true,
   batchRefresh: true,
   batchPrefetch: false,
   homeHide: [],
@@ -212,6 +230,8 @@ export const DEFAULTS: Settings = {
   headOrder: [],
   headLabels: false,
   feedLayout: 'classic',
+  dynamicSize: 16,
+  feedAutoRefresh: false,
   zoom: 100,
   cmdK: true,
   cdn: '',
@@ -222,8 +242,12 @@ export const DEFAULTS: Settings = {
   uiEffects: true,
   paletteSpeed: 100,
   searchStyle: 'classic',
+  hideHotSearch: false,
   wide: false,
   playerCorners: true,
+  rtxCompat: false,
+  hdrEnhance: false,
+  hdrStrength: 'standard',
   autoplayExt: false,
   hideAds: true,
   sponsorSkip: false,
@@ -283,12 +307,15 @@ function merge(raw: Partial<Settings> | undefined): Settings {
     headOrder: strList(r.headOrder),
     headLabels: r.headLabels === true,
     feedLayout: r.feedLayout === 'sidebar' ? 'sidebar' : 'classic',
+    dynamicSize: r.dynamicSize === 14 || r.dynamicSize === 18 || r.dynamicSize === 20 ? r.dynamicSize : 16,
+    feedAutoRefresh: r.feedAutoRefresh === true,
     zoom: r.zoom === 110 || r.zoom === 120 ? r.zoom : 100,
     homeDefaultTab: r.homeDefaultTab === 'popular' || r.homeDefaultTab === 'following' || r.homeDefaultTab === 'classic' ? r.homeDefaultTab : 'rcmd',
     homeWidth: r.homeWidth === 'compact' || r.homeWidth === 'fluid' ? r.homeWidth : 'current',
     tabRefresh: r.tabRefresh === true,
     batchNav: r.batchNav === true,
     batchSize: clampBatchSize(r.batchSize),
+    batchAutoSize: typeof r.batchAutoSize === 'boolean' ? r.batchAutoSize : clampBatchSize(r.batchSize) === BATCH_DEFAULT,
     batchRefresh: r.batchRefresh !== false,
     batchPrefetch: r.batchPrefetch === true,
     cmdK: r.cmdK !== false,
@@ -300,8 +327,13 @@ function merge(raw: Partial<Settings> | undefined): Settings {
     uiEffects: r.uiEffects !== false,
     paletteSpeed: clampPaletteSpeed(r.paletteSpeed),
     searchStyle: r.searchStyle === 'new' ? 'new' : 'classic',
+    hideHotSearch: r.hideHotSearch === true,
     wide: r.wide === true,
+    watchHeaderHide: r.watchHeaderHide === true,
     playerCorners: r.playerCorners !== false,
+    rtxCompat: r.rtxCompat === true,
+    hdrEnhance: r.hdrEnhance === true,
+    hdrStrength: r.hdrStrength === 'soft' || r.hdrStrength === 'vivid' ? r.hdrStrength : 'standard',
     autoplayExt: r.autoplayExt === true,
     hideAds: r.hideAds !== false,
     sponsorSkip: r.sponsorSkip === true,
@@ -361,10 +393,10 @@ export function sanitizeSettings(raw: unknown): Settings | null {
   if (typeof r.uiEffects === 'boolean') out.uiEffects = r.uiEffects;
   if (typeof r.dynamicVideoOnly === 'boolean') out.dynamicVideoOnly = r.dynamicVideoOnly;
   if (r.favColumns === 2 || r.favColumns === 3 || r.favColumns === 4) out.favColumns = r.favColumns;
-  const bool = (k: 'enabled' | 'hoverPreview' | 'watch' | 'intro' | 'footprint' | 'weather' | 'favDirect' | 'autoWeb' | 'webScroll' | 'speedKeys' | 'replyTree' | 'idDrag' | 'monoNum' | 'reduceMotion' | 'wide' | 'hideAds' | 'sponsorSkip' | 'danmakuJump' | 'danmakuAirborne' | 'msgRemind' | 'appFeed' | 'rerank' | 'headHover' | 'tabRefresh') => { if (typeof r[k] === 'boolean') out[k] = r[k] as boolean; };
+  const bool = (k: 'enabled' | 'hoverPreview' | 'watch' | 'intro' | 'footprint' | 'weather' | 'favDirect' | 'autoWeb' | 'webScroll' | 'watchHeaderHide' | 'speedKeys' | 'replyTree' | 'idDrag' | 'monoNum' | 'reduceMotion' | 'wide' | 'hideAds' | 'sponsorSkip' | 'danmakuJump' | 'danmakuAirborne' | 'msgRemind' | 'appFeed' | 'rerank' | 'headHover' | 'tabRefresh') => { if (typeof r[k] === 'boolean') out[k] = r[k] as boolean; };
   bool('sponsorSkip'); bool('danmakuJump');
   bool('danmakuAirborne');
-  bool('enabled'); bool('hoverPreview'); bool('watch'); bool('intro'); bool('footprint'); bool('weather'); bool('favDirect'); bool('autoWeb'); bool('webScroll'); bool('speedKeys'); bool('replyTree'); bool('idDrag'); bool('monoNum');
+  bool('enabled'); bool('hoverPreview'); bool('watch'); bool('intro'); bool('footprint'); bool('weather'); bool('favDirect'); bool('autoWeb'); bool('webScroll'); bool('watchHeaderHide'); bool('speedKeys'); bool('replyTree'); bool('idDrag'); bool('monoNum');
   bool('reduceMotion'); bool('wide'); bool('hideAds'); bool('msgRemind'); bool('appFeed'); bool('rerank'); bool('headHover'); bool('tabRefresh');
   if (r.radius === 0 || r.radius === 50 || r.radius === 100 || r.radius === 150) out.radius = r.radius;
   if (r.commentSize === 14 || r.commentSize === 15 || r.commentSize === 16 || r.commentSize === 17) out.commentSize = r.commentSize;
@@ -373,6 +405,8 @@ export function sanitizeSettings(raw: unknown): Settings | null {
   if (Array.isArray(r.headOrder)) out.headOrder = strList(r.headOrder);
   if (typeof r.headLabels === 'boolean') out.headLabels = r.headLabels;
   if (r.feedLayout === 'classic' || r.feedLayout === 'sidebar') out.feedLayout = r.feedLayout;
+  if (r.dynamicSize === 14 || r.dynamicSize === 16 || r.dynamicSize === 18 || r.dynamicSize === 20) out.dynamicSize = r.dynamicSize;
+  if (typeof r.feedAutoRefresh === 'boolean') out.feedAutoRefresh = r.feedAutoRefresh;
   if (typeof r.cmdK === 'boolean') out.cmdK = r.cmdK;
   if (typeof r.cdn === 'string') out.cdn = cleanHost(r.cdn);
   if (r.zoom === 100 || r.zoom === 110 || r.zoom === 120) out.zoom = r.zoom;
@@ -381,13 +415,18 @@ export function sanitizeSettings(raw: unknown): Settings | null {
   if (r.homeDefaultTab === 'rcmd' || r.homeDefaultTab === 'popular' || r.homeDefaultTab === 'following' || r.homeDefaultTab === 'classic') out.homeDefaultTab = r.homeDefaultTab;
   if (r.homeWidth === 'current' || r.homeWidth === 'compact' || r.homeWidth === 'fluid') out.homeWidth = r.homeWidth;
   if (typeof r.playerCorners === 'boolean') out.playerCorners = r.playerCorners;
+  if (typeof r.rtxCompat === 'boolean') out.rtxCompat = r.rtxCompat;
+  if (typeof r.hdrEnhance === 'boolean') out.hdrEnhance = r.hdrEnhance;
+  if (r.hdrStrength === 'soft' || r.hdrStrength === 'standard' || r.hdrStrength === 'vivid') out.hdrStrength = r.hdrStrength;
   if (typeof r.autoplayExt === 'boolean') out.autoplayExt = r.autoplayExt;
   if (typeof r.feedFollowList === 'boolean') out.feedFollowList = r.feedFollowList;
   if (typeof r.paletteSpeed === 'number') out.paletteSpeed = clampPaletteSpeed(r.paletteSpeed);
   if (r.searchStyle === 'classic' || r.searchStyle === 'new') out.searchStyle = r.searchStyle;
+  if (typeof r.hideHotSearch === 'boolean') out.hideHotSearch = r.hideHotSearch;
   if (typeof r.batchNav === 'boolean') out.batchNav = r.batchNav;
   if (typeof r.batchRefresh === 'boolean') out.batchRefresh = r.batchRefresh;
   if (typeof r.batchPrefetch === 'boolean') out.batchPrefetch = r.batchPrefetch;
+  if (typeof r.batchAutoSize === 'boolean') out.batchAutoSize = r.batchAutoSize;
   if (typeof r.batchSize === 'number') out.batchSize = clampBatchSize(r.batchSize);
   if (Array.isArray(r.homeHide)) out.homeHide = HOME_BITS.filter((b) => (r.homeHide as unknown[]).includes(b));
   if (Array.isArray(r.homeOrder)) out.homeOrder = normalizeHomeOrder(r.homeOrder);

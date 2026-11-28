@@ -77,7 +77,7 @@ export async function mountSearchExact(): Promise<void> {
     for (const item of items) {
       const li = element('li'); li.dataset.bvid = item.bvid;
       const cover = element('a'); cover.className = 'mx-cover';
-      cover.href = `https://www.bilibili.com/video/${item.bvid}/`; cover.target = '_blank'; cover.rel = 'noopener noreferrer';
+      cover.href = `https://www.bilibili.com/video/${item.bvid}/`; cover.target = '_blank'; cover.rel = 'noopener';
       cover.tabIndex = -1; cover.setAttribute('aria-hidden', 'true');
       if (/^https:\/\/[^/]+\.hdslb\.com\//.test(item.cover)) {
         const img = element('img'); img.src = item.cover; img.alt = ''; img.loading = 'lazy'; img.referrerPolicy = 'no-referrer'; cover.append(img);

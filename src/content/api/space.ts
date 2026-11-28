@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import { account } from './account';
 import { getJSON, getWbi } from './http';
 import type { Video } from './feed';
 
@@ -244,15 +245,19 @@ export async function block(mid: number, on: boolean, csrf: string): Promise<boo
 
 /**
  * 「关注老片」（v0.47.2，评论区 wsxszzz：想看关注的 UP 以前的高播放视频）：
- * 每批随机挑 4 位关注的 UP，取各自「最多播放」第一页里发布超过 90 天的前 3 条，打乱后返回。
+ * 每批随机挑 4 位关注的 UP，取各自「最多播放」第一页里发布超过 90 天的前 3 条，按发布时间返回。
  * 关注列表只拉一次（最多 250 人），用完一轮就结束。
  */
 let followPool: number[] | null = null;
-export async function followClassics(me: number): Promise<{ list: Video[]; done: boolean }> {
+export async function followClassics(signal: AbortSignal): Promise<{ list: Video[]; done: boolean }> {
   if (!followPool) {
+    const me = (await account())?.mid;
+    signal.throwIfAborted();
+    if (!me) throw new Error('登录后才能看关注的 UP 主');
     const mids: number[] = [];
     for (let pn = 1; pn <= 5; pn++) {
-      const d = await getJSON<any>('/x/relation/followings', { vmid: me, pn, ps: 50, order: 'desc' }).catch(() => null);
+      const d = await getJSON<any>('/x/relation/followings', { vmid: me, pn, ps: 50, order: 'desc' }, signal).catch(() => null);
+      signal.throwIfAborted();
       const l: any[] = d?.list ?? [];
       mids.push(...l.map((x) => Number(x.mid)).filter(Boolean));
       if (l.length < 50) break;
@@ -260,11 +265,19 @@ export async function followClassics(me: number): Promise<{ list: Video[]; done:
     if (!mids.length) throw new Error('还没有关注的 UP 主，或关注列表不公开');
     followPool = mids.sort(() => Math.random() - 0.5);
   }
-  const pick = followPool.splice(0, 4);
+  const pool = followPool;
+  const pick = pool.slice(0, 4);
   const old = Date.now() / 1000 - 90 * 86400;
-  const lists = await Promise.all(pick.map((mid, i) => new Promise<Video[]>((res) => setTimeout(() => spaceVideos(mid, 1, 'click').then((r) => res(r.list.filter((v) => v.pubdate && v.pubdate < old).slice(0, 3))).catch(() => res([])), i * 250))));
-  // v0.50：每批按发布时间从新到旧排（B 站评论建议，原来是打乱）
+  const lists = await Promise.all(pick.map(async (mid, index) => {
+    // 错开发送，避免四个空间请求同时打到接口。
+    if (index) await new Promise((resolve) => setTimeout(resolve, index * 100));
+    signal.throwIfAborted();
+    const result = await spaceVideos(mid, 1, 'click', '', signal).catch(() => null);
+    return result?.list.filter((video) => video.pubdate && video.pubdate < old).slice(0, 3) ?? [];
+  }));
+  signal.throwIfAborted();
+  pool.splice(0, pick.length);
   const list = lists.flat().sort((a, b) => b.pubdate - a.pubdate);
-  return { list, done: followPool.length === 0 };
+  return { list, done: pool.length === 0 };
 }
 export const resetClassics = () => { followPool = null; };
